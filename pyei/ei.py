@@ -1,4 +1,6 @@
-'''A placeholder file for now'''
+"""A placeholder file for now"""
+
 
 def placeholder():
+    """A placeholder function"""
     return True

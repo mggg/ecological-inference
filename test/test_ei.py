@@ -1,4 +1,4 @@
-from ei import placeholder
+from pyei import placeholder
 
 
 def test_placeholder():
