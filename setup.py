@@ -11,7 +11,7 @@ from setuptools.command.develop import develop
 PROJECT_ROOT = os.path.dirname(os.path.realpath(__file__))
 REQUIREMENTS_FILE = os.path.join(PROJECT_ROOT, "requirements.txt")
 README_FILE = os.path.join(PROJECT_ROOT, "README.md")
-VERSION_FILE = os.path.join(PROJECT_ROOT, "ei", "__init__.py")
+VERSION_FILE = os.path.join(PROJECT_ROOT, "pyei", "__init__.py")
 
 
 def get_requirements():
