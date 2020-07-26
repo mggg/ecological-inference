@@ -1,3 +1,4 @@
+"""Tests for ei.py"""
 from pyei import placeholder
 
 
