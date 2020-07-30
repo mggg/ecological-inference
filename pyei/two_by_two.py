@@ -2,7 +2,6 @@
 Models and fitting for 2x2 methods
 
 TODO: Finish wakefield model
-TODO: Add ridgeplots for precincts
 TODO: Truncated normal model
 """
 

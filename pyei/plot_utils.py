@@ -7,6 +7,7 @@ import scipy.stats as st
 
 
 def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=None):
+    """Ridgeplots of sampled voting preferences for each precinct"""
     n_x_pts = 500
     overlap = 1.3
     N = voting_prefs_group1.shape[1]

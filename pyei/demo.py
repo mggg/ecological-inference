@@ -4,6 +4,7 @@ A stub for a demo
 import pandas as pd
 import numpy as np
 from .two_by_two import TwoByTwoEI
+from .goodman_er import GoodmansER
 
 data = pd.read_csv("SantaClaraSampleData.csv")
 X = np.array(data["pct_e_asian_vote"])
