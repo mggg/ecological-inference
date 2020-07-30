@@ -13,4 +13,24 @@ N = np.array(data["total2"])
 ei = TwoByTwoEI(model_name="king99_pareto_modification")
 ei.fit(X, T, N)
 ei.summary()
-plots = ei.plot()
+ei.plot()
+ei.precinct_level_plot()
+
+ei = TwoByTwoEI(
+    "king99", lmbda=0.25
+)  # king uses 0.5, but smaller lambdas seem more stable
+ei.fit(X, T, N, demographic_group_name="e asian", candidate_name="Hardy")
+ei.summary()
+ei.plot()
+ei.precinct_level_plot()
+
+goodmans_er = GoodmansER().fit(
+    X, T, demographic_group_name="e asian", candidate_name="Hardy"
+)
+print(goodmans_er.summary())
+goodmans_er.plot()
+
+goodmans_er = GoodmansER(is_weighted_regression="True")
+goodmans_er.fit(X, T, N, demographic_group_name="e asian", candidate_name="Hardy")
+print(goodmans_er.summary())
+goodmans_er.plot()

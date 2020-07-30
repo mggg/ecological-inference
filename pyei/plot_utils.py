@@ -2,14 +2,70 @@
 import seaborn as sns
 import pandas as pd
 from matplotlib import pyplot as plt
+import numpy as np
+import scipy.stats as st
+
+
+def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=None):
+    n_x_pts = 500
+    overlap = 1.3
+    N = voting_prefs_group1.shape[1]
+    if ax is None:
+        fig, ax = plt.subplots()
+    x = np.linspace(0, 1, n_x_pts)
+
+    N = voting_prefs_group1.shape[1]
+    if y_labels is None:
+        y_labels = range(N)
+
+    iterator = zip(y_labels, voting_prefs_group1.T, voting_prefs_group2.T,)
+
+    for idx, (precinct, group1, group2) in enumerate(iterator, 1):
+        pfx = "" if idx == 1 else "_"
+        group1_kde = st.gaussian_kde(group1)
+        group2_kde = st.gaussian_kde(group2)
+        ax.plot([0], [precinct])
+        trans = ax.convert_yunits(precinct)
+
+        group1_y = group1_kde(x)
+        group1_y = overlap * group1_y / group1_y.max()
+        group2_y = group2_kde(x)
+        group2_y = overlap * group2_y / group2_y.max()
+
+        ax.fill_between(
+            x,
+            group1_y + trans,
+            trans,
+            color="steelblue",
+            zorder=4 * N - 4 * idx,
+            label=pfx + "Group 1",
+        )
+        ax.plot(
+            x, group1_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 1
+        )
+
+        ax.fill_between(
+            x,
+            group2_y + trans,
+            trans,
+            color="orange",
+            zorder=4 * N - 4 * idx + 2,
+            label=pfx + "Group 2",
+        )
+        ax.plot(
+            x, group2_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 3
+        )
+    ax.set_title("Precinct level estimates of voting preferences")
+    ax.set_xlabel("Percent vote for candidate")
+    return ax
 
 
 def plot_boxplot(
     voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None
 ):
-    '''
+    """
     Horizontal boxplot of 2 groups of samples between 0 and 1
-    '''
+    """
     if ax is None:
         ax = plt.gca()
     samples_df = pd.DataFrame(

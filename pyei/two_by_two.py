@@ -1,11 +1,20 @@
-'''
+"""
 Models and fitting for 2x2 methods
-'''
+
+TODO: Finish wakefield model
+TODO: Add ridgeplots for precincts
+TODO: Truncated normal model
+"""
 
 import pymc3 as pm
 import numpy as np
 import matplotlib.pyplot as plt
-from .plot_utils import plot_conf_or_credible_interval, plot_boxplot, plot_kdes
+from .plot_utils import (
+    plot_conf_or_credible_interval,
+    plot_boxplot,
+    plot_kdes,
+    plot_precincts,
+)
 
 
 def ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops):
@@ -37,10 +46,16 @@ def ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops):
         kappa_2 = pm.Pareto("kappa_2", m=1.5, alpha=1)
 
         b_1 = pm.Beta(
-            "b_1", alpha=phi_1 * kappa_1, beta=(1.0 - phi_1) * kappa_1, shape=num_precincts
+            "b_1",
+            alpha=phi_1 * kappa_1,
+            beta=(1.0 - phi_1) * kappa_1,
+            shape=num_precincts,
         )
         b_2 = pm.Beta(
-            "b_2", alpha=phi_2 * kappa_2, beta=(1.0 - phi_2) * kappa_2, shape=num_precincts
+            "b_2",
+            alpha=phi_2 * kappa_2,
+            beta=(1.0 - phi_2) * kappa_2,
+            shape=num_precincts,
         )
 
         theta = group_fraction * b_1 + (1 - group_fraction) * b_2
@@ -87,9 +102,10 @@ def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
 
 
 class TwoByTwoEI:
-    '''
+    """
     Fitting and plotting for king97, king99, and wakefield models
-    '''
+    """
+
     def __init__(self, model_name, **additional_model_params):
         # model_name can be 'king97', 'king99' or 'king99_pareto_modification' or 'wakefield'
         self.demographic_group_fraction = None
@@ -103,12 +119,12 @@ class TwoByTwoEI:
         self.demographic_group_name = None
         self.candidate_name = None
         self.sim_trace = None
-        self.sampled_voting_prefs_district_b1 = None
-        self.sampled_voting_prefs_district_b2 = None
-        self.posterior_mean_voting_prefs_district_b1 = None
-        self.posterior_mean_voting_prefs_district_b2 = None
-        self.credible_interval_95_mean_voting_prefs_district_b1 = None
-        self.credible_interval_95_mean_voting_prefs_district_b2 = None
+        self.sampled_voting_prefs_district_gp1 = None
+        self.sampled_voting_prefs_district_gp2 = None
+        self.posterior_mean_voting_prefs_district_gp1 = None
+        self.posterior_mean_voting_prefs_district_gp2 = None
+        self.credible_interval_95_mean_voting_prefs_district_gp1 = None
+        self.credible_interval_95_mean_voting_prefs_district_gp2 = None
 
     def fit(
         self,
@@ -118,7 +134,7 @@ class TwoByTwoEI:
         demographic_group_name="given demographic group",
         candidate_name="given candidate",
     ):
-        '''Fit the specified model using MCMC sampling'''
+        """Fit the specified model using MCMC sampling"""
         # Additional params includes lambda for king99, the
         # parameter passed to the exponential hyperpriors
         self.demographic_group_fraction = group_fraction
@@ -138,101 +154,105 @@ class TwoByTwoEI:
                 group_fraction, votes_fraction, precinct_pops
             )
         with sim_model:
-            self.sim_trace = pm.sample(200, target_accept=0.99, tune=200)
+            self.sim_trace = pm.sample(target_accept=0.99, tune=1000)
 
         self.calculate_summary()
 
     def calculate_summary(self):
-        '''Calculate point estimates (post. means) and credible intervals'''
+        """Calculate point estimates (post. means) and credible intervals"""
         # multiply sample proportions by precinct pops to get samples of
         # number of voters the demographic group who voted for the candidate
         # in each precinct
-        samples_converted_to_pops_b1 = (
+        samples_converted_to_pops_gp1 = (
             self.sim_trace.get_values("b_1") * self.precinct_pops
         )  # num_samples x num_precincts
-        samples_converted_to_pops_b2 = (
+        samples_converted_to_pops_gp2 = (
             self.sim_trace.get_values("b_2") * self.precinct_pops
         )  # num_samples x num_precincts
 
         # obtain samples of total votes summed across all precinct for the candidate for each group
-        samples_of_votes_summed_across_district_b1 = samples_converted_to_pops_b1.sum(
+        samples_of_votes_summed_across_district_gp1 = samples_converted_to_pops_gp1.sum(
             axis=1
         )
-        samples_of_votes_summed_across_district_b2 = samples_converted_to_pops_b2.sum(
+        samples_of_votes_summed_across_district_gp2 = samples_converted_to_pops_gp2.sum(
             axis=1
         )
 
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
-        self.sampled_voting_prefs_district_b1 = (
-            samples_of_votes_summed_across_district_b1 / self.precinct_pops.sum()
+        self.sampled_voting_prefs_district_gp1 = (
+            samples_of_votes_summed_across_district_gp1 / self.precinct_pops.sum()
         )  # sampled voted prefs across precincts
-        self.sampled_voting_prefs_district_b2 = (
-            samples_of_votes_summed_across_district_b2 / self.precinct_pops.sum()
+        self.sampled_voting_prefs_district_gp2 = (
+            samples_of_votes_summed_across_district_gp2 / self.precinct_pops.sum()
         )  # sampled voted prefs across precincts
 
         # compute point estimates
-        self.posterior_mean_voting_prefs_district_b1 = (
-            self.sampled_voting_prefs_district_b1.mean()
+        self.posterior_mean_voting_prefs_district_gp1 = (
+            self.sampled_voting_prefs_district_gp1.mean()
         )
-        self.posterior_mean_voting_prefs_district_b2 = (
-            self.sampled_voting_prefs_district_b2.mean()
+        self.posterior_mean_voting_prefs_district_gp2 = (
+            self.sampled_voting_prefs_district_gp2.mean()
         )
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
-        self.credible_interval_95_mean_voting_prefs_district_b1 = np.percentile(
-            self.sampled_voting_prefs_district_b1, percentiles
+        self.credible_interval_95_mean_voting_prefs_district_gp1 = np.percentile(
+            self.sampled_voting_prefs_district_gp1, percentiles
         )
-        self.credible_interval_95_mean_voting_prefs_district_b2 = np.percentile(
-            self.sampled_voting_prefs_district_b2, percentiles
+        self.credible_interval_95_mean_voting_prefs_district_gp2 = np.percentile(
+            self.sampled_voting_prefs_district_gp2, percentiles
         )
 
     def summary(self):
-        '''Return a summary string'''
+        """Return a summary string"""
         # TODO: probably format this as a table
-        return f"""Model: {self.model_name} + "\n"
+        return f"""Model: {self.model_name}
         Computed from the raw b_i samples by multiplying by population and then getting 
-        the proportion of the total pop (total pop=summed across all districts)"
+        the proportion of the total pop (total pop=summed across all districts):
         The posterior mean for the district-level voting preference of
-        {self.demographic_group_name} for {self.candidate_name} is {self.posterior_mean_voting_prefs_district_b1:.3f}"
-        The posterior mean for the district-level voting preference of non-{self.demographic_group_name} for {self.candidate_name} 
-        is {self.posterior_mean_voting_prefs_district_b2:.3f}"
-        95% Bayesian credible interval for district-level voting preference  of {self.demographic_group_name} for {self.candidate_name} is
-        {self.credible_interval_95_mean_voting_prefs_district_b1}"
-        "95% Bayesian credible interval for district-level voting preference  of {self.demographic_group_name} for {self.candidate_name} is 
-        {self.credible_interval_95_mean_voting_prefs_district_b2}"
+        {self.demographic_group_name} for {self.candidate_name} is
+        {self.posterior_mean_voting_prefs_district_gp1:.3f}
+        The posterior mean for the district-level voting preference of
+        non-{self.demographic_group_name} for {self.candidate_name} is
+        {self.posterior_mean_voting_prefs_district_gp2:.3f}
+        95% Bayesian credible interval for district-level voting preference of
+        {self.demographic_group_name} for {self.candidate_name} is
+        {self.credible_interval_95_mean_voting_prefs_district_gp1}
+        95% Bayesian credible interval for district-level voting preference of
+        non-{self.demographic_group_name} for {self.candidate_name} is 
+        {self.credible_interval_95_mean_voting_prefs_district_gp2}
         """
 
     def precinct_level_estimates(self):
-        '''If desired, we can return precinct-level estimates'''
+        """If desired, we can return precinct-level estimates"""
 
     def _voting_prefs(self):
-        '''Bundles together the samples, for ease of passing to plots'''
+        """Bundles together the samples, for ease of passing to plots"""
         return (
-            self.sampled_voting_prefs_district_b1,
-            self.sampled_voting_prefs_district_b2,
+            self.sampled_voting_prefs_district_gp1,
+            self.sampled_voting_prefs_district_gp2,
         )
 
     def _group_names_for_display(self):
-        '''Sets the group names to be displayed in plots'''
+        """Sets the group names to be displayed in plots"""
         return self.demographic_group_name, "non-" + self.demographic_group_name
 
     def plot_kde(self, ax=None):
-        '''kernel density estimate/ histogram plot'''
+        """kernel density estimate/ histogram plot"""
         return plot_kdes(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
 
     def plot_boxplot(self, ax=None):
-        ''' Boxplot of voting prefs for each group'''
+        """ Boxplot of voting prefs for each group"""
         return plot_boxplot(
             *self._voting_prefs(), *self._group_names_for_display(), ax=ax
         )
 
     def plot_intervals(self, ax=None):
-        ''' Plot of credible intervals for each group'''
+        """ Plot of credible intervals for each group"""
         title = "95% credible intervals"
         return plot_conf_or_credible_interval(
-            self.credible_interval_95_mean_voting_prefs_district_b1,
-            self.credible_interval_95_mean_voting_prefs_district_b2,
+            self.credible_interval_95_mean_voting_prefs_district_gp1,
+            self.credible_interval_95_mean_voting_prefs_district_gp2,
             *self._group_names_for_display(),
             self.candidate_name,
             title,
@@ -240,9 +260,15 @@ class TwoByTwoEI:
         )
 
     def plot(self):
-        '''kde, boxplot, and credible intervals'''
+        """kde, boxplot, and credible intervals"""
         _, (ax1, ax2, ax3) = plt.subplots(nrows=3)
         return (self.plot_kde(ax1), self.plot_boxplot(ax2), self.plot_intervals(ax3))
 
-    def precinct_level_plot(self):
-        '''Could put some ridge plots in here if desired'''
+    def precinct_level_plot(self, ax=None):
+        """Ridgeplots for precincts"""
+        return plot_precincts(
+            self.sim_trace.get_values("b_1"),
+            self.sim_trace.get_values("b_2"),
+            y_labels=None,
+            ax=ax,
+        )
