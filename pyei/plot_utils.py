@@ -21,7 +21,6 @@ def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=N
         _, ax = plt.subplots()
     x = np.linspace(0, 1, n_x_pts)
 
-    N = voting_prefs_group1.shape[1]
     if y_labels is None:
         y_labels = range(N)
 
