@@ -249,25 +249,25 @@ class TwoByTwoEI:
         _, (ax1, ax2, ax3) = plt.subplots(nrows=3)
         return (self.plot_kde(ax1), self.plot_boxplot(ax2), self.plot_intervals(ax3))
 
-    def precinct_level_plot(self, ax=None, force_print_all=False, y_labels=None):
+    def precinct_level_plot(self, ax=None, show_all_precincts=False, y_labels=None):
         """Ridgeplots for precincts
         
             Optional arguments:
             
-            ax               :  matplotlib axes object
-            force_print_all  :  If True, then it will show all ridge plots (even 
-                                if there are more than 50)
-            y_labels         :  Labels for each precinct (if not supplied, by
-                                default we label each precinct with an integer
-                                label, 1 to n)
+            ax                  :  matplotlib axes object
+            show_all_precincts  :  If True, then it will show all ridge plots (even 
+                                   if there are more than 50)
+            y_labels            :  Labels for each precinct (if not supplied, by
+                                   default we label each precinct with an integer
+                                   label, 1 to n)
         """
         voting_prefs_group1 = self.sim_trace.get_values("b_1")
         voting_prefs_group2 = self.sim_trace.get_values("b_2")
         N = voting_prefs_group1.shape[1]
-        if N > 50 and not force_print_all:
-            message = (f"User attempted to plot {N} precinct-level voting preference ridgeplots. "
-                       f"Automatically restricting to first 50 precincts "
-                       f"(run with `force_print_all=True` to plot all precinct ridgeplots.)")
+        if N > 50 and not show_all_precincts:
+            message = (f"User attempted to plot {N} precinct-level voting preference "
+                       f"ridgeplots. Automatically restricting to first 50 precincts "
+                       f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)")
             warnings.warn(message)
             voting_prefs_group1 = voting_prefs_group1[:, :50]
             voting_prefs_group2 = voting_prefs_group2[:, :50]
