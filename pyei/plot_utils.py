@@ -5,6 +5,13 @@ from matplotlib import pyplot as plt
 import numpy as np
 import scipy.stats as st
 
+__all__ = [
+    "plot_precincts",
+    "plot_boxplot",
+    "plot_kdes",
+    "plot_conf_or_credible_interval",
+]
+
 
 def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=None):
     """Ridgeplots of sampled voting preferences for each precinct"""
@@ -19,7 +26,7 @@ def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=N
     if y_labels is None:
         y_labels = range(N)
 
-    iterator = zip(y_labels, voting_prefs_group1.T, voting_prefs_group2.T,)
+    iterator = zip(y_labels, voting_prefs_group1.T, voting_prefs_group2.T)
 
     for idx, (precinct, group1, group2) in enumerate(iterator, 1):
         pfx = "" if idx == 1 else "_"

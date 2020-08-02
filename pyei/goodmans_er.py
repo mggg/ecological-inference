@@ -2,10 +2,12 @@
 Goodman's ecological regression
 """
 
-import seaborn as sns
-import numpy as np
 from matplotlib import pyplot as plt
+import numpy as np
+import seaborn as sns
 from sklearn.linear_model import LinearRegression
+
+__all__ = ["GoodmansER"]
 
 
 class GoodmansER:
@@ -61,10 +63,10 @@ class GoodmansER:
         else:
             model_name = "Goodmans ER"
         return f"""{model_name}
-        Est. fraction of {self.demographic_group_name} 
-        voters who voted for {self.candidate_name} is 
+        Est. fraction of {self.demographic_group_name}
+        voters who voted for {self.candidate_name} is
         {self.voting_prefs_est_:.3f}
-        Est. fraction of non- {self.demographic_group_name} 
+        Est. fraction of non- {self.demographic_group_name}
         voters who voted for {self.candidate_name} is
         {self.voting_prefs_complement_est_:.3f}
         """

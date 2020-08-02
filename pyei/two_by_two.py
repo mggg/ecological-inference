@@ -15,6 +15,8 @@ from .plot_utils import (
     plot_precincts,
 )
 
+__all__ = ["TwoByTwoEI"]
+
 
 def ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops):
     """
@@ -206,7 +208,7 @@ class TwoByTwoEI:
         """Return a summary string"""
         # TODO: probably format this as a table
         return f"""Model: {self.model_name}
-        Computed from the raw b_i samples by multiplying by population and then getting 
+        Computed from the raw b_i samples by multiplying by population and then getting
         the proportion of the total pop (total pop=summed across all districts):
         The posterior mean for the district-level voting preference of
         {self.demographic_group_name} for {self.candidate_name} is
@@ -218,7 +220,7 @@ class TwoByTwoEI:
         {self.demographic_group_name} for {self.candidate_name} is
         {self.credible_interval_95_mean_voting_prefs_district_gp1}
         95% Bayesian credible interval for district-level voting preference of
-        non-{self.demographic_group_name} for {self.candidate_name} is 
+        non-{self.demographic_group_name} for {self.candidate_name} is
         {self.credible_interval_95_mean_voting_prefs_district_gp2}
         """
 
