@@ -5,21 +5,15 @@ from matplotlib import pyplot as plt
 import numpy as np
 import scipy.stats as st
 
-__all__ = [
-    "plot_precincts",
-    "plot_boxplot",
-    "plot_kdes",
-    "plot_conf_or_credible_interval",
-]
+__all__ = ["plot_precincts", "plot_boxplot", "plot_kdes", "plot_conf_or_credible_interval"]
 
 
 def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=None):
     """Ridgeplots of sampled voting preferences for each precinct"""
     n_x_pts = 500
     overlap = 1.3
-    N = voting_prefs_group1.shape[1]
     if ax is None:
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
     x = np.linspace(0, 1, n_x_pts)
 
     N = voting_prefs_group1.shape[1]
