@@ -2,10 +2,12 @@
 Goodman's ecological regression
 """
 
-import seaborn as sns
-import numpy as np
 from matplotlib import pyplot as plt
+import numpy as np
+import seaborn as sns
 from sklearn.linear_model import LinearRegression
+
+__all__ = ["GoodmansER"]
 
 
 class GoodmansER:
@@ -41,9 +43,7 @@ class GoodmansER:
         self.candidate_name = candidate_name
         if self.is_weighted_regression:
             reg = LinearRegression().fit(
-                group_fraction.reshape(-1, 1),
-                vote_fraction,
-                sample_weight=precinct_pops,
+                group_fraction.reshape(-1, 1), vote_fraction, sample_weight=precinct_pops
             )
         else:
             reg = LinearRegression().fit(group_fraction.reshape(-1, 1), vote_fraction)
@@ -61,10 +61,10 @@ class GoodmansER:
         else:
             model_name = "Goodmans ER"
         return f"""{model_name}
-        Est. fraction of {self.demographic_group_name} 
-        voters who voted for {self.candidate_name} is 
+        Est. fraction of {self.demographic_group_name}
+        voters who voted for {self.candidate_name} is
         {self.voting_prefs_est_:.3f}
-        Est. fraction of non- {self.demographic_group_name} 
+        Est. fraction of non- {self.demographic_group_name}
         voters who voted for {self.candidate_name} is
         {self.voting_prefs_complement_est_:.3f}
         """
@@ -79,10 +79,6 @@ class GoodmansER:
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
         sns.regplot(
-            self.demographic_group_fraction,
-            self.vote_fraction,
-            ax=ax,
-            ci=95,
-            truncate=False,
+            self.demographic_group_fraction, self.vote_fraction, ax=ax, ci=95, truncate=False
         )
         return fig, ax

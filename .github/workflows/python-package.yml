@@ -7,32 +7,31 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install .
-        pip install -r requirements-dev.txt
-    - name: Check formatting with black
-      run: |
-        black --line-length 100 --check .
-    - name: Type checking with mypy
-      run: |
-        mypy pyei
-    - name: Lint with pylint
-      run: |
-        pylint pyei test/*.py
-    - name: Test with pytest
-      run: |
-        pytest --cov
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+          pip install -r requirements-dev.txt
+      - name: Check formatting with black
+        run: |
+          black --line-length 100 --check .
+      - name: Type checking with mypy
+        run: |
+          mypy --ignore-missing-imports pyei
+      - name: Lint with pylint
+        run: |
+          pylint pyei test/*.py
+      - name: Test with pytest
+        run: |
+          pytest -v --cov pyei

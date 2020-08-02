@@ -5,21 +5,22 @@ from matplotlib import pyplot as plt
 import numpy as np
 import scipy.stats as st
 
+__all__ = ["plot_precincts", "plot_boxplot", "plot_kdes", "plot_conf_or_credible_interval"]
+
 
 def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=None):
     """Ridgeplots of sampled voting preferences for each precinct"""
     n_x_pts = 500
     overlap = 1.3
-    N = voting_prefs_group1.shape[1]
     if ax is None:
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
     x = np.linspace(0, 1, n_x_pts)
 
     N = voting_prefs_group1.shape[1]
     if y_labels is None:
         y_labels = range(N)
 
-    iterator = zip(y_labels, voting_prefs_group1.T, voting_prefs_group2.T,)
+    iterator = zip(y_labels, voting_prefs_group1.T, voting_prefs_group2.T)
 
     for idx, (precinct, group1, group2) in enumerate(iterator, 1):
         pfx = "" if idx == 1 else "_"
@@ -41,9 +42,7 @@ def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=N
             zorder=4 * N - 4 * idx,
             label=pfx + "Group 1",
         )
-        ax.plot(
-            x, group1_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 1
-        )
+        ax.plot(x, group1_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 1)
 
         ax.fill_between(
             x,
@@ -53,33 +52,25 @@ def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=N
             zorder=4 * N - 4 * idx + 2,
             label=pfx + "Group 2",
         )
-        ax.plot(
-            x, group2_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 3
-        )
+        ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 3)
     ax.set_title("Precinct level estimates of voting preferences")
     ax.set_xlabel("Percent vote for candidate")
     return ax
 
 
-def plot_boxplot(
-    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None
-):
+def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
     """
     Horizontal boxplot of 2 groups of samples between 0 and 1
     """
     if ax is None:
         ax = plt.gca()
-    samples_df = pd.DataFrame(
-        {group1_name: voting_prefs_group1, group2_name: voting_prefs_group2}
-    )
+    samples_df = pd.DataFrame({group1_name: voting_prefs_group1, group2_name: voting_prefs_group2})
     ax = sns.boxplot(data=samples_df, orient="h", ax=ax)
     ax.set_xlim((0, 1))
     return ax
 
 
-def plot_kdes(
-    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None
-):
+def plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
     """'
     Plot kernel density plots of samples between 0 and 1 (e.g. of voting preferences) for two groups
     """

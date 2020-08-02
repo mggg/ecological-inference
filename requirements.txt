@@ -1,0 +1,5 @@
+pymc3
+scikit-learn
+matplotlib
+pandas
+seaborn
