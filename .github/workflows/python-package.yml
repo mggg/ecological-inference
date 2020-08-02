@@ -34,4 +34,4 @@ jobs:
           pylint pyei test/*.py
       - name: Test with pytest
         run: |
-          pytest --cov
+          pytest -v --cov pyei
