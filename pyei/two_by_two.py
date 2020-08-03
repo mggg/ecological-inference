@@ -248,11 +248,20 @@ class TwoByTwoEI:
         _, (ax1, ax2, ax3) = plt.subplots(nrows=3)
         return (self.plot_kde(ax1), self.plot_boxplot(ax2), self.plot_intervals(ax3))
 
-    def precinct_level_plot(self, ax=None):
-        """Ridgeplots for precincts"""
+    def precinct_level_plot(self, ax=None, show_all_precincts=False, y_labels=None):
+        """Ridgeplots for precincts
+            Optional arguments:
+            ax                  :  matplotlib axes object
+            show_all_precincts  :  If True, then it will show all ridge plots
+                                   (even if there are more than 50)
+            y_labels            :  Labels for each precinct (if not supplied, by
+                                   default we label each precinct with an integer
+                                   label, 1 to n)
+        """
         return plot_precincts(
             self.sim_trace.get_values("b_1"),
             self.sim_trace.get_values("b_2"),
-            y_labels=None,
+            y_labels=y_labels,
+            show_all_precincts=show_all_precincts,
             ax=ax,
         )
