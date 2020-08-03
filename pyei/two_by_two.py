@@ -5,7 +5,6 @@ TODO: Finish wakefield model
 TODO: Truncated normal model
 """
 
-import warnings
 import pymc3 as pm
 import numpy as np
 import matplotlib.pyplot as plt
@@ -251,32 +250,18 @@ class TwoByTwoEI:
 
     def precinct_level_plot(self, ax=None, show_all_precincts=False, y_labels=None):
         """Ridgeplots for precincts
-        
             Optional arguments:
-            
             ax                  :  matplotlib axes object
-            show_all_precincts  :  If True, then it will show all ridge plots (even 
-                                   if there are more than 50)
+            show_all_precincts  :  If True, then it will show all ridge plots
+                                   (even if there are more than 50)
             y_labels            :  Labels for each precinct (if not supplied, by
                                    default we label each precinct with an integer
                                    label, 1 to n)
         """
-        voting_prefs_group1 = self.sim_trace.get_values("b_1")
-        voting_prefs_group2 = self.sim_trace.get_values("b_2")
-        N = voting_prefs_group1.shape[1]
-        if N > 50 and not show_all_precincts:
-            message = (f"User attempted to plot {N} precinct-level voting preference "
-                       f"ridgeplots. Automatically restricting to first 50 precincts "
-                       f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)")
-            warnings.warn(message)
-            voting_prefs_group1 = voting_prefs_group1[:, :50]
-            voting_prefs_group2 = voting_prefs_group2[:, :50]
-            if y_labels is not None:
-                y_labels = y_labels[:50]
-
         return plot_precincts(
-            voting_prefs_group1,
-            voting_prefs_group2,
+            self.sim_trace.get_values("b_1"),
+            self.sim_trace.get_values("b_2"),
             y_labels=y_labels,
+            show_all_precincts=show_all_precincts,
             ax=ax,
         )

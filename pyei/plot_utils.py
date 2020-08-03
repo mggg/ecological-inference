@@ -1,4 +1,5 @@
 """Plotting functions for visualizing ei outputs"""
+import warnings
 import seaborn as sns
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -13,7 +14,9 @@ __all__ = [
 ]
 
 
-def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=None):
+def plot_precincts(
+    voting_prefs_group1, voting_prefs_group2, y_labels=None, show_all_precincts=False, ax=None
+):
     """Ridgeplots of sampled voting preferences for each precinct"""
     n_x_pts = 500
     overlap = 1.3
@@ -21,6 +24,18 @@ def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=N
         _, ax = plt.subplots()
     x = np.linspace(0, 1, n_x_pts)
 
+    N = voting_prefs_group1.shape[1]
+    if N > 50 and not show_all_precincts:
+        warnings.warn(
+            f"User attempted to plot {N} precinct-level voting preference "
+            f"ridgeplots. Automatically restricting to first 50 precincts "
+            f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)"
+        )
+        voting_prefs_group1 = voting_prefs_group1[:, :50]
+        voting_prefs_group2 = voting_prefs_group2[:, :50]
+        if y_labels is not None:
+            y_labels = y_labels[:50]
+        N = 50
     if y_labels is None:
         y_labels = range(N)
 
