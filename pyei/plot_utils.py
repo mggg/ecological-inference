@@ -5,7 +5,12 @@ from matplotlib import pyplot as plt
 import numpy as np
 import scipy.stats as st
 
-__all__ = ["plot_precincts", "plot_boxplot", "plot_kdes", "plot_conf_or_credible_interval"]
+__all__ = [
+    "plot_precincts",
+    "plot_boxplot",
+    "plot_kdes",
+    "plot_conf_or_credible_interval",
+]
 
 
 def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=None):
@@ -42,7 +47,9 @@ def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=N
             zorder=4 * N - 4 * idx,
             label=pfx + "Group 1",
         )
-        ax.plot(x, group1_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 1)
+        ax.plot(
+            x, group1_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 1
+        )
 
         ax.fill_between(
             x,
@@ -52,25 +59,33 @@ def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=N
             zorder=4 * N - 4 * idx + 2,
             label=pfx + "Group 2",
         )
-        ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 3)
+        ax.plot(
+            x, group2_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 3
+        )
     ax.set_title("Precinct level estimates of voting preferences")
     ax.set_xlabel("Percent vote for candidate")
     return ax
 
 
-def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
+def plot_boxplot(
+    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None
+):
     """
     Horizontal boxplot of 2 groups of samples between 0 and 1
     """
     if ax is None:
         ax = plt.gca()
-    samples_df = pd.DataFrame({group1_name: voting_prefs_group1, group2_name: voting_prefs_group2})
+    samples_df = pd.DataFrame(
+        {group1_name: voting_prefs_group1, group2_name: voting_prefs_group2}
+    )
     ax = sns.boxplot(data=samples_df, orient="h", ax=ax)
     ax.set_xlim((0, 1))
     return ax
 
 
-def plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
+def plot_kdes(
+    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None
+):
     """'
     Plot kernel density plots of samples between 0 and 1 (e.g. of voting preferences) for two groups
     """
