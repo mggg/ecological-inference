@@ -245,7 +245,9 @@ class TwoByTwoEI:
 
     def plot(self):
         """kde, boxplot, and credible intervals"""
-        _, (ax1, ax2, ax3) = plt.subplots(nrows=3)
+        _, (ax1, ax2, ax3) = plt.subplots(
+            nrows=3, figsize=(6.4, 6.4), gridspec_kw={"height_ratios": [2, 1, 1]}
+        )
         return (self.plot_kde(ax1), self.plot_boxplot(ax2), self.plot_intervals(ax3))
 
     def precinct_level_plot(self, ax=None, show_all_precincts=False, y_labels=None):
