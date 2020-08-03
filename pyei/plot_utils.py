@@ -82,11 +82,9 @@ def plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name
     if ax is None:
         ax = plt.gca()
     ax.set_xlim((0, 1))
-    sns.distplot(voting_prefs_group1, hist=True, ax=ax)
-    sns.distplot(voting_prefs_group2, hist=True, ax=ax)
-    text_pos_y = ax.get_ylim()[1] * 0.9
-    ax.text(voting_prefs_group1.mean(), text_pos_y, group1_name)
-    ax.text(voting_prefs_group2.mean(), text_pos_y, group2_name)
+    sns.distplot(voting_prefs_group1, hist=True, ax=ax, label=group1_name)
+    sns.distplot(voting_prefs_group2, hist=True, ax=ax, label=group2_name)
+    ax.legend()
     return ax
 
 
