@@ -5,7 +5,12 @@ from matplotlib import pyplot as plt
 import numpy as np
 import scipy.stats as st
 
-__all__ = ["plot_precincts", "plot_boxplot", "plot_kdes", "plot_conf_or_credible_interval"]
+__all__ = [
+    "plot_precincts",
+    "plot_boxplot",
+    "plot_kdes",
+    "plot_conf_or_credible_interval",
+]
 
 
 def plot_precincts(voting_prefs_group1, voting_prefs_group2, y_labels=None, ax=None):
