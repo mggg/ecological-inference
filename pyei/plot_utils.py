@@ -18,11 +18,10 @@ def plot_precincts(
     voting_prefs_group1, voting_prefs_group2, y_labels=None, show_all_precincts=False, ax=None
 ):
     """Ridgeplots of sampled voting preferences for each precinct"""
-    n_x_pts = 500
     overlap = 1.3
     if ax is None:
         _, ax = plt.subplots()
-    x = np.linspace(0, 1, n_x_pts)
+    x = np.linspace(0, 1, 500)  # 500 points between 0 and 1 on the x-axis
 
     N = voting_prefs_group1.shape[1]
     if N > 50 and not show_all_precincts:
