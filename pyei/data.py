@@ -39,6 +39,4 @@ def get_data(filename):
     # files checked into pyei/examples/data/<filename>
     else:
         data_pkg = "pyei.examples"
-        return pd.read_csv(
-            io.BytesIO(pkgutil.get_data(data_pkg, os.path.join("data", filename)))
-        )
+        return pd.read_csv(io.BytesIO(pkgutil.get_data(data_pkg, os.path.join("data", filename))))
