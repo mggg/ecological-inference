@@ -13,6 +13,7 @@ from .plot_utils import (
     plot_boxplot,
     plot_kdes,
     plot_precincts,
+    plot_summary
 )
 
 __all__ = ["TwoByTwoEI"]
@@ -243,12 +244,9 @@ class TwoByTwoEI:
             ax=ax,
         )
 
-    def plot(self):
+    def plot(self, ax=None):
         """kde, boxplot, and credible intervals"""
-        _, (ax1, ax2, ax3) = plt.subplots(
-            nrows=3, figsize=(6.4, 6.4), gridspec_kw={"height_ratios": [2, 1, 1]}
-        )
-        return (self.plot_kde(ax1), self.plot_boxplot(ax2), self.plot_intervals(ax3))
+        return plot_summary(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)   
 
     def precinct_level_plot(self, ax=None, show_all_precincts=False, y_labels=None):
         """Ridgeplots for precincts
