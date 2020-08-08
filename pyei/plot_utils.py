@@ -88,7 +88,9 @@ def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
     return ax
 
 
-def plot_summary(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name):
+def plot_summary(
+    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, candidate_name
+):
     """ Plot KDE, histogram, and boxplot"""
     _, (ax_box, ax_hist) = plt.subplots(
         2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (0.15, 0.85)}
@@ -120,6 +122,7 @@ def plot_summary(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
 
     # plot distribution
     plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=ax_hist)
+    ax_hist.set_xlabel(f"Support for {candidate_name}")
     return (ax_box, ax_hist)
 
 

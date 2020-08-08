@@ -245,7 +245,9 @@ class TwoByTwoEI:
 
     def plot(self):
         """kde, boxplot, and credible intervals"""
-        return plot_summary(*self._voting_prefs(), *self._group_names_for_display())
+        return plot_summary(
+            *self._voting_prefs(), *self._group_names_for_display(), self.candidate_name,
+        )
 
     def precinct_level_plot(self, ax=None, show_all_precincts=False, y_labels=None):
         """Ridgeplots for precincts
