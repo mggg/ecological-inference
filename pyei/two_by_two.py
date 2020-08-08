@@ -7,13 +7,12 @@ TODO: Truncated normal model
 
 import pymc3 as pm
 import numpy as np
-import matplotlib.pyplot as plt
 from .plot_utils import (
     plot_conf_or_credible_interval,
     plot_boxplot,
     plot_kdes,
     plot_precincts,
-    plot_summary
+    plot_summary,
 )
 
 __all__ = ["TwoByTwoEI"]
@@ -244,9 +243,9 @@ class TwoByTwoEI:
             ax=ax,
         )
 
-    def plot(self, ax=None):
+    def plot(self):
         """kde, boxplot, and credible intervals"""
-        return plot_summary(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)   
+        return plot_summary(*self._voting_prefs(), *self._group_names_for_display())
 
     def precinct_level_plot(self, ax=None, show_all_precincts=False, y_labels=None):
         """Ridgeplots for precincts

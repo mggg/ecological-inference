@@ -1,6 +1,7 @@
 """Plotting functions for visualizing ei outputs"""
 import warnings
 import seaborn as sns
+import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
 import scipy.stats as st
@@ -87,10 +88,10 @@ def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
     return ax
 
 
-def plot_summary(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
+def plot_summary(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name):
     """ Plot KDE, histogram, and boxplot"""
     _, (ax_box, ax_hist) = plt.subplots(
-            2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (.15, .85)}
+        2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (0.15, 0.85)}
     )
     sns.despine(ax=ax_hist)
     sns.despine(ax=ax_box, left=True)
@@ -105,7 +106,7 @@ def plot_summary(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
         color=colors[0],
         ax=ax_box,
         flierprops=flier1_props,
-        **plot_props
+        **plot_props,
     )
     sns.boxplot(
         voting_prefs_group2,
@@ -113,7 +114,7 @@ def plot_summary(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
         color=colors[1],
         ax=ax_box,
         flierprops=flier2_props,
-        **plot_props
+        **plot_props,
     )
     ax_box.tick_params(axis="y", left=False)  # remove y axis ticks
 
