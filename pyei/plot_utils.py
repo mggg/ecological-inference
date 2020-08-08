@@ -83,7 +83,7 @@ def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
     if ax is None:
         ax = plt.gca()
     samples_df = pd.DataFrame({group1_name: voting_prefs_group1, group2_name: voting_prefs_group2})
-    ax = sns.boxplot(data=samples_df, orient="h", ax=ax)
+    ax = sns.boxplot(data=samples_df, orient="h", whis=[5, 95], ax=ax)
     ax.set_xlim((0, 1))
     return ax
 
