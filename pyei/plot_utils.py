@@ -60,7 +60,22 @@ def plot_precincts(
     show_all_precincts=False,
     ax=None,
 ):
-    """Ridgeplots of sampled voting preferences for each precinct"""
+    """ Ridgeplots of sampled voting preferences for each precinct
+        Arguments:
+        voting_prefs_group1 :   A numpy array with shape (# of samples x
+                                # of precincts) representing the estimates
+                                of support for given candidate among group 1
+                                in each precinct in each sample
+        voting_prefs_group2 :   Same as voting_prefs_group2, except showing
+                                support among group 2
+        Optional arguments:
+        precinct_labels     :   The names for each precinct
+        show_all_precincts  :   By default, we only show the first 50 precincts.
+                                If show_all_precincts is True, we plot the
+                                ridgeplots for all precincts (i.e., one ridgeplot
+                                for every column in the voting_prefs matrices)
+        ax                  :   Matplotlib axis object
+    """
     N = voting_prefs_group1.shape[1]
     if N > 50 and not show_all_precincts:
         warnings.warn(
@@ -86,7 +101,7 @@ def plot_precincts(
         trans = ax.convert_yunits(idx)
         plot_single_ridgeplot(ax, group1, group2, 4 * N - 4 * idx, trans)
 
-    def replace_ticks_with_precinct_names(value, pos):
+    def replace_ticks_with_precinct_labels(value, pos):
         # pylint: disable=unused-argument
         # matplotlib axis tick formatter function
         idx = int(value)
@@ -94,8 +109,9 @@ def plot_precincts(
             return precinct_labels[idx]
         return value
 
+    # replace y-axis ticks with precinct labels
     ax.set_yticks(np.arange(len(precinct_labels)))
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(replace_ticks_with_precinct_names))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(replace_ticks_with_precinct_labels))
     ax.set_title("Precinct level estimates of voting preferences")
     ax.set_xlabel("Percent vote for candidate")
     ax.set_ylabel("Precinct")
