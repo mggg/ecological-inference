@@ -141,7 +141,7 @@ def plot_summary(
     sns.despine(ax=ax_box, left=True)
     # plot custom boxplot, with two boxplots in the same row
     colors = sns.color_palette()  # fetch seaborn default color palette
-    plot_props = dict(fliersize=5, linewidth=2, whis=[5, 95])
+    plot_props = dict(fliersize=5, linewidth=2, whis=[2.5, 97.5])
     flier1_props = dict(marker="o", markerfacecolor=colors[0], alpha=0.5)
     flier2_props = dict(marker="d", markerfacecolor=colors[1], alpha=0.5)
     sns.boxplot(
