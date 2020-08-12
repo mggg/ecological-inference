@@ -87,6 +87,8 @@ def plot_precincts(
         plot_single_ridgeplot(ax, group1, group2, 4 * N - 4 * idx, trans)
 
     def replace_ticks_with_precinct_names(value, pos):
+        # pylint: disable=unused-argument
+        # matplotlib axis tick formatter function
         idx = int(value)
         if idx < len(precinct_labels):
             return precinct_labels[idx]

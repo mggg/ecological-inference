@@ -199,8 +199,8 @@ class TwoByTwoEI:
         )  # sampled voted prefs across precincts
 
         # compute point estimates
-        self.posterior_mean_voting[0] = self.sampled_voting_prefs[0].mean()
-        self.posterior_mean_voting[1] = self.sampled_voting_prefs[1].mean()
+        self.posterior_mean_voting_prefs[0] = self.sampled_voting_prefs[0].mean()
+        self.posterior_mean_voting_prefs[1] = self.sampled_voting_prefs[1].mean()
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
@@ -219,10 +219,10 @@ class TwoByTwoEI:
         the proportion of the total pop (total pop=summed across all districts):
         The posterior mean for the district-level voting preference of
         {self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs_district[0]:.3f}
+        {self.posterior_mean_voting_prefs[0]:.3f}
         The posterior mean for the district-level voting preference of
         non-{self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs_district[1]:.3f}
+        {self.posterior_mean_voting_prefs[1]:.3f}
         95% Bayesian credible interval for district-level voting preference of
         {self.demographic_group_name} for {self.candidate_name} is
         {self.credible_interval_95_mean_voting_prefs[0]}
