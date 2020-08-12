@@ -116,12 +116,9 @@ class TwoByTwoEI:
         self.demographic_group_name = None
         self.candidate_name = None
         self.sim_trace = None
-        self.sampled_voting_prefs_district_gp1 = None
-        self.sampled_voting_prefs_district_gp2 = None
-        self.posterior_mean_voting_prefs_district_gp1 = None
-        self.posterior_mean_voting_prefs_district_gp2 = None
-        self.credible_interval_95_mean_voting_prefs_district_gp1 = None
-        self.credible_interval_95_mean_voting_prefs_district_gp2 = None
+        self.sampled_voting_prefs = [None, None]
+        self.posterior_mean_voting_prefs = [None, None]
+        self.credible_interval_95_mean_voting_prefs = [None, None]
 
     def fit(
         self,
@@ -194,28 +191,24 @@ class TwoByTwoEI:
         samples_of_votes_summed_across_district_gp2 = samples_converted_to_pops_gp2.sum(axis=1)
 
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
-        self.sampled_voting_prefs_district_gp1 = (
+        self.sampled_voting_prefs[0] = (
             samples_of_votes_summed_across_district_gp1 / self.precinct_pops.sum()
         )  # sampled voted prefs across precincts
-        self.sampled_voting_prefs_district_gp2 = (
+        self.sampled_voting_prefs[1] = (
             samples_of_votes_summed_across_district_gp2 / self.precinct_pops.sum()
         )  # sampled voted prefs across precincts
 
         # compute point estimates
-        self.posterior_mean_voting_prefs_district_gp1 = (
-            self.sampled_voting_prefs_district_gp1.mean()
-        )
-        self.posterior_mean_voting_prefs_district_gp2 = (
-            self.sampled_voting_prefs_district_gp2.mean()
-        )
+        self.posterior_mean_voting[0] = self.sampled_voting_prefs[0].mean()
+        self.posterior_mean_voting[1] = self.sampled_voting_prefs[1].mean()
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
-        self.credible_interval_95_mean_voting_prefs_district_gp1 = np.percentile(
-            self.sampled_voting_prefs_district_gp1, percentiles
+        self.credible_interval_95_mean_voting_prefs[0] = np.percentile(
+            self.sampled_voting_prefs[0], percentiles
         )
-        self.credible_interval_95_mean_voting_prefs_district_gp2 = np.percentile(
-            self.sampled_voting_prefs_district_gp2, percentiles
+        self.credible_interval_95_mean_voting_prefs[1] = np.percentile(
+            self.sampled_voting_prefs[1], percentiles
         )
 
     def summary(self):
@@ -226,16 +219,16 @@ class TwoByTwoEI:
         the proportion of the total pop (total pop=summed across all districts):
         The posterior mean for the district-level voting preference of
         {self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs_district_gp1:.3f}
+        {self.posterior_mean_voting_prefs_district[0]:.3f}
         The posterior mean for the district-level voting preference of
         non-{self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs_district_gp2:.3f}
+        {self.posterior_mean_voting_prefs_district[1]:.3f}
         95% Bayesian credible interval for district-level voting preference of
         {self.demographic_group_name} for {self.candidate_name} is
-        {self.credible_interval_95_mean_voting_prefs_district_gp1}
+        {self.credible_interval_95_mean_voting_prefs[0]}
         95% Bayesian credible interval for district-level voting preference of
         non-{self.demographic_group_name} for {self.candidate_name} is
-        {self.credible_interval_95_mean_voting_prefs_district_gp2}
+        {self.credible_interval_95_mean_voting_prefs[1]}
         """
 
     def precinct_level_estimates(self):
@@ -244,8 +237,8 @@ class TwoByTwoEI:
     def _voting_prefs(self):
         """Bundles together the samples, for ease of passing to plots"""
         return (
-            self.sampled_voting_prefs_district_gp1,
-            self.sampled_voting_prefs_district_gp2,
+            self.sampled_voting_prefs[0],
+            self.sampled_voting_prefs[1],
         )
 
     def _group_names_for_display(self):
@@ -264,8 +257,8 @@ class TwoByTwoEI:
         """ Plot of credible intervals for each group"""
         title = "95% credible intervals"
         return plot_conf_or_credible_interval(
-            self.credible_interval_95_mean_voting_prefs_district_gp1,
-            self.credible_interval_95_mean_voting_prefs_district_gp2,
+            self.credible_interval_95_mean_voting_prefs[0],
+            self.credible_interval_95_mean_voting_prefs[1],
             *self._group_names_for_display(),
             self.candidate_name,
             title,
