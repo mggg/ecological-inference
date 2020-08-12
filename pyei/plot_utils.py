@@ -83,9 +83,47 @@ def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
     if ax is None:
         ax = plt.gca()
     samples_df = pd.DataFrame({group1_name: voting_prefs_group1, group2_name: voting_prefs_group2})
-    ax = sns.boxplot(data=samples_df, orient="h", ax=ax)
+    ax = sns.boxplot(data=samples_df, orient="h", whis=[5, 95], ax=ax)
     ax.set_xlim((0, 1))
     return ax
+
+
+def plot_summary(
+    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, candidate_name
+):
+    """ Plot KDE, histogram, and boxplot"""
+    _, (ax_box, ax_hist) = plt.subplots(
+        2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (0.15, 0.85)}
+    )
+    sns.despine(ax=ax_hist)
+    sns.despine(ax=ax_box, left=True)
+    # plot custom boxplot, with two boxplots in the same row
+    colors = sns.color_palette()  # fetch seaborn default color palette
+    plot_props = dict(fliersize=5, linewidth=2, whis=[5, 95])
+    flier1_props = dict(marker="o", markerfacecolor=colors[0], alpha=0.5)
+    flier2_props = dict(marker="d", markerfacecolor=colors[1], alpha=0.5)
+    sns.boxplot(
+        voting_prefs_group1,
+        orient="h",
+        color=colors[0],
+        ax=ax_box,
+        flierprops=flier1_props,
+        **plot_props,
+    )
+    sns.boxplot(
+        voting_prefs_group2,
+        orient="h",
+        color=colors[1],
+        ax=ax_box,
+        flierprops=flier2_props,
+        **plot_props,
+    )
+    ax_box.tick_params(axis="y", left=False)  # remove y axis ticks
+
+    # plot distribution
+    plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=ax_hist)
+    ax_hist.set_xlabel(f"Support for {candidate_name}")
+    return (ax_box, ax_hist)
 
 
 def plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
