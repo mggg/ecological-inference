@@ -5,6 +5,7 @@ TODO: Finish wakefield model
 TODO: Truncated normal model
 """
 
+import warnings
 import pymc3 as pm
 import numpy as np
 from .plot_utils import (
@@ -111,6 +112,7 @@ class TwoByTwoEI:
         self.demographic_group_fraction = None
         self.votes_fraction = None
         self.precinct_pops = None
+        self.precinct_names = None
         self.demographic_group_name = None
         self.candidate_name = None
         self.sim_trace = None
@@ -128,8 +130,26 @@ class TwoByTwoEI:
         precinct_pops,
         demographic_group_name="given demographic group",
         candidate_name="given candidate",
+        precinct_names=None,
     ):
-        """Fit the specified model using MCMC sampling"""
+        """ Fit the specified model using MCMC sampling
+            Required arguments:
+            group_fraction  :   Length-p (p=# of precincts) vector giving demographic
+                                information (X) as the fraction of precinct_pop in
+                                the demographic group of interest
+            votes_fraction  :   Length p vector giving the fraction of each precinct_pop
+                                that votes for the candidate of interest (T)
+            precinct_pops   :   Length-p vector giving size of each precinct population
+                                of interest (e.g. voting population) (N)
+            Optional arguments:
+            demographic_group_name  :   Name of the demographic group of interest,
+                                        where results are computed for the
+                                        demographic group and its complement
+            candidate_name          :   Name of the candidate whose support we
+                                        want to analyze
+            precinct_names          :   Length p vector giving the string names
+                                        for each precinct.
+        """
         # Additional params includes lambda for king99, the
         # parameter passed to the exponential hyperpriors
         self.demographic_group_fraction = group_fraction
@@ -137,6 +157,15 @@ class TwoByTwoEI:
         self.precinct_pops = precinct_pops
         self.demographic_group_name = demographic_group_name
         self.candidate_name = candidate_name
+        if precinct_names is not None:
+            assert len(precinct_names) == len(precinct_pops)
+            if len(set(precinct_names)) != len(precinct_names):
+                warnings.warn(
+                    "Precinct names are not unique. This may interfere with "
+                    "passing precinct names to precinct_level_plot()."
+                )
+            self.precinct_names = precinct_names
+
         if self.model_name == "king99":
             sim_model = ei_beta_binom_model(
                 group_fraction, votes_fraction, precinct_pops, **self.additional_model_params,
@@ -249,20 +278,26 @@ class TwoByTwoEI:
             *self._voting_prefs(), *self._group_names_for_display(), self.candidate_name,
         )
 
-    def precinct_level_plot(self, ax=None, show_all_precincts=False, y_labels=None):
-        """Ridgeplots for precincts
+    def precinct_level_plot(self, ax=None, show_all_precincts=False, precinct_names=None):
+        """ Ridgeplots for precincts
             Optional arguments:
             ax                  :  matplotlib axes object
             show_all_precincts  :  If True, then it will show all ridge plots
                                    (even if there are more than 50)
-            y_labels            :  Labels for each precinct (if not supplied, by
+            precinct_names      :  Labels for each precinct (if not supplied, by
                                    default we label each precinct with an integer
                                    label, 1 to n)
         """
+        voting_prefs_group1 = self.sim_trace.get_values("b_1")
+        voting_prefs_group2 = self.sim_trace.get_values("b_2")
+        if precinct_names is not None:
+            precinct_idxs = [self.precinct_names.index(name) for name in precinct_names]
+            voting_prefs_group1 = voting_prefs_group1[:, precinct_idxs]
+            voting_prefs_group2 = voting_prefs_group2[:, precinct_idxs]
         return plot_precincts(
-            self.sim_trace.get_values("b_1"),
-            self.sim_trace.get_values("b_2"),
-            y_labels=y_labels,
+            voting_prefs_group1,
+            voting_prefs_group2,
+            precinct_labels=precinct_names,
             show_all_precincts=show_all_precincts,
             ax=ax,
         )
