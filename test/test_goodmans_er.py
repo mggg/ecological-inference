@@ -1,7 +1,8 @@
 """Test Goodmans Ecological Regression."""
+# pylint:disable=redefined-outer-name
 import numpy as np
 import pytest
-from pyei.goodmans_er import *  # pylint:disable=wildcard-import,unused-wildcard-import
+from pyei import GoodmansER
 
 
 @pytest.fixture
@@ -30,7 +31,7 @@ def group_and_vote_fractions_with_pop():
     return group_share, vote_share, populations
 
 
-def test_fit(group_and_vote_fractions):  # pylint:disable=redefined-outer-name
+def test_fit(group_and_vote_fractions):
     model = GoodmansER()
     group_share, vote_share = group_and_vote_fractions
     model.fit(group_share, vote_share)
@@ -38,7 +39,7 @@ def test_fit(group_and_vote_fractions):  # pylint:disable=redefined-outer-name
     np.testing.assert_almost_equal(model.slope_, 1)
 
 
-def test_weighted_fit(group_and_vote_fractions_with_pop):  # pylint:disable=redefined-outer-name
+def test_weighted_fit(group_and_vote_fractions_with_pop):
     model = GoodmansER(is_weighted_regression=True)
     group_share, vote_share, pops = group_and_vote_fractions_with_pop
     model.fit(group_share, vote_share, pops)
@@ -52,9 +53,7 @@ def test_summary():
     model.candidate_name = "Lorax"
     model.voting_prefs_est_ = 1.0
     model.voting_prefs_complement_est_ = 0.0
-    assert (
-        model.summary()
-        == """Goodmans ER
+    expected_summary = """Goodmans ER
         Est. fraction of Trees
         voters who voted for Lorax is
         1.000
@@ -62,10 +61,20 @@ def test_summary():
         voters who voted for Lorax is
         0.000
         """
-    )
+    assert model.summary() == expected_summary
+    model.is_weighted_regression = True
+    expected_summary = """Goodmans ER, weighted by population
+        Est. fraction of Trees
+        voters who voted for Lorax is
+        1.000
+        Est. fraction of non- Trees
+        voters who voted for Lorax is
+        0.000
+        """
+    assert model.summary() == expected_summary
 
 
-def test_plot(group_and_vote_fractions):  # pylint:disable=redefined-outer-name
+def test_plot(group_and_vote_fractions):
     model = GoodmansER()
     group_share, vote_share = group_and_vote_fractions
     model.fit(group_share, vote_share)
