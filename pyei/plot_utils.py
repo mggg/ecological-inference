@@ -3,6 +3,7 @@ import warnings
 import seaborn as sns
 import pandas as pd
 from matplotlib import pyplot as plt
+from matplotlib import ticker as mticker
 import numpy as np
 import scipy.stats as st
 
@@ -14,15 +15,67 @@ __all__ = [
 ]
 
 
-def plot_precincts(
-    voting_prefs_group1, voting_prefs_group2, y_labels=None, show_all_precincts=False, ax=None
-):
-    """Ridgeplots of sampled voting preferences for each precinct"""
-    overlap = 1.3
-    if ax is None:
-        _, ax = plt.subplots()
-    x = np.linspace(0, 1, 500)  # 500 points between 0 and 1 on the x-axis
+def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1.3, num_points=500):
+    """ Helper function for plot_precincts that plots a single ridgeplot (e.g.,
+        for a single precinct for a given candidate.)
+        Arguments:
+        ax          :   matplotlib axis object
+        group1_pref :   The estimates for the support for the candidate among
+                        Group 1
+        group2_pref :   The estimates for the support for the candidate among
+                        Group 2
+        z_init      :   The initial value for the z-order (helps determine
+                        how plots get drawn over one another)
+        trans       :   The y-translation for this plot
+        Optional arguments:
+        overlap     :   how much this ridgeplot may overlap with the ridgeplot
+                        above it
+        num_points  :   The number of evenly spaced points in [0, 1] that we
+                        use to plot compute the KDE curve
+    """
+    x = np.linspace(0, 1, num_points)  # 500 points between 0 and 1 on the x-axis
+    group1_kde = st.gaussian_kde(group1_pref)
+    group2_kde = st.gaussian_kde(group2_pref)
 
+    group1_y = group1_kde(x)
+    group1_y = overlap * group1_y / group1_y.max()
+    group2_y = group2_kde(x)
+    group2_y = overlap * group2_y / group2_y.max()
+
+    ax.fill_between(
+        x, group1_y + trans, trans, color="steelblue", zorder=z_init,
+    )
+    ax.plot(x, group1_y + trans, color="black", linewidth=1, zorder=z_init + 1)
+
+    ax.fill_between(
+        x, group2_y + trans, trans, color="orange", zorder=z_init + 2,
+    )
+    ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=z_init + 3)
+
+
+def plot_precincts(
+    voting_prefs_group1,
+    voting_prefs_group2,
+    precinct_labels=None,
+    show_all_precincts=False,
+    ax=None,
+):
+    """ Ridgeplots of sampled voting preferences for each precinct
+        Arguments:
+        voting_prefs_group1 :   A numpy array with shape (# of samples x
+                                # of precincts) representing the estimates
+                                of support for given candidate among group 1
+                                in each precinct in each sample
+        voting_prefs_group2 :   Same as voting_prefs_group2, except showing
+                                support among group 2
+        Optional arguments:
+        precinct_labels     :   The names for each precinct
+        show_all_precincts  :   By default, we only show the first 50 precincts.
+                                If show_all_precincts is True, we plot the
+                                ridgeplots for all precincts (i.e., one ridgeplot
+                                for every column in the voting_prefs matrices)
+        ax                  :   Matplotlib axis object
+    """
     N = voting_prefs_group1.shape[1]
     if N > 50 and not show_all_precincts:
         warnings.warn(
@@ -32,47 +85,36 @@ def plot_precincts(
         )
         voting_prefs_group1 = voting_prefs_group1[:, :50]
         voting_prefs_group2 = voting_prefs_group2[:, :50]
-        if y_labels is not None:
-            y_labels = y_labels[:50]
+        if precinct_labels is not None:
+            precinct_labels = precinct_labels[:50]
         N = 50
-    if y_labels is None:
-        y_labels = range(N)
+    if precinct_labels is None:
+        precinct_labels = range(1, N + 1)
+    if ax is None:
+        # adapt height of plot to the number of precincts
+        _, ax = plt.subplots(figsize=(6.4, 0.2 * N))
 
-    iterator = zip(y_labels, voting_prefs_group1.T, voting_prefs_group2.T)
+    iterator = zip(voting_prefs_group1.T, voting_prefs_group2.T)
 
-    for idx, (precinct, group1, group2) in enumerate(iterator, 1):
-        pfx = "" if idx == 1 else "_"
-        group1_kde = st.gaussian_kde(group1)
-        group2_kde = st.gaussian_kde(group2)
-        ax.plot([0], [precinct])
-        trans = ax.convert_yunits(precinct)
+    for idx, (group1, group2) in enumerate(iterator, 0):
+        ax.plot([0], [idx])
+        trans = ax.convert_yunits(idx)
+        plot_single_ridgeplot(ax, group1, group2, 4 * N - 4 * idx, trans)
 
-        group1_y = group1_kde(x)
-        group1_y = overlap * group1_y / group1_y.max()
-        group2_y = group2_kde(x)
-        group2_y = overlap * group2_y / group2_y.max()
+    def replace_ticks_with_precinct_labels(value, pos):
+        # pylint: disable=unused-argument
+        # matplotlib axis tick formatter function
+        idx = int(value)
+        if idx < len(precinct_labels):
+            return precinct_labels[idx]
+        return value
 
-        ax.fill_between(
-            x,
-            group1_y + trans,
-            trans,
-            color="steelblue",
-            zorder=4 * N - 4 * idx,
-            label=pfx + "Group 1",
-        )
-        ax.plot(x, group1_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 1)
-
-        ax.fill_between(
-            x,
-            group2_y + trans,
-            trans,
-            color="orange",
-            zorder=4 * N - 4 * idx + 2,
-            label=pfx + "Group 2",
-        )
-        ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=4 * N - 4 * idx + 3)
+    # replace y-axis ticks with precinct labels
+    ax.set_yticks(np.arange(len(precinct_labels)))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(replace_ticks_with_precinct_labels))
     ax.set_title("Precinct level estimates of voting preferences")
     ax.set_xlabel("Percent vote for candidate")
+    ax.set_ylabel("Precinct")
     return ax
 
 
@@ -83,7 +125,7 @@ def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
     if ax is None:
         ax = plt.gca()
     samples_df = pd.DataFrame({group1_name: voting_prefs_group1, group2_name: voting_prefs_group2})
-    ax = sns.boxplot(data=samples_df, orient="h", whis=[5, 95], ax=ax)
+    ax = sns.boxplot(data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax)
     ax.set_xlim((0, 1))
     return ax
 
@@ -99,7 +141,7 @@ def plot_summary(
     sns.despine(ax=ax_box, left=True)
     # plot custom boxplot, with two boxplots in the same row
     colors = sns.color_palette()  # fetch seaborn default color palette
-    plot_props = dict(fliersize=5, linewidth=2, whis=[5, 95])
+    plot_props = dict(fliersize=5, linewidth=2, whis=[2.5, 97.5])
     flier1_props = dict(marker="o", markerfacecolor=colors[0], alpha=0.5)
     flier2_props = dict(marker="d", markerfacecolor=colors[1], alpha=0.5)
     sns.boxplot(

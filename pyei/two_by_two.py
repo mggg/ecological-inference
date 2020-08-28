@@ -5,6 +5,7 @@ TODO: Finish wakefield model
 TODO: Truncated normal model
 """
 
+import warnings
 import pymc3 as pm
 import numpy as np
 from .plot_utils import (
@@ -111,15 +112,13 @@ class TwoByTwoEI:
         self.demographic_group_fraction = None
         self.votes_fraction = None
         self.precinct_pops = None
+        self.precinct_names = None
         self.demographic_group_name = None
         self.candidate_name = None
         self.sim_trace = None
-        self.sampled_voting_prefs_district_gp1 = None
-        self.sampled_voting_prefs_district_gp2 = None
-        self.posterior_mean_voting_prefs_district_gp1 = None
-        self.posterior_mean_voting_prefs_district_gp2 = None
-        self.credible_interval_95_mean_voting_prefs_district_gp1 = None
-        self.credible_interval_95_mean_voting_prefs_district_gp2 = None
+        self.sampled_voting_prefs = [None, None]
+        self.posterior_mean_voting_prefs = [None, None]
+        self.credible_interval_95_mean_voting_prefs = [None, None]
 
     def fit(
         self,
@@ -128,8 +127,26 @@ class TwoByTwoEI:
         precinct_pops,
         demographic_group_name="given demographic group",
         candidate_name="given candidate",
+        precinct_names=None,
     ):
-        """Fit the specified model using MCMC sampling"""
+        """ Fit the specified model using MCMC sampling
+            Required arguments:
+            group_fraction  :   Length-p (p=# of precincts) vector giving demographic
+                                information (X) as the fraction of precinct_pop in
+                                the demographic group of interest
+            votes_fraction  :   Length p vector giving the fraction of each precinct_pop
+                                that votes for the candidate of interest (T)
+            precinct_pops   :   Length-p vector giving size of each precinct population
+                                of interest (e.g. voting population) (N)
+            Optional arguments:
+            demographic_group_name  :   Name of the demographic group of interest,
+                                        where results are computed for the
+                                        demographic group and its complement
+            candidate_name          :   Name of the candidate whose support we
+                                        want to analyze
+            precinct_names          :   Length p vector giving the string names
+                                        for each precinct.
+        """
         # Additional params includes lambda for king99, the
         # parameter passed to the exponential hyperpriors
         self.demographic_group_fraction = group_fraction
@@ -137,6 +154,15 @@ class TwoByTwoEI:
         self.precinct_pops = precinct_pops
         self.demographic_group_name = demographic_group_name
         self.candidate_name = candidate_name
+        if precinct_names is not None:
+            assert len(precinct_names) == len(precinct_pops)
+            if len(set(precinct_names)) != len(precinct_names):
+                warnings.warn(
+                    "Precinct names are not unique. This may interfere with "
+                    "passing precinct names to precinct_level_plot()."
+                )
+            self.precinct_names = precinct_names
+
         if self.model_name == "king99":
             sim_model = ei_beta_binom_model(
                 group_fraction, votes_fraction, precinct_pops, **self.additional_model_params,
@@ -165,28 +191,24 @@ class TwoByTwoEI:
         samples_of_votes_summed_across_district_gp2 = samples_converted_to_pops_gp2.sum(axis=1)
 
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
-        self.sampled_voting_prefs_district_gp1 = (
+        self.sampled_voting_prefs[0] = (
             samples_of_votes_summed_across_district_gp1 / self.precinct_pops.sum()
         )  # sampled voted prefs across precincts
-        self.sampled_voting_prefs_district_gp2 = (
+        self.sampled_voting_prefs[1] = (
             samples_of_votes_summed_across_district_gp2 / self.precinct_pops.sum()
         )  # sampled voted prefs across precincts
 
         # compute point estimates
-        self.posterior_mean_voting_prefs_district_gp1 = (
-            self.sampled_voting_prefs_district_gp1.mean()
-        )
-        self.posterior_mean_voting_prefs_district_gp2 = (
-            self.sampled_voting_prefs_district_gp2.mean()
-        )
+        self.posterior_mean_voting_prefs[0] = self.sampled_voting_prefs[0].mean()
+        self.posterior_mean_voting_prefs[1] = self.sampled_voting_prefs[1].mean()
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
-        self.credible_interval_95_mean_voting_prefs_district_gp1 = np.percentile(
-            self.sampled_voting_prefs_district_gp1, percentiles
+        self.credible_interval_95_mean_voting_prefs[0] = np.percentile(
+            self.sampled_voting_prefs[0], percentiles
         )
-        self.credible_interval_95_mean_voting_prefs_district_gp2 = np.percentile(
-            self.sampled_voting_prefs_district_gp2, percentiles
+        self.credible_interval_95_mean_voting_prefs[1] = np.percentile(
+            self.sampled_voting_prefs[1], percentiles
         )
 
     def summary(self):
@@ -197,16 +219,16 @@ class TwoByTwoEI:
         the proportion of the total pop (total pop=summed across all districts):
         The posterior mean for the district-level voting preference of
         {self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs_district_gp1:.3f}
+        {self.posterior_mean_voting_prefs[0]:.3f}
         The posterior mean for the district-level voting preference of
         non-{self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs_district_gp2:.3f}
+        {self.posterior_mean_voting_prefs[1]:.3f}
         95% Bayesian credible interval for district-level voting preference of
         {self.demographic_group_name} for {self.candidate_name} is
-        {self.credible_interval_95_mean_voting_prefs_district_gp1}
+        {self.credible_interval_95_mean_voting_prefs[0]}
         95% Bayesian credible interval for district-level voting preference of
         non-{self.demographic_group_name} for {self.candidate_name} is
-        {self.credible_interval_95_mean_voting_prefs_district_gp2}
+        {self.credible_interval_95_mean_voting_prefs[1]}
         """
 
     def precinct_level_estimates(self):
@@ -215,8 +237,8 @@ class TwoByTwoEI:
     def _voting_prefs(self):
         """Bundles together the samples, for ease of passing to plots"""
         return (
-            self.sampled_voting_prefs_district_gp1,
-            self.sampled_voting_prefs_district_gp2,
+            self.sampled_voting_prefs[0],
+            self.sampled_voting_prefs[1],
         )
 
     def _group_names_for_display(self):
@@ -235,8 +257,8 @@ class TwoByTwoEI:
         """ Plot of credible intervals for each group"""
         title = "95% credible intervals"
         return plot_conf_or_credible_interval(
-            self.credible_interval_95_mean_voting_prefs_district_gp1,
-            self.credible_interval_95_mean_voting_prefs_district_gp2,
+            self.credible_interval_95_mean_voting_prefs[0],
+            self.credible_interval_95_mean_voting_prefs[1],
             *self._group_names_for_display(),
             self.candidate_name,
             title,
@@ -249,20 +271,26 @@ class TwoByTwoEI:
             *self._voting_prefs(), *self._group_names_for_display(), self.candidate_name,
         )
 
-    def precinct_level_plot(self, ax=None, show_all_precincts=False, y_labels=None):
-        """Ridgeplots for precincts
+    def precinct_level_plot(self, ax=None, show_all_precincts=False, precinct_names=None):
+        """ Ridgeplots for precincts
             Optional arguments:
             ax                  :  matplotlib axes object
             show_all_precincts  :  If True, then it will show all ridge plots
                                    (even if there are more than 50)
-            y_labels            :  Labels for each precinct (if not supplied, by
+            precinct_names      :  Labels for each precinct (if not supplied, by
                                    default we label each precinct with an integer
                                    label, 1 to n)
         """
+        voting_prefs_group1 = self.sim_trace.get_values("b_1")
+        voting_prefs_group2 = self.sim_trace.get_values("b_2")
+        if precinct_names is not None:
+            precinct_idxs = [self.precinct_names.index(name) for name in precinct_names]
+            voting_prefs_group1 = voting_prefs_group1[:, precinct_idxs]
+            voting_prefs_group2 = voting_prefs_group2[:, precinct_idxs]
         return plot_precincts(
-            self.sim_trace.get_values("b_1"),
-            self.sim_trace.get_values("b_2"),
-            y_labels=y_labels,
+            voting_prefs_group1,
+            voting_prefs_group2,
+            precinct_labels=precinct_names,
             show_all_precincts=show_all_precincts,
             ax=ax,
         )
