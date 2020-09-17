@@ -81,8 +81,8 @@ class GoodmansER:
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
         sns.regplot(
-            self.demographic_group_fraction,
-            self.vote_fraction,
+            x=self.demographic_group_fraction,
+            y=self.vote_fraction,
             ax=ax,
             ci=95,
             truncate=False,

@@ -153,7 +153,7 @@ def plot_summary(
     flier1_props = dict(marker="o", markerfacecolor=colors[0], alpha=0.5)
     flier2_props = dict(marker="d", markerfacecolor=colors[1], alpha=0.5)
     sns.boxplot(
-        voting_prefs_group1,
+        x=voting_prefs_group1,
         orient="h",
         color=colors[0],
         ax=ax_box,
@@ -161,7 +161,7 @@ def plot_summary(
         **plot_props,
     )
     sns.boxplot(
-        voting_prefs_group2,
+        x=voting_prefs_group2,
         orient="h",
         color=colors[1],
         ax=ax_box,

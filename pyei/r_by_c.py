@@ -11,7 +11,7 @@ TODO: error for model name that's not supported
 """
 
 
-import warnings
+# import warnings
 import pymc3 as pm
 import numpy as np
 
@@ -91,7 +91,7 @@ class RowByColumnEI:
         precinct_pops,
         demographic_group_names,
         candidate_names,
-        precinct_names=None,
+        # precinct_names=None,
     ):
         """Fit the specified model using MCMC sampling
         Required arguments:
@@ -118,14 +118,16 @@ class RowByColumnEI:
         self.precinct_pops = precinct_pops
         self.demographic_group_names = demographic_group_names
         self.candidate_names = candidate_names
-        if precinct_names is not None:
-            assert len(precinct_names) == len(precinct_pops)
-            if len(set(precinct_names)) != len(precinct_names):
-                warnings.warn(
-                    "Precinct names are not unique. This may interfere with "
-                    "passing precinct names to precinct_level_plot()."
-                )
-            self.precinct_names = precinct_names
+        # pylint: disable=duplicate-code
+        # if precinct_names is not None:
+        #     assert len(precinct_names) == len(precinct_pops)
+        #     if len(set(precinct_names)) != len(precinct_names):
+        #         warnings.warn(
+        #             "Precinct names are not unique. This may interfere with "
+        #             "passing precinct names to precinct_level_plot()."
+        #         )
+        #     self.precinct_names = precinct_names
+        # # pylint: enable=duplicate-code
         self.num_groups_and_num_candidates = [
             group_fractions.shape[0],
             votes_fractions.shape[0],
