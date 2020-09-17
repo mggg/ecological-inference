@@ -104,7 +104,6 @@ class TwoByTwoEI:
 
     def __init__(self, model_name, **additional_model_params):
         # model_name can be 'king97', 'king99' or 'king99_pareto_modification' or 'wakefield'
-        self.demographic_group_fraction = None
         self.vote_fraction = None
         self.model_name = model_name
         self.additional_model_params = additional_model_params

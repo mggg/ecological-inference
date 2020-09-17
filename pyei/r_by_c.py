@@ -7,6 +7,7 @@ TODO: Fitting for multinomial-dir
 TODO: Plotting for all r x c 
 TODO: Greiner-Quinn Model
 TODO: Refactor to integrate with two_by_two
+TODO: error for model name that's not supported
 """
 
 
@@ -72,13 +73,13 @@ class RowByColumnEI:
     def __init__(self, model_name, **additional_model_params):
         # model_name can be 'multinomial-dirichlet' or 'greiner-quinn'
         # TODO: implement greiner quinn
-        self.demographic_group_fraction = None
-        self.vote_fraction = None
+        self.demographic_group_fractions = None
+        self.votes_fraction = None
         self.model_name = model_name
         self.additional_model_params = additional_model_params
 
-        self.demographic_group_fraction = None
-        self.votes_fraction = None
+        self.demographic_group_fractions = None
+        self.votes_fractions = None
         self.precinct_pops = None
         self.precinct_names = None
         self.demographic_group_name = None
@@ -132,7 +133,7 @@ class RowByColumnEI:
             self.precinct_names = precinct_names
         self.num_groups_and_num_candidates = [
             group_fractions.shape[0],
-            vote_fractions.shape[0],
+            votes_fractions.shape[0],
         ]  # [r, c]
 
         # TODO: warning if num_groups from group_fractions doesn't matchu num_groups in demographic group_names
@@ -175,9 +176,11 @@ class RowByColumnEI:
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
-        self.credible_interval_95_mean_voting_prefs = np.percentile(
-            self.sampled_voting_prefs, percentiles, axis=0
-        )
+        for row in range(self.num_groups_and_num_candidates[0]):
+            for col in range(self.num_groups_and_num_candidates[1]):
+                self.credible_interval_95_mean_voting_prefs[row][col] = np.percentile(
+                    self.sampled_voting_prefs[:, row, col], percentiles
+                )
 
     def summary(self):
         """Return a summary string"""
@@ -188,9 +191,10 @@ class RowByColumnEI:
             """
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1]):
-                summary_str += f"""
-                The posterior mean for the district-level voting preference of
-                {self.demographic_group_name[row]} for {self.candidate_name[col]} is
+                s = f"""The posterior mean for the district-level voting preference of
+                {self.demographic_group_names[row]} for {self.candidate_names[col]} is
                 {self.posterior_mean_voting_prefs[row][col]:.3f}
+                Credible interval:  {self.credible_interval_95_mean_voting_prefs[row][col]}
                 """
+                summary_str += s
         return summary_str
