@@ -4,7 +4,7 @@ where r and c are greater than or
 equal to 2
 
 TODO: Fitting for multinomial-dir
-TODO: Plotting for all r x c 
+TODO: Plotting for all r x c
 TODO: Greiner-Quinn Model
 TODO: Refactor to integrate with two_by_two
 TODO: error for model name that's not supported
@@ -14,23 +14,16 @@ TODO: error for model name that's not supported
 import warnings
 import pymc3 as pm
 import numpy as np
-from .plot_utils import (
-    plot_conf_or_credible_interval,
-    plot_boxplot,
-    plot_kdes,
-    plot_precincts,
-    plot_summary,
-)
 
 
 def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
     """
     An implementation of the r x c dirichlet/multinomial EI model
-    
+
     Parameters
     ----------
-    group_fractions: r x num_precincts  matrix giving demographic information 
-        as the fraction of precinct_pop in the demographic group of interest for each of 
+    group_fractions: r x num_precincts  matrix giving demographic information
+        as the fraction of precinct_pop in the demographic group of interest for each of
         p precincts and r demographic groups (sometimes denoted X)
     votes_fractions: c x num_precincts matrix giving the fraction of each precinct_pop that votes
         for each of c candidates (sometimes denoted T)
@@ -43,22 +36,25 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
     """
 
     num_precincts = len(precinct_pops)  # number of precincts
-    r = group_fractions.shape[0]  # number of demographic groups
-    c = votes_fractions.shape[0]  # number of candidates or voting outcomes
+    num_rows = group_fractions.shape[0]  # number of demographic groups (r)
+    num_cols = votes_fractions.shape[0]  # number of candidates or voting outcomes (c)
 
     # reshaping and rounding
     votes_count_obs = np.swapaxes(
         votes_fractions * precinct_pops, 0, 1
     ).round()  # num_precincts x r
     group_fractions_extended = np.expand_dims(group_fractions, axis=2)
-    group_fractions_extended = np.repeat(group_fractions_extended, c, axis=2)
-    group_fractions_extended = np.swapaxes(group_fractions_extended, 0, 1)  #  num_precincts x r x c
+    group_fractions_extended = np.repeat(group_fractions_extended, num_cols, axis=2)
+    group_fractions_extended = np.swapaxes(group_fractions_extended, 0, 1)
+    # num_precincts x r x c
 
     with pm.Model() as model:
-        # @TODO: are the prior conc_params what is in the literature? is it a good choice?
-        conc_params = pm.Exponential("conc_params", lam=0.25, shape=(r, c))
-        b = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, r, c))  # num_precincts x r x c
-        theta = (group_fractions_extended * b).sum(axis=1)
+        # TODO: are the prior conc_params what is in the literature? is it a good choice?
+        # TODO: make b vs. beta naming consistent
+        conc_params = pm.Exponential("conc_params", lam=0.25, shape=(num_rows, num_cols))
+        beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
+        # num_precincts x r x c
+        theta = (group_fractions_extended * beta).sum(axis=1)
         pm.Multinomial(
             "votes_count", n=precinct_pops, p=theta, observed=votes_count_obs
         )  # num_precincts x r
@@ -99,8 +95,8 @@ class RowByColumnEI:
     ):
         """ Fit the specified model using MCMC sampling
             Required arguments:
-            group_fractions :   r x p (p =#precincts = num_precicts) matrix giving demographic 
-                information as the fraction of precinct_pop in the demographic group for each 
+            group_fractions :   r x p (p =#precincts = num_precicts) matrix giving demographic
+                information as the fraction of precinct_pop in the demographic group for each
                 of p precincts and r demographic groups (sometimes denoted X)
             votes_fractions  :  c x p giving the fraction of each precinct_pop that votes
                 for each of c candidates (sometimes denoted T)
@@ -135,7 +131,8 @@ class RowByColumnEI:
             votes_fractions.shape[0],
         ]  # [r, c]
 
-        # TODO: warning if num_groups from group_fractions doesn't matchu num_groups in demographic group_names
+        # TODO: warning if num_groups from group_fractions doesn't matchu num_groups in
+        # demographic group_names
 
         if self.model_name == "multinomial-dirichlet":
             sim_model = ei_multinom_dirichlet(
@@ -194,10 +191,10 @@ class RowByColumnEI:
             """
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1]):
-                s = f"""The posterior mean for the district-level voting preference of
+                summ = f"""The posterior mean for the district-level voting preference of
                 {self.demographic_group_names[row]} for {self.candidate_names[col]} is
                 {self.posterior_mean_voting_prefs[row][col]:.3f}
                 Credible interval:  {self.credible_interval_95_mean_voting_prefs[row][col]}
                 """
-                summary_str += s
+                summary_str += summ
         return summary_str
