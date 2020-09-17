@@ -52,16 +52,12 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
     ).round()  # num_precincts x r
     group_fractions_extended = np.expand_dims(group_fractions, axis=2)
     group_fractions_extended = np.repeat(group_fractions_extended, c, axis=2)
-    group_fractions_extended = np.swapaxes(
-        group_fractions_extended, 0, 1
-    )  #  num_precincts x r x c
+    group_fractions_extended = np.swapaxes(group_fractions_extended, 0, 1)  #  num_precincts x r x c
 
     with pm.Model() as model:
         # @TODO: are the prior conc_params what is in the literature? is it a good choice?
         conc_params = pm.Exponential("conc_params", lam=0.25, shape=(r, c))
-        b = pm.Dirichlet(
-            "b", a=conc_params, shape=(num_precincts, r, c)
-        )  # num_precincts x r x c
+        b = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, r, c))  # num_precincts x r x c
         theta = (group_fractions_extended * b).sum(axis=1)
         pm.Multinomial(
             "votes_count", n=precinct_pops, p=theta, observed=votes_count_obs
@@ -143,10 +139,7 @@ class RowByColumnEI:
 
         if self.model_name == "multinomial-dirichlet":
             sim_model = ei_multinom_dirichlet(
-                group_fractions,
-                votes_fractions,
-                precinct_pops,
-                **self.additional_model_params,
+                group_fractions, votes_fractions, precinct_pops, **self.additional_model_params,
             )
         with sim_model:
             self.sim_trace = pm.sample(target_accept=0.99, tune=1000)
@@ -162,9 +155,7 @@ class RowByColumnEI:
         b_reshaped = np.swapaxes(
             self.sim_trace.get_values("b"), 1, 2
         )  # num_samples x r x num_precincts x c
-        b_reshaped = np.swapaxes(
-            b_reshaped, 2, 3
-        )  # num_samples x r x c x num_precincts
+        b_reshaped = np.swapaxes(b_reshaped, 2, 3)  # num_samples x r x c x num_precincts
         samples_converted_to_pops = (
             b_reshaped * self.precinct_pops
         )  # num_samples x r x c num_precincts
@@ -180,24 +171,18 @@ class RowByColumnEI:
         )  # sampled voted prefs across precincts,  num_samples x r x c
 
         # compute point estimates
-        self.posterior_mean_voting_prefs = self.sampled_voting_prefs.mean(
-            axis=0
-        )  # r x c
+        self.posterior_mean_voting_prefs = self.sampled_voting_prefs.mean(axis=0)  # r x c
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
         self.credible_interval_95_mean_voting_prefs = np.zeros(
-            (
-                self.num_groups_and_num_candidates[0],
-                self.num_groups_and_num_candidates[1],
-                2,
-            )
+            (self.num_groups_and_num_candidates[0], self.num_groups_and_num_candidates[1], 2,)
         )
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1]):
-                self.credible_interval_95_mean_voting_prefs[row][col][
-                    :
-                ] = np.percentile(self.sampled_voting_prefs[:, row, col], percentiles)
+                self.credible_interval_95_mean_voting_prefs[row][col][:] = np.percentile(
+                    self.sampled_voting_prefs[:, row, col], percentiles
+                )
 
     def summary(self):
         """Return a summary string"""
