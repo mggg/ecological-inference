@@ -48,10 +48,16 @@ def ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops):
         kappa_2 = pm.Pareto("kappa_2", m=1.5, alpha=1)
 
         b_1 = pm.Beta(
-            "b_1", alpha=phi_1 * kappa_1, beta=(1.0 - phi_1) * kappa_1, shape=num_precincts,
+            "b_1",
+            alpha=phi_1 * kappa_1,
+            beta=(1.0 - phi_1) * kappa_1,
+            shape=num_precincts,
         )
         b_2 = pm.Beta(
-            "b_2", alpha=phi_2 * kappa_2, beta=(1.0 - phi_2) * kappa_2, shape=num_precincts,
+            "b_2",
+            alpha=phi_2 * kappa_2,
+            beta=(1.0 - phi_2) * kappa_2,
+            shape=num_precincts,
         )
 
         theta = group_fraction * b_1 + (1 - group_fraction) * b_2
@@ -128,23 +134,23 @@ class TwoByTwoEI:
         candidate_name="given candidate",
         precinct_names=None,
     ):
-        """ Fit the specified model using MCMC sampling
-            Required arguments:
-            group_fraction  :   Length-p (p=# of precincts) vector giving demographic
-                                information (X) as the fraction of precinct_pop in
-                                the demographic group of interest
-            votes_fraction  :   Length p vector giving the fraction of each precinct_pop
-                                that votes for the candidate of interest (T)
-            precinct_pops   :   Length-p vector giving size of each precinct population
-                                of interest (e.g. voting population) (N)
-            Optional arguments:
-            demographic_group_name  :   Name of the demographic group of interest,
-                                        where results are computed for the
-                                        demographic group and its complement
-            candidate_name          :   Name of the candidate whose support we
-                                        want to analyze
-            precinct_names          :   Length p vector giving the string names
-                                        for each precinct.
+        """Fit the specified model using MCMC sampling
+        Required arguments:
+        group_fraction  :   Length-p (p=# of precincts) vector giving demographic
+                            information (X) as the fraction of precinct_pop in
+                            the demographic group of interest
+        votes_fraction  :   Length p vector giving the fraction of each precinct_pop
+                            that votes for the candidate of interest (T)
+        precinct_pops   :   Length-p vector giving size of each precinct population
+                            of interest (e.g. voting population) (N)
+        Optional arguments:
+        demographic_group_name  :   Name of the demographic group of interest,
+                                    where results are computed for the
+                                    demographic group and its complement
+        candidate_name          :   Name of the candidate whose support we
+                                    want to analyze
+        precinct_names          :   Length p vector giving the string names
+                                    for each precinct.
         """
         # Additional params includes lambda for king99, the
         # parameter passed to the exponential hyperpriors
@@ -164,10 +170,15 @@ class TwoByTwoEI:
 
         if self.model_name == "king99":
             sim_model = ei_beta_binom_model(
-                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params,
+                group_fraction,
+                votes_fraction,
+                precinct_pops,
+                **self.additional_model_params,
             )
         elif self.model_name == "king99_pareto_modification":
-            sim_model = ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops)
+            sim_model = ei_beta_binom_model_modified(
+                group_fraction, votes_fraction, precinct_pops
+            )
         with sim_model:
             self.sim_trace = pm.sample(target_accept=0.99, tune=1000)
 
@@ -186,8 +197,12 @@ class TwoByTwoEI:
         )  # num_samples x num_precincts
 
         # obtain samples of total votes summed across all precinct for the candidate for each group
-        samples_of_votes_summed_across_district_gp1 = samples_converted_to_pops_gp1.sum(axis=1)
-        samples_of_votes_summed_across_district_gp2 = samples_converted_to_pops_gp2.sum(axis=1)
+        samples_of_votes_summed_across_district_gp1 = samples_converted_to_pops_gp1.sum(
+            axis=1
+        )
+        samples_of_votes_summed_across_district_gp2 = samples_converted_to_pops_gp2.sum(
+            axis=1
+        )
 
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
         self.sampled_voting_prefs[0] = (
@@ -250,7 +265,9 @@ class TwoByTwoEI:
 
     def plot_boxplot(self, ax=None):
         """ Boxplot of voting prefs for each group"""
-        return plot_boxplot(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
+        return plot_boxplot(
+            *self._voting_prefs(), *self._group_names_for_display(), ax=ax
+        )
 
     def plot_intervals(self, ax=None):
         """ Plot of credible intervals for each group"""
@@ -267,18 +284,22 @@ class TwoByTwoEI:
     def plot(self):
         """kde, boxplot, and credible intervals"""
         return plot_summary(
-            *self._voting_prefs(), *self._group_names_for_display(), self.candidate_name,
+            *self._voting_prefs(),
+            *self._group_names_for_display(),
+            self.candidate_name,
         )
 
-    def precinct_level_plot(self, ax=None, show_all_precincts=False, precinct_names=None):
-        """ Ridgeplots for precincts
-            Optional arguments:
-            ax                  :  matplotlib axes object
-            show_all_precincts  :  If True, then it will show all ridge plots
-                                   (even if there are more than 50)
-            precinct_names      :  Labels for each precinct (if not supplied, by
-                                   default we label each precinct with an integer
-                                   label, 1 to n)
+    def precinct_level_plot(
+        self, ax=None, show_all_precincts=False, precinct_names=None
+    ):
+        """Ridgeplots for precincts
+        Optional arguments:
+        ax                  :  matplotlib axes object
+        show_all_precincts  :  If True, then it will show all ridge plots
+                               (even if there are more than 50)
+        precinct_names      :  Labels for each precinct (if not supplied, by
+                               default we label each precinct with an integer
+                               label, 1 to n)
         """
         voting_prefs_group1 = self.sim_trace.get_values("b_1")
         voting_prefs_group2 = self.sim_trace.get_values("b_2")

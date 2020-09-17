@@ -3,7 +3,7 @@ Models and fitting for rxc methods
 where r and c are greater than or
 equal to 2
 
-TODO: Fitting for multinomial-dir
+TODO: Better or reparametrized priors for multinomial-dir
 TODO: Plotting for all r x c
 TODO: Greiner-Quinn Model
 TODO: Refactor to integrate with two_by_two
@@ -51,8 +51,12 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
     with pm.Model() as model:
         # TODO: are the prior conc_params what is in the literature? is it a good choice?
         # TODO: make b vs. beta naming consistent
-        conc_params = pm.Exponential("conc_params", lam=0.25, shape=(num_rows, num_cols))
-        beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
+        conc_params = pm.Exponential(
+            "conc_params", lam=0.25, shape=(num_rows, num_cols)
+        )
+        beta = pm.Dirichlet(
+            "b", a=conc_params, shape=(num_precincts, num_rows, num_cols)
+        )
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)
         pm.Multinomial(
@@ -93,22 +97,22 @@ class RowByColumnEI:
         candidate_names,
         precinct_names=None,
     ):
-        """ Fit the specified model using MCMC sampling
-            Required arguments:
-            group_fractions :   r x p (p =#precincts = num_precicts) matrix giving demographic
-                information as the fraction of precinct_pop in the demographic group for each
-                of p precincts and r demographic groups (sometimes denoted X)
-            votes_fractions  :  c x p giving the fraction of each precinct_pop that votes
-                for each of c candidates (sometimes denoted T)
-            precinct_pops   :   Length-p vector giving size of each precinct population
-                                of interest (e.g. voting population) (someteimes denoted N)
-            Optional arguments:
-            demographic_group_names  :  Names of the r demographic group of interest,
-                                        where results are computed for the
-                                        demographic group and its complement
-            candidate_names          :  Name of the c candidates or voting outcomes of interest
-            precinct_names          :   Length p vector giving the string names
-                                        for each precinct.
+        """Fit the specified model using MCMC sampling
+        Required arguments:
+        group_fractions :   r x p (p =#precincts = num_precicts) matrix giving demographic
+            information as the fraction of precinct_pop in the demographic group for each
+            of p precincts and r demographic groups (sometimes denoted X)
+        votes_fractions  :  c x p giving the fraction of each precinct_pop that votes
+            for each of c candidates (sometimes denoted T)
+        precinct_pops   :   Length-p vector giving size of each precinct population
+                            of interest (e.g. voting population) (someteimes denoted N)
+        Optional arguments:
+        demographic_group_names  :  Names of the r demographic group of interest,
+                                    where results are computed for the
+                                    demographic group and its complement
+        candidate_names          :  Name of the c candidates or voting outcomes of interest
+        precinct_names          :   Length p vector giving the string names
+                                    for each precinct.
 
         """
         # Additional params for hyperparameters
@@ -136,7 +140,10 @@ class RowByColumnEI:
 
         if self.model_name == "multinomial-dirichlet":
             sim_model = ei_multinom_dirichlet(
-                group_fractions, votes_fractions, precinct_pops, **self.additional_model_params,
+                group_fractions,
+                votes_fractions,
+                precinct_pops,
+                **self.additional_model_params,
             )
         with sim_model:
             self.sim_trace = pm.sample(target_accept=0.99, tune=1000)
@@ -152,7 +159,9 @@ class RowByColumnEI:
         b_reshaped = np.swapaxes(
             self.sim_trace.get_values("b"), 1, 2
         )  # num_samples x r x num_precincts x c
-        b_reshaped = np.swapaxes(b_reshaped, 2, 3)  # num_samples x r x c x num_precincts
+        b_reshaped = np.swapaxes(
+            b_reshaped, 2, 3
+        )  # num_samples x r x c x num_precincts
         samples_converted_to_pops = (
             b_reshaped * self.precinct_pops
         )  # num_samples x r x c num_precincts
@@ -168,18 +177,24 @@ class RowByColumnEI:
         )  # sampled voted prefs across precincts,  num_samples x r x c
 
         # compute point estimates
-        self.posterior_mean_voting_prefs = self.sampled_voting_prefs.mean(axis=0)  # r x c
+        self.posterior_mean_voting_prefs = self.sampled_voting_prefs.mean(
+            axis=0
+        )  # r x c
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
         self.credible_interval_95_mean_voting_prefs = np.zeros(
-            (self.num_groups_and_num_candidates[0], self.num_groups_and_num_candidates[1], 2,)
+            (
+                self.num_groups_and_num_candidates[0],
+                self.num_groups_and_num_candidates[1],
+                2,
+            )
         )
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1]):
-                self.credible_interval_95_mean_voting_prefs[row][col][:] = np.percentile(
-                    self.sampled_voting_prefs[:, row, col], percentiles
-                )
+                self.credible_interval_95_mean_voting_prefs[row][col][
+                    :
+                ] = np.percentile(self.sampled_voting_prefs[:, row, col], percentiles)
 
     def summary(self):
         """Return a summary string"""
