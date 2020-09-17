@@ -43,7 +43,9 @@ class GoodmansER:
         self.candidate_name = candidate_name
         if self.is_weighted_regression:
             reg = LinearRegression().fit(
-                group_fraction.reshape(-1, 1), vote_fraction, sample_weight=precinct_pops,
+                group_fraction.reshape(-1, 1),
+                vote_fraction,
+                sample_weight=precinct_pops,
             )
         else:
             reg = LinearRegression().fit(group_fraction.reshape(-1, 1), vote_fraction)
@@ -79,6 +81,10 @@ class GoodmansER:
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
         sns.regplot(
-            self.demographic_group_fraction, self.vote_fraction, ax=ax, ci=95, truncate=False,
+            x=self.demographic_group_fraction,
+            y=self.vote_fraction,
+            ax=ax,
+            ci=95,
+            truncate=False,
         )
         return fig, ax

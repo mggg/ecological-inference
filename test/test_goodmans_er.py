@@ -7,9 +7,9 @@ from pyei import GoodmansER
 
 @pytest.fixture
 def group_and_vote_fractions():
-    """ Sample group and vote fractions, where every member of the demographic
-        group votes for the given candidate and every non-member of the
-        demographic group does not vote for the given candidate.
+    """Sample group and vote fractions, where every member of the demographic
+    group votes for the given candidate and every non-member of the
+    demographic group does not vote for the given candidate.
     """
     group_share = np.array([0, 0.2, 0.4, 0.6, 0.8])
     vote_share = np.array([0, 0.2, 0.4, 0.6, 0.8])
@@ -18,12 +18,12 @@ def group_and_vote_fractions():
 
 @pytest.fixture
 def group_and_vote_fractions_with_pop():
-    """ Sample group and vote fractions, where every member of the demographic
-        group votes for the given candidate and 10% of the demographic group's
-        complement supports the given candidate (i.e., slope = 1, intercept = 0.1),
-        with an exception of one precinct.
-        All precincts have population 1000, except one precinct that has population
-        1 and does not follow the above formula.
+    """Sample group and vote fractions, where every member of the demographic
+    group votes for the given candidate and 10% of the demographic group's
+    complement supports the given candidate (i.e., slope = 1, intercept = 0.1),
+    with an exception of one precinct.
+    All precincts have population 1000, except one precinct that has population
+    1 and does not follow the above formula.
     """
     group_share = np.array([0, 0.2, 0.4, 0.6, 0.8, 0.9])
     vote_share = np.array([0.1, 0.3, 0.5, 0.7, 0.9, 0.9])
