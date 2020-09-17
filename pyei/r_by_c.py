@@ -51,12 +51,8 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
     with pm.Model() as model:
         # TODO: are the prior conc_params what is in the literature? is it a good choice?
         # TODO: make b vs. beta naming consistent
-        conc_params = pm.Exponential(
-            "conc_params", lam=0.25, shape=(num_rows, num_cols)
-        )
-        beta = pm.Dirichlet(
-            "b", a=conc_params, shape=(num_precincts, num_rows, num_cols)
-        )
+        conc_params = pm.Exponential("conc_params", lam=0.25, shape=(num_rows, num_cols))
+        beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)
         pm.Multinomial(
@@ -159,9 +155,7 @@ class RowByColumnEI:
         b_reshaped = np.swapaxes(
             self.sim_trace.get_values("b"), 1, 2
         )  # num_samples x r x num_precincts x c
-        b_reshaped = np.swapaxes(
-            b_reshaped, 2, 3
-        )  # num_samples x r x c x num_precincts
+        b_reshaped = np.swapaxes(b_reshaped, 2, 3)  # num_samples x r x c x num_precincts
         samples_converted_to_pops = (
             b_reshaped * self.precinct_pops
         )  # num_samples x r x c num_precincts
@@ -177,9 +171,7 @@ class RowByColumnEI:
         )  # sampled voted prefs across precincts,  num_samples x r x c
 
         # compute point estimates
-        self.posterior_mean_voting_prefs = self.sampled_voting_prefs.mean(
-            axis=0
-        )  # r x c
+        self.posterior_mean_voting_prefs = self.sampled_voting_prefs.mean(axis=0)  # r x c
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
@@ -192,9 +184,9 @@ class RowByColumnEI:
         )
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1]):
-                self.credible_interval_95_mean_voting_prefs[row][col][
-                    :
-                ] = np.percentile(self.sampled_voting_prefs[:, row, col], percentiles)
+                self.credible_interval_95_mean_voting_prefs[row][col][:] = np.percentile(
+                    self.sampled_voting_prefs[:, row, col], percentiles
+                )
 
     def summary(self):
         """Return a summary string"""

@@ -176,9 +176,7 @@ class TwoByTwoEI:
                 **self.additional_model_params,
             )
         elif self.model_name == "king99_pareto_modification":
-            sim_model = ei_beta_binom_model_modified(
-                group_fraction, votes_fraction, precinct_pops
-            )
+            sim_model = ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops)
         with sim_model:
             self.sim_trace = pm.sample(target_accept=0.99, tune=1000)
 
@@ -197,12 +195,8 @@ class TwoByTwoEI:
         )  # num_samples x num_precincts
 
         # obtain samples of total votes summed across all precinct for the candidate for each group
-        samples_of_votes_summed_across_district_gp1 = samples_converted_to_pops_gp1.sum(
-            axis=1
-        )
-        samples_of_votes_summed_across_district_gp2 = samples_converted_to_pops_gp2.sum(
-            axis=1
-        )
+        samples_of_votes_summed_across_district_gp1 = samples_converted_to_pops_gp1.sum(axis=1)
+        samples_of_votes_summed_across_district_gp2 = samples_converted_to_pops_gp2.sum(axis=1)
 
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
         self.sampled_voting_prefs[0] = (
@@ -265,9 +259,7 @@ class TwoByTwoEI:
 
     def plot_boxplot(self, ax=None):
         """ Boxplot of voting prefs for each group"""
-        return plot_boxplot(
-            *self._voting_prefs(), *self._group_names_for_display(), ax=ax
-        )
+        return plot_boxplot(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
 
     def plot_intervals(self, ax=None):
         """ Plot of credible intervals for each group"""
@@ -289,9 +281,7 @@ class TwoByTwoEI:
             self.candidate_name,
         )
 
-    def precinct_level_plot(
-        self, ax=None, show_all_precincts=False, precinct_names=None
-    ):
+    def precinct_level_plot(self, ax=None, show_all_precincts=False, precinct_names=None):
         """Ridgeplots for precincts
         Optional arguments:
         ax                  :  matplotlib axes object

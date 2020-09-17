@@ -15,9 +15,7 @@ __all__ = [
 ]
 
 
-def plot_single_ridgeplot(
-    ax, group1_pref, group2_pref, z_init, trans, overlap=1.3, num_points=500
-):
+def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1.3, num_points=500):
     """Helper function for plot_precincts that plots a single ridgeplot (e.g.,
     for a single precinct for a given candidate.)
     Arguments:
@@ -121,26 +119,20 @@ def plot_precincts(
 
     # replace y-axis ticks with precinct labels
     ax.set_yticks(np.arange(len(precinct_labels)))
-    ax.yaxis.set_major_formatter(
-        mticker.FuncFormatter(replace_ticks_with_precinct_labels)
-    )
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(replace_ticks_with_precinct_labels))
     ax.set_title("Precinct level estimates of voting preferences")
     ax.set_xlabel("Percent vote for candidate")
     ax.set_ylabel("Precinct")
     return ax
 
 
-def plot_boxplot(
-    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None
-):
+def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
     """
     Horizontal boxplot of 2 groups of samples between 0 and 1
     """
     if ax is None:
         ax = plt.gca()
-    samples_df = pd.DataFrame(
-        {group1_name: voting_prefs_group1, group2_name: voting_prefs_group2}
-    )
+    samples_df = pd.DataFrame({group1_name: voting_prefs_group1, group2_name: voting_prefs_group2})
     ax = sns.boxplot(data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax)
     ax.set_xlim((0, 1))
     return ax
@@ -179,16 +171,12 @@ def plot_summary(
     ax_box.tick_params(axis="y", left=False)  # remove y axis ticks
 
     # plot distribution
-    plot_kdes(
-        voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=ax_hist
-    )
+    plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=ax_hist)
     ax_hist.set_xlabel(f"Support for {candidate_name}")
     return (ax_box, ax_hist)
 
 
-def plot_kdes(
-    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None
-):
+def plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
     """'
     Plot kernel density plots of samples between 0 and 1 (e.g. of voting preferences) for two groups
     """
