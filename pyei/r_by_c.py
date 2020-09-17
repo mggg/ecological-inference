@@ -84,9 +84,9 @@ class RowByColumnEI:
         self.demographic_group_name = None
         self.candidate_name = None
         self.sim_trace = None
-        self.sampled_voting_prefs = [None, None]
-        self.posterior_mean_voting_prefs = [None, None]
-        self.credible_interval_95_mean_voting_prefs = [None, None]
+        self.sampled_voting_prefs = None
+        self.posterior_mean_voting_prefs = None
+        self.credible_interval_95_mean_voting_prefs = None
 
     def fit(
         self,
@@ -115,7 +115,7 @@ class RowByColumnEI:
                                         for each precinct.
 
         """
-        # Additional params for hyperparamters
+        # Additional params for hyperparameters
         # TODO: describe hyperparameters
         self.demographic_group_fractions = group_fractions
         self.votes_fractions = votes_fractions
@@ -130,6 +130,12 @@ class RowByColumnEI:
                     "passing precinct names to precinct_level_plot()."
                 )
             self.precinct_names = precinct_names
+        self.num_groups_and_num_candidates = [
+            group_fractions.shape[0],
+            vote_fractions.shape[0],
+        ]  # [r, c]
+
+        # TODO: warning if num_groups from group_fractions doesn't matchu num_groups in demographic group_names
 
         if self.model_name == "multinomial-dirichlet":
             sim_model = ei_multinom_dirichlet(
@@ -172,3 +178,19 @@ class RowByColumnEI:
         self.credible_interval_95_mean_voting_prefs = np.percentile(
             self.sampled_voting_prefs, percentiles, axis=0
         )
+
+    def summary(self):
+        """Return a summary string"""
+        # TODO: probably format this as a table
+        summary_str = """
+            Computed from the raw b_ samples by multiplying by population and then getting
+                the proportion of the total pop (total pop=summed across all districts):
+            """
+        for row in range(self.num_groups_and_num_candidates[0]):
+            for col in range(self.num_groups_and_num_candidates[1]):
+                summary_str += f"""
+                The posterior mean for the district-level voting preference of
+                {self.demographic_group_name[row]} for {self.candidate_name[col]} is
+                {self.posterior_mean_voting_prefs[row][col]:.3f}
+                """
+        return summary_str
