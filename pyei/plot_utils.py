@@ -290,9 +290,9 @@ def plot_conf_or_credible_interval(
     return ax
 
 
-def tomography_plot(X, T):
+def tomography_plot(group_fraction, votes_fraction):
     # TODO: pass ax as argument
-    num_precincts = len(X)
+    num_precincts = len(group_fraction)
     b_1 = np.linspace(0, 1, 200)
     _, ax = plt.subplots()
     ax.set_xlim((0, 1))
@@ -301,6 +301,6 @@ def tomography_plot(X, T):
     ax.set_xlabel("voter pref of group 1")
     ax.set_ylabel("voter pref of group 2")
     for n in range(num_precincts):
-        b_2 = (T[n] - b_1 * X[n]) / (1 - X[n])
+        b_2 = (votes_fraction[n] - b_1 * group_fraction[n]) / (1 - group_fraction[n])
         ax.plot(b_1, b_2, c="b")
     return ax
