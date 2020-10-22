@@ -288,3 +288,19 @@ def plot_conf_or_credible_interval(
     ax.plot(interval_1, [int1_height, int1_height], linewidth=4, alpha=0.8)
     ax.plot(interval_2, [int2_height, int2_height], linewidth=4, alpha=0.8)
     return ax
+
+
+def tomography_plot(X, T):
+    # TODO: pass ax as argument
+    num_precincts = len(X)
+    b_1 = np.linspace(0, 1, 200)
+    _, ax = plt.subplots()
+    ax.set_xlim((0, 1))
+    ax.set_ylim((0, 1))
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlabel("voter pref of group 1")
+    ax.set_ylabel("voter pref of group 2")
+    for n in range(num_precincts):
+        b_2 = (T[n] - b_1 * X[n]) / (1 - X[n])
+        ax.plot(b_1, b_2, c="b")
+    return ax
