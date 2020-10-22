@@ -33,7 +33,7 @@ def get_data(filename):
         )
     elif filename == "waterbury.csv":
         return pd.read_csv(
-            "https://raw.githubusercontent.com/gerrymandr/ei-app/master/santaClara.csv"
+            "https://raw.githubusercontent.com/gerrymandr/ei-app/master/waterbury.csv"
         )
     # This does not work yet (9/2/20), but will collect
     # files checked into pyei/examples/data/<filename>
