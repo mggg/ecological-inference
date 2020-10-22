@@ -278,16 +278,19 @@ class RowByColumnEI:
                 ).sum() / self.sampled_voting_prefs.shape[0]
 
                 print(
-                    f"""  In {frac} of samples, the district-level vote preference of {self.demographic_group_names[row]} 
-                for {self.candidate_names[candidate_idx]} was higher than for any other candidate"""
+                    f"""In {frac} of samples, the district-level vote preference of
+                    {self.demographic_group_names[row]} for {self.candidate_names[candidate_idx]}
+                    was higher than for any other candidate"""
                 )
 
     def plot_boxplots(self):
+        """ Plot boxplots of voting prefs (one boxplot for each candidate)"""
         return plot_boxplots(
             self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names
         )
 
-    def plot_kdes(self, by="candidate"):
+    def plot_kdes(self, plot_by="candidate"):
+        """ Kernel density plots of voting preference, plots grouped by candidate or group"""
         return plot_kdes(
-            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, by
+            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by
         )

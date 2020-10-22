@@ -218,7 +218,7 @@ def plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name,
     return ax
 
 
-def plot_kdes(sampled_voting_prefs, group_names, candidate_names, by="candidate"):
+def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candidate"):
     """
     Plot a kernel density plot for prefs of voting groups for each candidate
 
@@ -231,19 +231,19 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, by="candidate"
     # TODO pass axes as argument
     # TODO plot by group
     _, num_groups, num_candidates = sampled_voting_prefs.shape
-    if by == "candidate":
+    if plot_by == "candidate":
         num_plots = num_candidates
         num_kdes_per_plot = num_groups
         titles = candidate_names
         legend = group_names
-    elif by == "group":
+    elif plot_by == "group":
         num_plots = num_groups
         num_kdes_per_plot = num_candidates
         titles = group_names
         sampled_voting_prefs = np.swapaxes(sampled_voting_prefs, 1, 2)  # TODO: Check this
         legend = candidate_names
     else:
-        raise ValueError("by must be 'group' or 'candidate' (default: 'candidate')")
+        raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
     fig, axes = plt.subplots(num_candidates, sharex=True)
     fig.subplots_adjust(hspace=0.5)
     for plot_idx in range(num_plots):
