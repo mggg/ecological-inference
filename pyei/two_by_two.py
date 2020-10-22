@@ -11,7 +11,7 @@ import numpy as np
 from .plot_utils import (
     plot_conf_or_credible_interval,
     plot_boxplot,
-    plot_kdes,
+    plot_kde,
     plot_precincts,
     plot_summary,
 )
@@ -37,6 +37,11 @@ def ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops):
     Returns
     -------
     model: A pymc3 model
+
+    Notes
+    -----
+    Reparametrizing of the hyperpriors to give (hopefully) better geometry for sampling.
+    Also gives intuitive interpretation of hyperparams as mean and counts
     """
     votes_count_obs = votes_fraction * precinct_pops
     num_precincts = len(precinct_pops)
@@ -255,7 +260,7 @@ class TwoByTwoEI:
 
     def plot_kde(self, ax=None):
         """kernel density estimate/ histogram plot"""
-        return plot_kdes(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
+        return plot_kde(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
 
     def plot_boxplot(self, ax=None):
         """ Boxplot of voting prefs for each group"""
