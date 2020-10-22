@@ -11,6 +11,7 @@ __all__ = [
     "plot_precincts",
     "plot_boxplot",
     "plot_kdes",
+    "plot_kde",
     "plot_conf_or_credible_interval",
 ]
 
@@ -138,6 +139,34 @@ def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
     return ax
 
 
+def plot_boxplots(sampled_voting_prefs, group_names, candidate_names):
+    """
+    Horizontal boxplots for r x c sets of samples between 0 and 1
+
+    sampled_voting_prefs: num_samples x r x c
+
+    c subplots, each showing the sampled voting preference of each of r groups.
+    """
+    # TODO add ax argument
+    _, num_groups, num_candidates = sampled_voting_prefs.shape
+    fig, axes = plt.subplots(num_candidates)
+
+    for candidate_idx in range(num_candidates):
+        samples_df = pd.DataFrame(
+            {group_names[i]: sampled_voting_prefs[:, i, candidate_idx] for i in range(num_groups)}
+        )
+
+        ax = axes[candidate_idx]
+        sns.despine(ax=ax, left=True)
+        sns.boxplot(data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax)
+        ax.set_xlim((0, 1))
+        ax.set_title(candidate_names[candidate_idx])
+        ax.tick_params(axis="y", left=False)  # remove y axis ticks
+
+    fig.subplots_adjust(hspace=0.75)
+    return ax
+
+
 def plot_summary(
     voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, candidate_name
 ):
@@ -171,12 +200,12 @@ def plot_summary(
     ax_box.tick_params(axis="y", left=False)  # remove y axis ticks
 
     # plot distribution
-    plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=ax_hist)
+    plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=ax_hist)
     ax_hist.set_xlabel(f"Support for {candidate_name}")
     return (ax_box, ax_hist)
 
 
-def plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
+def plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
     """'
     Plot kernel density plots of samples between 0 and 1 (e.g. of voting preferences) for two groups
     """
@@ -187,6 +216,24 @@ def plot_kdes(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name
     sns.distplot(voting_prefs_group2, hist=True, ax=ax, label=group2_name)
     ax.legend()
     return ax
+
+
+def plot_kdes(sampled_voting_prefs, group_names, candidate_names):
+    # TODO pass axes as argument,
+    _, num_groups, num_candidates = sampled_voting_prefs.shape
+    fig, axes = plt.subplots(num_candidates, sharex=True)
+    fig.subplots_adjust(hspace=0.5)
+    for candidate_idx in range(num_candidates):
+        ax = axes[candidate_idx]
+        for group_idx in range(num_groups):
+            sns.distplot(
+                sampled_voting_prefs[:, group_idx, candidate_idx],
+                hist=True,
+                ax=ax,
+                label=group_names[group_idx],
+            )
+        ax.set_title(candidate_names[candidate_idx])
+    axes[0].legend(bbox_to_anchor=(1, 1), loc="upper left")
 
 
 def plot_conf_or_credible_interval(
