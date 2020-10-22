@@ -101,7 +101,8 @@ def ei_multinom_dirichlet_modified(group_fractions, votes_fractions, precinct_po
 
     with pm.Model() as model:
         # TODO: make b vs. beta naming consistent
-        kappa = pm.Pareto("kappa", alpha=4, m=1, shape=num_rows)
+        # TODO: make alpha settable by the user
+        kappa = pm.Pareto("kappa", alpha=5, m=1, shape=num_rows)
         phi = pm.Dirichlet("phi", a=np.ones(num_cols), shape=(num_cols, num_rows))
         beta = pm.Dirichlet("b", a=kappa * phi, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
@@ -129,6 +130,7 @@ class RowByColumnEI:
         self.precinct_names = None
         self.demographic_group_names = None
         self.candidate_names = None
+        self.sim_model = None
         self.sim_trace = None
         self.sampled_voting_prefs = None
         self.posterior_mean_voting_prefs = None
@@ -188,7 +190,7 @@ class RowByColumnEI:
         # demographic group_names
 
         if self.model_name == "multinomial-dirichlet-modified":
-            sim_model = ei_multinom_dirichlet(
+            self.sim_model = ei_multinom_dirichlet(
                 group_fractions,
                 votes_fractions,
                 precinct_pops,
@@ -197,13 +199,13 @@ class RowByColumnEI:
 
         # TODO: Probably make the "modified" version the default option
         if self.model_name == "multinomial-dirichlet-modified":
-            sim_model = ei_multinom_dirichlet_modified(
+            self.sim_model = ei_multinom_dirichlet_modified(
                 group_fractions,
                 votes_fractions,
                 precinct_pops,
                 **self.additional_model_params,
             )
-        with sim_model:
+        with self.sim_model:
             self.sim_trace = pm.sample(target_accept=0.99, tune=1000)
 
         self.calculate_summary()

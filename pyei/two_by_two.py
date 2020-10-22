@@ -125,6 +125,7 @@ class TwoByTwoEI:
         self.precinct_names = None
         self.demographic_group_name = None
         self.candidate_name = None
+        self.sim_model = None
         self.sim_trace = None
         self.sampled_voting_prefs = [None, None]
         self.posterior_mean_voting_prefs = [None, None]
@@ -174,15 +175,17 @@ class TwoByTwoEI:
             self.precinct_names = precinct_names
 
         if self.model_name == "king99":
-            sim_model = ei_beta_binom_model(
+            self.sim_model = ei_beta_binom_model(
                 group_fraction,
                 votes_fraction,
                 precinct_pops,
                 **self.additional_model_params,
             )
         elif self.model_name == "king99_pareto_modification":
-            sim_model = ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops)
-        with sim_model:
+            self.sim_model = ei_beta_binom_model_modified(
+                group_fraction, votes_fraction, precinct_pops
+            )
+        with self.sim_model:
             self.sim_trace = pm.sample(target_accept=0.99, tune=1000)
 
         self.calculate_summary()
