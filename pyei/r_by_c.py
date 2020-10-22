@@ -206,7 +206,7 @@ class RowByColumnEI:
                 **self.additional_model_params,
             )
         with self.sim_model:
-            self.sim_trace = pm.sample(target_accept=0.99, tune=1000)
+            self.sim_trace = pm.sample(target_accept=0.99, tune=1001)
 
         self.calculate_summary()
 
