@@ -287,7 +287,7 @@ class RowByColumnEI:
             self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names
         )
 
-    def plot_kdes(self):
+    def plot_kdes(self, by="candidate"):
         return plot_kdes(
-            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names
+            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, by
         )
