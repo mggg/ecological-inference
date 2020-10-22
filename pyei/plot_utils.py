@@ -291,6 +291,7 @@ def plot_conf_or_credible_interval(
 
 
 def tomography_plot(group_fraction, votes_fraction):
+    """Tomography plot (basic)"""
     # TODO: pass ax as argument
     num_precincts = len(group_fraction)
     b_1 = np.linspace(0, 1, 200)
