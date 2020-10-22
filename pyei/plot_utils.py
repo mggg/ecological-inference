@@ -290,7 +290,7 @@ def plot_conf_or_credible_interval(
     return ax
 
 
-def tomography_plot(group_fraction, votes_fraction):
+def tomography_plot(group_fraction, votes_fraction, demographic_group_name, candidate_name):
     """Tomography plot (basic)"""
     # TODO: pass ax as argument
     num_precincts = len(group_fraction)
@@ -299,8 +299,8 @@ def tomography_plot(group_fraction, votes_fraction):
     ax.set_xlim((0, 1))
     ax.set_ylim((0, 1))
     ax.set_aspect("equal", adjustable="box")
-    ax.set_xlabel("voter pref of group 1")
-    ax.set_ylabel("voter pref of group 2")
+    ax.set_xlabel(f"voter pref of {demographic_group_name} for {candidate_name}")
+    ax.set_ylabel(f"voter pref of non-{demographic_group_name} for {candidate_name}")
     for i in range(num_precincts):
         b_2 = (votes_fraction[i] - b_1 * group_fraction[i]) / (1 - group_fraction[i])
         ax.plot(b_1, b_2, c="b")
