@@ -301,7 +301,7 @@ def tomography_plot(group_fraction, votes_fraction):
     ax.set_aspect("equal", adjustable="box")
     ax.set_xlabel("voter pref of group 1")
     ax.set_ylabel("voter pref of group 2")
-    for n in range(num_precincts):
-        b_2 = (votes_fraction[n] - b_1 * group_fraction[n]) / (1 - group_fraction[n])
+    for i in range(num_precincts):
+        b_2 = (votes_fraction[i] - b_1 * group_fraction[i]) / (1 - group_fraction[i])
         ax.plot(b_1, b_2, c="b")
     return ax
