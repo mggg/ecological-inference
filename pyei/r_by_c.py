@@ -14,6 +14,7 @@ TODO: error for model name that's not supported
 # import warnings
 import pymc3 as pm
 import numpy as np
+from .plot_utils import plot_boxplots, plot_kdes
 
 
 def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
@@ -53,6 +54,56 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
         # TODO: make b vs. beta naming consistent
         conc_params = pm.Exponential("conc_params", lam=0.25, shape=(num_rows, num_cols))
         beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
+        # num_precincts x r x c
+        theta = (group_fractions_extended * beta).sum(axis=1)
+        pm.Multinomial(
+            "votes_count", n=precinct_pops, p=theta, observed=votes_count_obs
+        )  # num_precincts x r
+    return model
+
+
+def ei_multinom_dirichlet_modified(group_fractions, votes_fractions, precinct_pops):
+    """
+    An implementation of the r x c dirichlet/multinomial EI model with reparametrized hyperpriors
+
+    Parameters
+    ----------
+    group_fractions: r x num_precincts  matrix giving demographic information
+        as the fraction of precinct_pop in the demographic group of interest for each of
+        p precincts and r demographic groups (sometimes denoted X)
+    votes_fractions: c x num_precincts matrix giving the fraction of each precinct_pop that votes
+        for each of c candidates (sometimes denoted T)
+    precinct_pops: Length-num_precincts vector giving size of each precinct population of interest
+        (e.g. voting population) (sometimes denoted N)
+
+    Returns
+    -------
+    model: A pymc3 model
+
+    Notes
+    -----
+    Reparametrizing of the hyperpriors to give (hopefully) better geometry for sampling.
+    Also gives intuitive interpretation of hyperparams as mean and counts
+    """
+
+    num_precincts = len(precinct_pops)  # number of precincts
+    num_rows = group_fractions.shape[0]  # number of demographic groups (r)
+    num_cols = votes_fractions.shape[0]  # number of candidates or voting outcomes (c)
+
+    # reshaping and rounding
+    votes_count_obs = np.swapaxes(
+        votes_fractions * precinct_pops, 0, 1
+    ).round()  # num_precincts x r
+    group_fractions_extended = np.expand_dims(group_fractions, axis=2)
+    group_fractions_extended = np.repeat(group_fractions_extended, num_cols, axis=2)
+    group_fractions_extended = np.swapaxes(group_fractions_extended, 0, 1)
+    # num_precincts x r x c
+
+    with pm.Model() as model:
+        # TODO: make b vs. beta naming consistent
+        kappa = pm.Pareto("kappa", alpha=4, m=1, shape=num_rows)
+        phi = pm.Dirichlet("phi", a=np.ones(num_cols), shape=(num_cols, num_rows))
+        beta = pm.Dirichlet("b", a=kappa * phi, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)
         pm.Multinomial(
@@ -133,11 +184,20 @@ class RowByColumnEI:
             votes_fractions.shape[0],
         ]  # [r, c]
 
-        # TODO: warning if num_groups from group_fractions doesn't matchu num_groups in
+        # TODO: warning if num_groups from group_fractions doesn't match num_groups in
         # demographic group_names
 
-        if self.model_name == "multinomial-dirichlet":
+        if self.model_name == "multinomial-dirichlet-modified":
             sim_model = ei_multinom_dirichlet(
+                group_fractions,
+                votes_fractions,
+                precinct_pops,
+                **self.additional_model_params,
+            )
+
+        # TODO: Probably make the "modified" version the default option
+        if self.model_name == "multinomial-dirichlet-modified":
+            sim_model = ei_multinom_dirichlet_modified(
                 group_fractions,
                 votes_fractions,
                 precinct_pops,
@@ -207,3 +267,27 @@ class RowByColumnEI:
                 """
                 summary_str += summ
         return summary_str
+
+    def candidate_of_choice(self):
+        """ For each group, look at differences in preference within that group"""
+        for row in range(self.num_groups_and_num_candidates[0]):
+            print(self.demographic_group_names[row])
+            for candidate_idx in range(self.num_groups_and_num_candidates[1]):
+                frac = (
+                    np.argmax(self.sampled_voting_prefs[:, row, :], axis=1) == candidate_idx
+                ).sum() / self.sampled_voting_prefs.shape[0]
+
+                print(
+                    f"""  In {frac} of samples, the district-level vote preference of {self.demographic_group_names[row]} 
+                for {self.candidate_names[candidate_idx]} was higher than for any other candidate"""
+                )
+
+    def plot_boxplots(self):
+        return plot_boxplots(
+            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names
+        )
+
+    def plot_kdes(self):
+        return plot_kdes(
+            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names
+        )
