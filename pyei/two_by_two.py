@@ -19,7 +19,13 @@ from .plot_utils import (
 __all__ = ["TwoByTwoEI"]
 
 
-def ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2):
+def ei_beta_binom_model_modified(
+    group_fraction,
+    votes_fraction,
+    precinct_pops,
+    pareto_scale=8,
+    pareto_shape=2
+):
     """
     An modification of the 2 x 2 beta/binomial EI model from King, Rosen, Tanner 1999,
     with (scaled) Pareto distributions over each parameters of the beta distribution,
