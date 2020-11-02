@@ -19,7 +19,7 @@ from .plot_utils import (
 __all__ = ["TwoByTwoEI"]
 
 
-def ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops):
+def ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2):
     """
     An modification of the 2 x 2 beta/binomial EI model from King, Rosen, Tanner 1999,
     with (scaled) Pareto distributions over each parameters of the beta distribution,
@@ -47,10 +47,10 @@ def ei_beta_binom_model_modified(group_fraction, votes_fraction, precinct_pops):
     num_precincts = len(precinct_pops)
     with pm.Model() as model:
         phi_1 = pm.Uniform("phi_1", lower=0.0, upper=1.0)
-        kappa_1 = pm.Pareto("kappa_1", m=1.5, alpha=1)
+        kappa_1 = pm.Pareto("kappa_1", m=pareto_scale, alpha=pareto_shape)
 
         phi_2 = pm.Uniform("phi_2", lower=0.0, upper=1.0)
-        kappa_2 = pm.Pareto("kappa_2", m=1.5, alpha=1)
+        kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
 
         b_1 = pm.Beta(
             "b_1",
@@ -159,7 +159,9 @@ class TwoByTwoEI:
                                     for each precinct.
         """
         # Additional params includes lambda for king99, the
-        # parameter passed to the exponential hyperpriors
+        # parameter passed to the exponential hyperpriors,
+        # and the paretoo_scale and pareto_shape parameters for the pareto
+        # dist in the king99_pareto_modification model hyperprior
         self.demographic_group_fraction = group_fraction
         self.votes_fraction = votes_fraction
         self.precinct_pops = precinct_pops
@@ -183,10 +185,10 @@ class TwoByTwoEI:
             )
         elif self.model_name == "king99_pareto_modification":
             self.sim_model = ei_beta_binom_model_modified(
-                group_fraction, votes_fraction, precinct_pops
+                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
             )
         with self.sim_model:
-            self.sim_trace = pm.sample(target_accept=0.99, tune=1000)
+            self.sim_trace = pm.sample(target_accept=0.99, tune=2000)
 
         self.calculate_summary()
 
@@ -197,10 +199,10 @@ class TwoByTwoEI:
         # in each precinct
         samples_converted_to_pops_gp1 = (
             self.sim_trace.get_values("b_1") * self.precinct_pops
-        )  # num_samples x num_precincts
+        )  # shape: num_samples x num_precincts
         samples_converted_to_pops_gp2 = (
             self.sim_trace.get_values("b_2") * self.precinct_pops
-        )  # num_samples x num_precincts
+        )  # shape: num_samples x num_precincts
 
         # obtain samples of total votes summed across all precinct for the candidate for each group
         samples_of_votes_summed_across_district_gp1 = samples_converted_to_pops_gp1.sum(axis=1)
