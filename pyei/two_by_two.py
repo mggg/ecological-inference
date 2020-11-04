@@ -14,6 +14,7 @@ from .plot_utils import (
     plot_kde,
     plot_precincts,
     plot_summary,
+    plot_intervals_all_precincts
 )
 
 __all__ = ["TwoByTwoEI"]
@@ -257,6 +258,16 @@ class TwoByTwoEI:
 
     def precinct_level_estimates(self):
         """If desired, we can return precinct-level estimates"""
+        percentiles = [2.5, 97.5]
+        precinct_level_samples_gp1 = self.sim_trace.get_values("b_1")
+        precinct_posterior_means_gp1 = precinct_level_samples_gp1.mean(axis=0)
+        precinct_credible_intervals_gp1 = np.percentile(precinct_level_samples_gp1, percentiles, axis=0).T
+
+        precinct_level_samples_gp2 = self.sim_trace.get_values("b_2")
+        precinct_posterior_means_gp2 = precinct_level_samples_gp2.mean(axis=0)
+        precinct_credible_intervals_gp2 = np.percentile(precinct_level_samples_gp2, percentiles, axis=0).T
+
+        return precinct_posterior_means_gp1, precinct_posterior_means_gp2, precinct_credible_intervals_gp1, precinct_credible_intervals_gp2
 
     def _voting_prefs(self):
         """Bundles together the samples, for ease of passing to plots"""
@@ -288,6 +299,16 @@ class TwoByTwoEI:
             title,
             ax=ax,
         )
+
+    def plot_intervals_by_precinct(self, ax=None):
+        """ Plot of pointe estimates and credible intervals for each precinct"""
+        # TODO: Fix use of axes
+        precinct_posterior_means_gp1, precinct_posterior_means_gp2, precinct_credible_intervals_gp1, precinct_credible_intervals_gp2 = self.precinct_level_estimates()
+        
+        plot_gp1 = plot_intervals_all_precincts(precinct_posterior_means_gp1, precinct_credible_intervals_gp1, self.candidate_name, self.precinct_names, self._group_names_for_display()[0])
+        plot_gp2 = plot_intervals_all_precincts(precinct_posterior_means_gp2, precinct_credible_intervals_gp2, self.candidate_name, self.precinct_names, self._group_names_for_display()[1])
+        
+        return plot_gp1, plot_gp2
 
     def plot(self):
         """kde, boxplot, and credible intervals"""

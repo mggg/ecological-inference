@@ -1,18 +1,29 @@
-"""Plotting functions for visualizing ei outputs"""
+"""
+Plotting functions for visualizing ei outputs
+
+TODO: Complete documentation
+TODO: update __all__
+"""
 import warnings
 import seaborn as sns
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib import ticker as mticker
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle, Circle
 import numpy as np
 import scipy.stats as st
 
 __all__ = [
-    "plot_precincts",
     "plot_boxplot",
+    "plot_boxplots",
+    "plot_conf_or_credible_interval",
+    "plot_intervals_all_precincts",
     "plot_kdes",
     "plot_kde",
-    "plot_conf_or_credible_interval",
+    "plot_precincts",
+    "plot_summary",
+    "tomography_plot"
 ]
 
 
@@ -229,7 +240,6 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
 
     """
     # TODO pass axes as argument
-    # TODO plot by group
     _, num_groups, num_candidates = sampled_voting_prefs.shape
     if plot_by == "candidate":
         num_plots = num_candidates
@@ -266,7 +276,7 @@ def plot_conf_or_credible_interval(
     Plot confidence of credible interval for two different groups
     """
 
-    # TO DO: generalize for more intervals
+    # TODO: generalize for more intervals
     int1_height = 0.4
     int2_height = 0.2
     if ax is None:
@@ -290,12 +300,72 @@ def plot_conf_or_credible_interval(
     return ax
 
 
-def tomography_plot(group_fraction, votes_fraction, demographic_group_name, candidate_name):
+def plot_intervals_all_precincts(point_estimates, intervals, candidate_name, precinct_labels, title, ax=None, show_all_precincts=False):
+    """
+    Plot intervals, point estimates of support for candidate, sorted by point estimates, for all precincts
+    """
+    num_intervals = len(point_estimates)
+
+    if num_intervals > 50 and not show_all_precincts:
+        warnings.warn(
+            f"User attempted to plot {num_intervals} precinct-level voting preference "
+            f"ridgeplots. Automatically restricting to first 50 precincts "
+            f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)"
+        )
+        point_estimates = point_estimates[:, :50]
+        intervals = intervals[:, :50]
+        if precinct_labels is not None:
+            precinct_labels = precinct_labels[:50]
+        num_intervals = 50
+
+    int_heights = 20 * np.arange(num_intervals) + 20
+    tot_height = int_heights[-1] + 20
+    int_heights = tot_height - int_heights
+    
+    if ax is None:
+        _, ax = plt.subplots(1, frameon=False, constrained_layout=True, figsize=(16, num_intervals/4))
+    
+    if precinct_labels is None:
+        precinct_labels = range(num_intervals)
+
+    ax.set(
+        title=title,
+        xlim=(0, 1),
+        ylim=(0, tot_height),
+        xlabel=f"Support for {candidate_name}",
+        frame_on=False,
+    )
+
+    ax.get_xaxis().tick_bottom()
+    ax.axes.get_yaxis().set_visible(False)
+
+    point_estimates, intervals, precinct_labels = zip(*sorted(zip(point_estimates, intervals, precinct_labels)))
+    bars = []
+
+    for point_estimate, interval, precinct_label, int_height in zip(point_estimates, intervals, precinct_labels, int_heights):
+        width = interval[1] - interval[0]
+        height = 16
+        lower_left = (interval[0], int_height)
+        bars.append(Rectangle(lower_left, width, height))
+
+        ax.scatter(point_estimate, int_height + height/2, s=30, alpha=1, c="k")
+        ax.text(1, int_height + height/2, precinct_label, fontsize=12)
+
+    pc_bars = PatchCollection(bars, facecolor="gray", alpha=0.6)
+    ax.add_collection(pc_bars)
+
+    return ax
+
+
+
+def tomography_plot(group_fraction, votes_fraction, demographic_group_name, candidate_name, ax=None):
     """Tomography plot (basic)"""
-    # TODO: pass ax as argument
+
+    if ax is None:
+        _, ax = plt.subplots()
+
     num_precincts = len(group_fraction)
     b_1 = np.linspace(0, 1, 200)
-    _, ax = plt.subplots()
     ax.set_xlim((0, 1))
     ax.set_ylim((0, 1))
     ax.set_aspect("equal", adjustable="box")
