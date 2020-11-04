@@ -23,7 +23,7 @@ __all__ = [
     "plot_kde",
     "plot_precincts",
     "plot_summary",
-    "tomography_plot"
+    "tomography_plot",
 ]
 
 
@@ -300,7 +300,15 @@ def plot_conf_or_credible_interval(
     return ax
 
 
-def plot_intervals_all_precincts(point_estimates, intervals, candidate_name, precinct_labels, title, ax=None, show_all_precincts=False):
+def plot_intervals_all_precincts(
+    point_estimates,
+    intervals,
+    candidate_name,
+    precinct_labels,
+    title,
+    ax=None,
+    show_all_precincts=False,
+):
     """
     Plot intervals, point estimates of support for candidate, sorted by point estimates, for all precincts
     """
@@ -321,10 +329,12 @@ def plot_intervals_all_precincts(point_estimates, intervals, candidate_name, pre
     int_heights = 20 * np.arange(num_intervals) + 20
     tot_height = int_heights[-1] + 20
     int_heights = tot_height - int_heights
-    
+
     if ax is None:
-        _, ax = plt.subplots(1, frameon=False, constrained_layout=True, figsize=(16, num_intervals/4))
-    
+        _, ax = plt.subplots(
+            1, frameon=False, constrained_layout=True, figsize=(16, num_intervals / 4)
+        )
+
     if precinct_labels is None:
         precinct_labels = range(num_intervals)
 
@@ -339,17 +349,21 @@ def plot_intervals_all_precincts(point_estimates, intervals, candidate_name, pre
     ax.get_xaxis().tick_bottom()
     ax.axes.get_yaxis().set_visible(False)
 
-    point_estimates, intervals, precinct_labels = zip(*sorted(zip(point_estimates, intervals, precinct_labels)))
+    point_estimates, intervals, precinct_labels = zip(
+        *sorted(zip(point_estimates, intervals, precinct_labels))
+    )
     bars = []
 
-    for point_estimate, interval, precinct_label, int_height in zip(point_estimates, intervals, precinct_labels, int_heights):
+    for point_estimate, interval, precinct_label, int_height in zip(
+        point_estimates, intervals, precinct_labels, int_heights
+    ):
         width = interval[1] - interval[0]
         height = 16
         lower_left = (interval[0], int_height)
         bars.append(Rectangle(lower_left, width, height))
 
-        ax.scatter(point_estimate, int_height + height/2, s=30, alpha=1, c="k")
-        ax.text(1, int_height + height/2, precinct_label, fontsize=12)
+        ax.scatter(point_estimate, int_height + height / 2, s=30, alpha=1, c="k")
+        ax.text(1, int_height + height / 2, precinct_label, fontsize=12)
 
     pc_bars = PatchCollection(bars, facecolor="gray", alpha=0.6)
     ax.add_collection(pc_bars)
@@ -357,8 +371,9 @@ def plot_intervals_all_precincts(point_estimates, intervals, candidate_name, pre
     return ax
 
 
-
-def tomography_plot(group_fraction, votes_fraction, demographic_group_name, candidate_name, ax=None):
+def tomography_plot(
+    group_fraction, votes_fraction, demographic_group_name, candidate_name, ax=None
+):
     """Tomography plot (basic)"""
 
     if ax is None:

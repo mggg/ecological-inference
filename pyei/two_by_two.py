@@ -14,18 +14,14 @@ from .plot_utils import (
     plot_kde,
     plot_precincts,
     plot_summary,
-    plot_intervals_all_precincts
+    plot_intervals_all_precincts,
 )
 
 __all__ = ["TwoByTwoEI"]
 
 
 def ei_beta_binom_model_modified(
-    group_fraction,
-    votes_fraction,
-    precinct_pops,
-    pareto_scale=8,
-    pareto_shape=2
+    group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
 ):
     """
     An modification of the 2 x 2 beta/binomial EI model from King, Rosen, Tanner 1999,
@@ -261,13 +257,22 @@ class TwoByTwoEI:
         percentiles = [2.5, 97.5]
         precinct_level_samples_gp1 = self.sim_trace.get_values("b_1")
         precinct_posterior_means_gp1 = precinct_level_samples_gp1.mean(axis=0)
-        precinct_credible_intervals_gp1 = np.percentile(precinct_level_samples_gp1, percentiles, axis=0).T
+        precinct_credible_intervals_gp1 = np.percentile(
+            precinct_level_samples_gp1, percentiles, axis=0
+        ).T
 
         precinct_level_samples_gp2 = self.sim_trace.get_values("b_2")
         precinct_posterior_means_gp2 = precinct_level_samples_gp2.mean(axis=0)
-        precinct_credible_intervals_gp2 = np.percentile(precinct_level_samples_gp2, percentiles, axis=0).T
+        precinct_credible_intervals_gp2 = np.percentile(
+            precinct_level_samples_gp2, percentiles, axis=0
+        ).T
 
-        return precinct_posterior_means_gp1, precinct_posterior_means_gp2, precinct_credible_intervals_gp1, precinct_credible_intervals_gp2
+        return (
+            precinct_posterior_means_gp1,
+            precinct_posterior_means_gp2,
+            precinct_credible_intervals_gp1,
+            precinct_credible_intervals_gp2,
+        )
 
     def _voting_prefs(self):
         """Bundles together the samples, for ease of passing to plots"""
@@ -303,11 +308,28 @@ class TwoByTwoEI:
     def plot_intervals_by_precinct(self, ax=None):
         """ Plot of pointe estimates and credible intervals for each precinct"""
         # TODO: Fix use of axes
-        precinct_posterior_means_gp1, precinct_posterior_means_gp2, precinct_credible_intervals_gp1, precinct_credible_intervals_gp2 = self.precinct_level_estimates()
-        
-        plot_gp1 = plot_intervals_all_precincts(precinct_posterior_means_gp1, precinct_credible_intervals_gp1, self.candidate_name, self.precinct_names, self._group_names_for_display()[0])
-        plot_gp2 = plot_intervals_all_precincts(precinct_posterior_means_gp2, precinct_credible_intervals_gp2, self.candidate_name, self.precinct_names, self._group_names_for_display()[1])
-        
+        (
+            precinct_posterior_means_gp1,
+            precinct_posterior_means_gp2,
+            precinct_credible_intervals_gp1,
+            precinct_credible_intervals_gp2,
+        ) = self.precinct_level_estimates()
+
+        plot_gp1 = plot_intervals_all_precincts(
+            precinct_posterior_means_gp1,
+            precinct_credible_intervals_gp1,
+            self.candidate_name,
+            self.precinct_names,
+            self._group_names_for_display()[0],
+        )
+        plot_gp2 = plot_intervals_all_precincts(
+            precinct_posterior_means_gp2,
+            precinct_credible_intervals_gp2,
+            self.candidate_name,
+            self.precinct_names,
+            self._group_names_for_display()[1],
+        )
+
         return plot_gp1, plot_gp2
 
     def plot(self):
