@@ -305,7 +305,7 @@ class TwoByTwoEI:
             ax=ax,
         )
 
-    def plot_intervals_by_precinct(self, ax=None):
+    def plot_intervals_by_precinct(self):
         """ Plot of pointe estimates and credible intervals for each precinct"""
         # TODO: Fix use of axes
         (

@@ -10,7 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib import ticker as mticker
 from matplotlib.collections import PatchCollection
-from matplotlib.patches import Rectangle, Circle
+from matplotlib.patches import Rectangle
 import numpy as np
 import scipy.stats as st
 
@@ -310,7 +310,7 @@ def plot_intervals_all_precincts(
     show_all_precincts=False,
 ):
     """
-    Plot intervals, point estimates of support for candidate, sorted by point estimates, for all precincts
+    Plot intervals&point estimates of support for candidate, sorted by point estimates for precincts
     """
     num_intervals = len(point_estimates)
 
