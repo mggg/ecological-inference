@@ -185,8 +185,8 @@ def wakefield_model_beta_binom(
             observed={
                 "b_1": b_1,
                 "b_2": b_2,
-                "n0": group_count_obs,
-                "n1": precinct_pops - group_count_obs,
+                "n_0": group_count_obs,
+                "n_1": precinct_pops - group_count_obs,
                 "upper": upper,
                 "lower": lower,
                 "obs_votes": vote_count_obs,
