@@ -1,13 +1,16 @@
 """
 Models and fitting for 2x2 methods
 
-TODO: Finish wakefield model
+TODO: Checks for wakefield model
+TODO: Wakefield model with normal prior
 TODO: Truncated normal model
 """
 
 import warnings
 import pymc3 as pm
 import numpy as np
+import theano.tensor as tt
+import theano
 from .plot_utils import (
     plot_conf_or_credible_interval,
     plot_boxplot,
@@ -111,6 +114,87 @@ def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
     return model
 
 
+def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, p0_curr, p1_curr, prev):
+    """
+    Helper function for computing log prob of convolution of binomial
+    """
+    group_count = tt.arange(lower, upper)  # y
+    component_for_current_precinct = pm.math.logsumexp(
+        pm.Binomial.dist(n0_curr, p0_curr).logp(group_count)
+        + pm.Binomial.dist(n1_curr, p1_curr).logp(obs_vote - group_count)
+    )[0]
+    return prev + component_for_current_precinct
+
+
+def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
+    """
+    Log probability for convolution of binomials
+    """
+    result, _ = theano.scan(
+        fn=log_binom_sum,
+        outputs_info={"taps": [-1], "initial": tt.as_tensor(np.array([0.0]))},
+        sequences=[
+            tt.as_tensor(lower),
+            tt.as_tensor(upper),
+            tt.as_tensor(obs_votes),
+            tt.as_tensor(n_0),
+            tt.as_tensor(n_1),
+            tt.as_tensor(b_1),
+            tt.as_tensor(b_2),
+        ],
+    )
+    return result[-1]
+
+
+def wakefield_model_beta_binom(
+    group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
+):
+    """
+    2 x 2 EI model Wakefield
+
+    """
+
+    vote_count_obs = votes_fraction * precinct_pops
+    group_count_obs = group_fraction * precinct_pops
+    num_precincts = len(precinct_pops)
+    upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
+    lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
+    with pm.Model() as model:
+        phi_1 = pm.Uniform("phi_1", lower=0.0, upper=1.0)
+        kappa_1 = pm.Pareto("kappa_1", m=pareto_scale, alpha=pareto_shape)
+
+        phi_2 = pm.Uniform("phi_2", lower=0.0, upper=1.0)
+        kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
+
+        b_1 = pm.Beta(
+            "b_1",
+            alpha=phi_1 * kappa_1,
+            beta=(1.0 - phi_1) * kappa_1,
+            shape=num_precincts,
+        )
+        b_2 = pm.Beta(
+            "b_2",
+            alpha=phi_2 * kappa_2,
+            beta=(1.0 - phi_2) * kappa_2,
+            shape=num_precincts,
+        )
+
+        pm.DensityDist(
+            "votes_count_obs",
+            binom_conv_log_p,
+            observed={
+                "b_1": b_1,
+                "b_2": b_2,
+                "n_0": group_count_obs,
+                "n_1": precinct_pops - group_count_obs,
+                "upper": upper,
+                "lower": lower,
+                "obs_votes": vote_count_obs,
+            },
+        )
+    return model
+
+
 class TwoByTwoEI:
     """
     Fitting and plotting for king97, king99, and wakefield models
@@ -190,8 +274,21 @@ class TwoByTwoEI:
             self.sim_model = ei_beta_binom_model_modified(
                 group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
             )
+        elif self.model_name == "wakefield_beta_binom":
+            self.sim_model = wakefield_model_beta_binom(
+                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
+            )
+
+        if self.model_name == "wakefield_beta_binom":
+            compute_convergence_checks = False
+            print("WARNING: convergence checks disabled for wakefield model")
+        else:
+            compute_convergence_checks = True
+
         with self.sim_model:
-            self.sim_trace = pm.sample(target_accept=0.99, tune=2000)
+            self.sim_trace = pm.sample(
+                target_accept=0.99, tune=2000, compute_convergence_checks=compute_convergence_checks
+            )
 
         self.calculate_summary()
 
