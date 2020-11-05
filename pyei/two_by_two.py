@@ -115,24 +115,40 @@ def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
 
 
 def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, p0_curr, p1_curr, prev):
-    y = tt.arange(lower, upper)
-    component_for_current_precinct = pm.math.logsumexp(pm.Binomial.dist(n0_curr, p0_curr).logp(y) + 
-                                                        pm.Binomial.dist(n1_curr, p1_curr).logp(obs_vote - y))[0]
+    """
+    Helper function for computing log prob of convolution of binomial
+    """
+    group_count = tt.arange(lower, upper)  # y
+    component_for_current_precinct = pm.math.logsumexp(
+        pm.Binomial.dist(n0_curr, p0_curr).logp(group_count)
+        + pm.Binomial.dist(n1_curr, p1_curr).logp(obs_vote - group_count)
+    )[0]
     return prev + component_for_current_precinct
 
 
-def binom_conv_log_p(b_1, b_2, n0, n1, upper, lower, obs_votes):
+def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
     """
     Log probability for convolution of binomials
     """
-    result, _ = theano.scan(fn=log_binom_sum,
-                                  outputs_info={"taps": [-1], "initial": tt.as_tensor(np.array([0.]))},
-                                  sequences=[tt.as_tensor(lower), tt.as_tensor(upper), tt.as_tensor(obs_votes), tt.as_tensor(n0), tt.as_tensor(n1), tt.as_tensor(b_1), tt.as_tensor(b_2)]
-                                 )
+    result, _ = theano.scan(
+        fn=log_binom_sum,
+        outputs_info={"taps": [-1], "initial": tt.as_tensor(np.array([0.0]))},
+        sequences=[
+            tt.as_tensor(lower),
+            tt.as_tensor(upper),
+            tt.as_tensor(obs_votes),
+            tt.as_tensor(n_0),
+            tt.as_tensor(n_1),
+            tt.as_tensor(b_1),
+            tt.as_tensor(b_2),
+        ],
+    )
     return result[-1]
 
 
-def wakefield_model_beta_binom(group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2):
+def wakefield_model_beta_binom(
+    group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
+):
     """
     2 x 2 EI model Wakefield
 
@@ -141,8 +157,8 @@ def wakefield_model_beta_binom(group_fraction, votes_fraction, precinct_pops, pa
     vote_count_obs = votes_fraction * precinct_pops
     group_count_obs = group_fraction * precinct_pops
     num_precincts = len(precinct_pops)
-    upper = np.minimum(group_count_obs, vote_count_obs) # upper bound on y
-    lower = np.maximum(0., vote_count_obs - precinct_pops + group_count_obs) # lower bound on y
+    upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
+    lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
     with pm.Model() as model:
         phi_1 = pm.Uniform("phi_1", lower=0.0, upper=1.0)
         kappa_1 = pm.Pareto("kappa_1", m=pareto_scale, alpha=pareto_shape)
@@ -163,7 +179,19 @@ def wakefield_model_beta_binom(group_fraction, votes_fraction, precinct_pops, pa
             shape=num_precincts,
         )
 
-        pm.DensityDist('votes_count_obs', binom_conv_log_p, observed={'b_1': b_1, 'b_2': b_2, 'n0': group_count_obs, 'n1': precinct_pops - group_count_obs, 'upper': upper, 'lower': lower,'obs_votes': vote_count_obs})
+        pm.DensityDist(
+            "votes_count_obs",
+            binom_conv_log_p,
+            observed={
+                "b_1": b_1,
+                "b_2": b_2,
+                "n0": group_count_obs,
+                "n1": precinct_pops - group_count_obs,
+                "upper": upper,
+                "lower": lower,
+                "obs_votes": vote_count_obs,
+            },
+        )
     return model
 
 
@@ -252,13 +280,15 @@ class TwoByTwoEI:
             )
 
         if self.model_name == "wakefield_beta_binom":
-            compute_convergence_checks=False
+            compute_convergence_checks = False
             print("WARNING: convergence checks disabled for wakefield model")
         else:
-            compute_convergence_checks=True
+            compute_convergence_checks = True
 
         with self.sim_model:
-            self.sim_trace = pm.sample(target_accept=0.99, tune=2000, compute_convergence_checks=compute_convergence_checks)
+            self.sim_trace = pm.sample(
+                target_accept=0.99, tune=2000, compute_convergence_checks=compute_convergence_checks
+            )
 
         self.calculate_summary()
 
