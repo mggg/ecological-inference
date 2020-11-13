@@ -223,8 +223,10 @@ def plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name,
     if ax is None:
         ax = plt.gca()
     ax.set_xlim((0, 1))
-    sns.distplot(voting_prefs_group1, hist=True, ax=ax, label=group1_name)
-    sns.distplot(voting_prefs_group2, hist=True, ax=ax, label=group2_name)
+
+    sns.histplot(voting_prefs_group1, kde=True, ax=ax, element="step", stat='density', label=group1_name, color=f'C{0}', linewidth=0)
+    sns.histplot(voting_prefs_group2, kde=True, ax=ax, element="step", stat='density', label=group2_name, color=f'C{1}', linewidth=0)
+
     ax.legend()
     return ax
 
@@ -239,6 +241,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
     of voting preferences for all candidates.
 
     """
+    
     # TODO pass axes as argument
     _, num_groups, num_candidates = sampled_voting_prefs.shape
     if plot_by == "candidate":
@@ -259,12 +262,16 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
     for plot_idx in range(num_plots):
         ax = axes[plot_idx]
         for kde_idx in range(num_kdes_per_plot):
-            sns.distplot(
+            sns.histplot(
                 sampled_voting_prefs[:, kde_idx, plot_idx],
-                hist=True,
-                ax=ax,
-                label=legend[kde_idx],
-            )
+                kde=True, 
+                ax=ax, 
+                stat='density',
+                element="step", 
+                label=legend[kde_idx], 
+                color=f'C{kde_idx}',
+                linewidth=0),
+   
         ax.set_title(titles[plot_idx])
     axes[0].legend(bbox_to_anchor=(1, 1), loc="upper left")
 

@@ -39,6 +39,10 @@ def ei_beta_binom_model_modified(
         for the candidate of interest (T)
     precinct_pops: Length-p vector giving size of each precinct population of interest
         (e.g. voting population) (N)
+    pareto_scale: A positive real number. The scale paremeter passed to the
+        pareto hyperparamters
+    pareto_shape: A positive real number. The shape paremeter passed to the
+        pareto hyperparamters
 
     Returns
     -------
@@ -114,14 +118,17 @@ def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
     return model
 
 
-def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, p0_curr, p1_curr, prev):
+def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, prev):
     """
     Helper function for computing log prob of convolution of binomial
     """
-    group_count = tt.arange(lower, upper)  # y
+
+    # votes_within_group_count is y_0i in Wakefield's notation, the count of votes from
+    # given group for given candidate within precinct i (unobserved)
+    votes_within_group_count = tt.arange(lower, upper)  
     component_for_current_precinct = pm.math.logsumexp(
-        pm.Binomial.dist(n0_curr, p0_curr).logp(group_count)
-        + pm.Binomial.dist(n1_curr, p1_curr).logp(obs_vote - group_count)
+        pm.Binomial.dist(n0_curr, b_1_curr).logp(votes_within_group_count)
+        + pm.Binomial.dist(n1_curr, b_2_curr).logp(obs_vote - votes_within_group_count)
     )[0]
     return prev + component_for_current_precinct
 
@@ -129,7 +136,30 @@ def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, p0_curr, p1_curr, pr
 def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
     """
     Log probability for convolution of binomials
+
+    Parameters
+    ----------
+    b_1: corresponds to p0 in wakefield's notation, the probability that an individual
+        the given demographic group votes for the given candidate
+    b_2: corresponds to p1 in wakefield's notation, the probability that an individual
+        the complement of the given demographic group votes for the given candidate
+
+    n_0: the count of given demographic group in the precinct
+    n_1: the count of the complement of given demographic group in the precinct
+
+    lower, upper : lower and upper bounds on the (unobserved) count of votes from given
+    deographic group for given candidate within precinct
+    (corresponds to votes_within_group_count in log_binom_sum and y_0i in Wakefield's)
+    
+    Returns
+    -------
+    A theano tensor giving the log probability of b_1, b_2 (given the other parameters)
+
+    Notes
+    -----
+    See Wakefield 2004 equation 4
     """
+
     result, _ = theano.scan(
         fn=log_binom_sum,
         outputs_info={"taps": [-1], "initial": tt.as_tensor(np.array([0.0]))},
@@ -146,7 +176,7 @@ def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
     return result[-1]
 
 
-def wakefield_model_beta_binom(
+def wakefield_model_beta(
     group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
 ):
     """
@@ -195,13 +225,42 @@ def wakefield_model_beta_binom(
     return model
 
 
+def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0):
+    """
+    2 x 2 EI model Wakefield with normal hyperpriors
+
+    Note: Wakefield suggests adding another level of hierarchy, with a prior over mu0 and mu1, sigma0, sigma1,
+    but that is not implemented here
+
+    """
+
+    vote_count_obs = votes_fraction * precinct_pops
+    group_count_obs = group_fraction * precinct_pops
+    num_precincts = len(precinct_pops)
+    upper = np.minimum(group_count_obs, vote_count_obs) # upper bound on y
+    lower = np.maximum(0., vote_count_obs - precinct_pops + group_count_obs) # lower bound on y
+    with pm.Model() as model:
+        sigma_0 = pm.Gamma('sigma0', 1, 0.1)
+        sigma_1 = pm.Gamma('sigma1', 1, 0.1)
+
+        theta_0 = pm.Normal('theta0', mu0, sigma_0, shape=num_precincts)
+        theta_1 = pm.Normal('theta1', mu1, sigma_1, shape=num_precincts)
+
+        b_1 = pm.Deterministic('b_1', tt.exp(theta_0) / (1+tt.exp(theta_0))) # vector of length num_precincts
+        b_2 = pm.Deterministic('b_2', tt.exp(theta_1) / (1+tt.exp(theta_1)))# vector of length num_precincts
+        
+        pm.DensityDist('votes_count_obs', binom_conv_log_p, observed={'b_1': b_1, 'b_2': b_2, 'n_0': group_count_obs, 'n_1': precinct_pops - group_count_obs, 'upper': upper, 'lower': lower, 'obs_votes': vote_count_obs})
+    return model
+
+
 class TwoByTwoEI:
     """
     Fitting and plotting for king97, king99, and wakefield models
     """
 
     def __init__(self, model_name, **additional_model_params):
-        # model_name can be 'king97', 'king99' or 'king99_pareto_modification' or 'wakefield'
+        # model_name can be 'king97', 'king99' or 'king99_pareto_modification' 
+        # 'wakefield_beta' or 'wakefield normal'
         self.vote_fraction = None
         self.model_name = model_name
         self.additional_model_params = additional_model_params
@@ -274,20 +333,26 @@ class TwoByTwoEI:
             self.sim_model = ei_beta_binom_model_modified(
                 group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
             )
-        elif self.model_name == "wakefield_beta_binom":
-            self.sim_model = wakefield_model_beta_binom(
+        elif self.model_name == "wakefield_beta":
+            self.sim_model = wakefield_model_beta(
+                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
+            )
+        elif self.model_name == "wakefield_normal":
+            self.sim_model = wakefield_normal(
                 group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
             )
 
-        if self.model_name == "wakefield_beta_binom":
+        # TODO: this workaround shouldn't be necessary. Modify the model so that the checks
+        # can run without error
+        if self.model_name == "wakefield_beta" or self.model_name == "wakefield_normal":
             compute_convergence_checks = False
-            print("WARNING: convergence checks disabled for wakefield model")
+            print("WARNING: some convergence checks currently disabled for wakefield model")
         else:
             compute_convergence_checks = True
 
         with self.sim_model:
             self.sim_trace = pm.sample(
-                target_accept=0.99, tune=2000, compute_convergence_checks=compute_convergence_checks
+                target_accept=0.99, tune=1500, compute_convergence_checks=compute_convergence_checks
             )
 
         self.calculate_summary()
