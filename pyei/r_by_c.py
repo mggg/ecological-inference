@@ -337,7 +337,7 @@ class RowByColumnEI:
             self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by
         )
 
-    def plot_intervals(self, group_name, candidate_name):
+    def plot_intervals_by_precinct(self, group_name, candidate_name):
         """ Plot of credible intervals for all precincts, for specified group and candidate"""
         if group_name not in self.demographic_group_names:
             raise ValueError(
