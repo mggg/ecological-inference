@@ -1,7 +1,7 @@
 """Helpers for managing data files."""
-import io
-import os
-import pkgutil
+# import io
+# import os
+# import pkgutil
 
 import pandas as pd
 
@@ -36,8 +36,10 @@ def get_data(filename):
             "https://raw.githubusercontent.com/gerrymandr/ei-app/master/waterbury.csv"
         )
     else:
-        raise ValueError('''get_data() currently only supports filenames "santaClara.csv" or "waterbury.csv".
-        Use, e.g., pandas.read_csv()" if you'd like to load your own data file''')
+        raise ValueError(
+            """get_data() currently only supports filenames "santaClara.csv" or "waterbury.csv".
+        Use, e.g., pandas.read_csv()" if you'd like to load your own data file"""
+        )
 
     # This does not work yet (9/2/20), but will collect
     # files checked into pyei/examples/data/<filename>

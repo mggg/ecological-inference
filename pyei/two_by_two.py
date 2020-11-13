@@ -125,7 +125,7 @@ def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, 
 
     # votes_within_group_count is y_0i in Wakefield's notation, the count of votes from
     # given group for given candidate within precinct i (unobserved)
-    votes_within_group_count = tt.arange(lower, upper)  
+    votes_within_group_count = tt.arange(lower, upper)
     component_for_current_precinct = pm.math.logsumexp(
         pm.Binomial.dist(n0_curr, b_1_curr).logp(votes_within_group_count)
         + pm.Binomial.dist(n1_curr, b_2_curr).logp(obs_vote - votes_within_group_count)
@@ -150,7 +150,7 @@ def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
     lower, upper : lower and upper bounds on the (unobserved) count of votes from given
     deographic group for given candidate within precinct
     (corresponds to votes_within_group_count in log_binom_sum and y_0i in Wakefield's)
-    
+
     Returns
     -------
     A theano tensor giving the log probability of b_1, b_2 (given the other parameters)
@@ -229,27 +229,43 @@ def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0
     """
     2 x 2 EI model Wakefield with normal hyperpriors
 
-    Note: Wakefield suggests adding another level of hierarchy, with a prior over mu0 and mu1, sigma0, sigma1,
-    but that is not implemented here
+    Note: Wakefield suggests adding another level of hierarchy, with a prior over mu0 and mu1,
+    sigma0, sigma1, but that is not yet implemented here
 
     """
 
     vote_count_obs = votes_fraction * precinct_pops
     group_count_obs = group_fraction * precinct_pops
     num_precincts = len(precinct_pops)
-    upper = np.minimum(group_count_obs, vote_count_obs) # upper bound on y
-    lower = np.maximum(0., vote_count_obs - precinct_pops + group_count_obs) # lower bound on y
+    upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
+    lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
     with pm.Model() as model:
-        sigma_0 = pm.Gamma('sigma0', 1, 0.1)
-        sigma_1 = pm.Gamma('sigma1', 1, 0.1)
+        sigma_0 = pm.Gamma("sigma0", 1, 0.1)
+        sigma_1 = pm.Gamma("sigma1", 1, 0.1)
 
-        theta_0 = pm.Normal('theta0', mu0, sigma_0, shape=num_precincts)
-        theta_1 = pm.Normal('theta1', mu1, sigma_1, shape=num_precincts)
+        theta_0 = pm.Normal("theta0", mu0, sigma_0, shape=num_precincts)
+        theta_1 = pm.Normal("theta1", mu1, sigma_1, shape=num_precincts)
 
-        b_1 = pm.Deterministic('b_1', tt.exp(theta_0) / (1+tt.exp(theta_0))) # vector of length num_precincts
-        b_2 = pm.Deterministic('b_2', tt.exp(theta_1) / (1+tt.exp(theta_1)))# vector of length num_precincts
-        
-        pm.DensityDist('votes_count_obs', binom_conv_log_p, observed={'b_1': b_1, 'b_2': b_2, 'n_0': group_count_obs, 'n_1': precinct_pops - group_count_obs, 'upper': upper, 'lower': lower, 'obs_votes': vote_count_obs})
+        b_1 = pm.Deterministic(
+            "b_1", tt.exp(theta_0) / (1 + tt.exp(theta_0))
+        )  # vector of length num_precincts
+        b_2 = pm.Deterministic(
+            "b_2", tt.exp(theta_1) / (1 + tt.exp(theta_1))
+        )  # vector of length num_precincts
+
+        pm.DensityDist(
+            "votes_count_obs",
+            binom_conv_log_p,
+            observed={
+                "b_1": b_1,
+                "b_2": b_2,
+                "n_0": group_count_obs,
+                "n_1": precinct_pops - group_count_obs,
+                "upper": upper,
+                "lower": lower,
+                "obs_votes": vote_count_obs,
+            },
+        )
     return model
 
 
@@ -259,7 +275,7 @@ class TwoByTwoEI:
     """
 
     def __init__(self, model_name, **additional_model_params):
-        # model_name can be 'king97', 'king99' or 'king99_pareto_modification' 
+        # model_name can be 'king97', 'king99' or 'king99_pareto_modification'
         # 'wakefield_beta' or 'wakefield normal'
         self.vote_fraction = None
         self.model_name = model_name
