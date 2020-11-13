@@ -11,13 +11,14 @@ TODO: error for model name that's not supported
 """
 
 
-# import warnings
+import warnings
 import pymc3 as pm
+import theano.tensor as tt
 import numpy as np
-from .plot_utils import plot_boxplots, plot_kdes
+from .plot_utils import plot_boxplots, plot_kdes, plot_intervals_all_precincts
 
 
-def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
+def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda=0.1):
     """
     An implementation of the r x c dirichlet/multinomial EI model
 
@@ -52,7 +53,7 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
     with pm.Model() as model:
         # TODO: are the prior conc_params what is in the literature? is it a good choice?
         # TODO: make b vs. beta naming consistent
-        conc_params = pm.Exponential("conc_params", lam=0.25, shape=(num_rows, num_cols))
+        conc_params = pm.Exponential("conc_params", lam=lmbda, shape=(num_rows, num_cols))
         beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)
@@ -62,7 +63,9 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops):
     return model
 
 
-def ei_multinom_dirichlet_modified(group_fractions, votes_fractions, precinct_pops):
+def ei_multinom_dirichlet_modified(
+    group_fractions, votes_fractions, precinct_pops, pareto_scale=5, pareto_shape=1
+):
     """
     An implementation of the r x c dirichlet/multinomial EI model with reparametrized hyperpriors
 
@@ -101,12 +104,12 @@ def ei_multinom_dirichlet_modified(group_fractions, votes_fractions, precinct_po
 
     with pm.Model() as model:
         # TODO: make b vs. beta naming consistent
-        # TODO: make alpha settable by the user
-        kappa = pm.Pareto("kappa", alpha=5, m=1, shape=num_rows)
-        phi = pm.Dirichlet("phi", a=np.ones(num_cols), shape=(num_cols, num_rows))
-        beta = pm.Dirichlet("b", a=kappa * phi, shape=(num_precincts, num_rows, num_cols))
+        kappa = pm.Pareto("kappa", alpha=pareto_shape, m=pareto_scale, shape=num_rows)
+        phi = pm.Dirichlet("phi", a=np.ones(num_cols), shape=(num_rows, num_cols))  # r x c
+        phi_kappa = pm.Deterministic("phi_kappa", tt.transpose(kappa * tt.transpose(phi)))
+        beta = pm.Dirichlet("b", a=phi_kappa, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
-        theta = (group_fractions_extended * beta).sum(axis=1)
+        theta = (group_fractions_extended * beta).sum(axis=1)  # sum across num_rows
         pm.Multinomial(
             "votes_count", n=precinct_pops, p=theta, observed=votes_count_obs
         )  # num_precincts x r
@@ -171,6 +174,7 @@ class RowByColumnEI:
         self.precinct_pops = precinct_pops
         self.demographic_group_names = demographic_group_names
         self.candidate_names = candidate_names
+
         # pylint: disable=duplicate-code
         # if precinct_names is not None:
         #     assert len(precinct_names) == len(precinct_pops)
@@ -179,17 +183,23 @@ class RowByColumnEI:
         #             "Precinct names are not unique. This may interfere with "
         #             "passing precinct names to precinct_level_plot()."
         #         )
-        #     self.precinct_names = precinct_names
+        #     self.precinct_names = precinct_names #TODO: set this
         # # pylint: enable=duplicate-code
         self.num_groups_and_num_candidates = [
             group_fractions.shape[0],
             votes_fractions.shape[0],
         ]  # [r, c]
 
-        # TODO: warning if num_groups from group_fractions doesn't match num_groups in
-        # demographic group_names
+        check_dimensions_of_input(
+            group_fractions,
+            votes_fractions,
+            precinct_pops,
+            demographic_group_names,
+            candidate_names,
+            self.num_groups_and_num_candidates,
+        )
 
-        if self.model_name == "multinomial-dirichlet-modified":
+        if self.model_name == "multinomial-dirichlet":
             self.sim_model = ei_multinom_dirichlet(
                 group_fractions,
                 votes_fractions,
@@ -270,6 +280,36 @@ class RowByColumnEI:
                 summary_str += summ
         return summary_str
 
+    def precinct_level_estimates(self):
+        """If desired, we can return precinct-level estimates
+
+        Returns:
+            precinct_posterior_means: num_precincts x r x c
+            precinct_credible_intervals num_precincts x r x c x 2
+        """
+
+        precinct_level_samples = self.sim_trace.get_values(
+            "b"
+        )  # num_samples x num_precincts x r x c
+        precinct_posterior_means = precinct_level_samples.mean(axis=0)
+        precinct_credible_intervals = np.ones(
+            (
+                len(self.precinct_pops),
+                self.num_groups_and_num_candidates[0],
+                self.num_groups_and_num_candidates[1],
+                2,
+            )
+        )
+        percentiles = [2.5, 97.5]
+
+        for row in range(self.num_groups_and_num_candidates[0]):
+            for col in range(self.num_groups_and_num_candidates[1]):
+                precinct_credible_intervals[:, row, col, :] = np.percentile(
+                    precinct_level_samples[:, :, row, col], percentiles, axis=0
+                ).T
+
+        return (precinct_posterior_means, precinct_credible_intervals)
+
     def candidate_of_choice(self):
         """ For each group, look at differences in preference within that group"""
         for row in range(self.num_groups_and_num_candidates[0]):
@@ -295,4 +335,94 @@ class RowByColumnEI:
         """ Kernel density plots of voting preference, plots grouped by candidate or group"""
         return plot_kdes(
             self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by
+        )
+
+    def plot_intervals(self, group_name, candidate_name):
+        """ Plot of credible intervals for all precincts, for specified group and candidate"""
+        if group_name not in self.demographic_group_names:
+            raise ValueError(
+                "group_name must be in the list of demographic_group_names provided to fit()"
+            )
+
+        if candidate_name not in self.candidate_names:
+            raise ValueError(
+                "candidate_name must be in the list of candidate_names provided to fit()"
+            )
+
+        group_index = self.demographic_group_names.index(group_name)
+        candidate_index = self.candidate_names.index(candidate_name)
+
+        point_estimates_all, intervals_all = self.precinct_level_estimates()
+        point_estimates = point_estimates_all[:, group_index, candidate_index]
+        intervals = intervals_all[:, group_index, candidate_index, :]
+
+        plot_intervals_all_precincts(
+            point_estimates,
+            intervals,
+            candidate_name,
+            self.precinct_names,
+            group_name,  # TODO: _group_names_for_display?
+            ax=None,
+            show_all_precincts=False,
+        )
+
+
+def check_dimensions_of_input(
+    group_fractions,
+    votes_fractions,
+    precinct_pops,
+    demographic_group_names,
+    candidate_names,
+    num_groups_and_num_candidates,
+):
+    """Checks shape of inputs and gives warnings or errors if there is a problem
+
+    Required arguments:
+    group_fractions :   r x p (p =#precincts = num_precicts) matrix giving demographic
+        information as the fraction of precinct_pop in the demographic group for each
+        of p precincts and r demographic groups (sometimes denoted X)
+    votes_fractions  :  c x p giving the fraction of each precinct_pop that votes
+        for each of c candidates (sometimes denoted T)
+    precinct_pops   :   Length-p vector giving size of each precinct population
+                        of interest (e.g. voting population) (someteimes denoted N)
+    Optional arguments:
+    demographic_group_names  :  Names of the r demographic group of interest,
+                                where results are computed for the
+                                demographic group and its complement
+    candidate_names          :  Name of the c candidates or voting outcomes of interest
+
+    """
+
+    if demographic_group_names is not None:
+        if len(demographic_group_names) != num_groups_and_num_candidates[0]:
+            warnings.warn(
+                """Length of demographic_groups_names should be equal to
+            r = group_fractions.shape[0]. If not, plotting labels may be inaccurate.
+            """
+            )
+
+    if candidate_names is not None:
+        if len(candidate_names) != num_groups_and_num_candidates[1]:
+            warnings.warn(
+                """Length of candiate_names should be equal to
+            c = votes_fractions.shape[0]. If not, plotting labels be inaccurate.
+            """
+            )
+
+    print(f"r = {num_groups_and_num_candidates[0]} rows (demographic groups)")
+    print(f"c = {num_groups_and_num_candidates[1]} columns (candidates or voting outcomes)")
+    print(f"number of precincts = {len(precinct_pops)}")
+
+    if len(precinct_pops) != votes_fractions.shape[1]:
+        raise ValueError(
+            """votes_fractions should have shape: c x num_precincts.
+        In particular, it is required that len(precinct_pops) = votes_fractions.shape[1]
+        """
+        )
+
+    if len(precinct_pops) != group_fractions.shape[1]:
+        raise ValueError(
+            """votes_fractions should have shape: r x num_precincts.
+        In particular, it is required that len(precinct_pops) = group_fractions.shape[1]
+        """
         )
