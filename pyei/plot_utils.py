@@ -28,7 +28,7 @@ __all__ = [
 def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1.3, num_points=500):
     """Helper function for plot_precincts that plots a single ridgeplot (e.g.,
     for a single precinct for a given candidate.)
-    
+
     Arguments:
     ax          :   matplotlib axis object
     group1_pref :   The estimates for the support for the candidate among
@@ -91,7 +91,7 @@ def plot_precincts(
     precinct_labels : list of str (optional)
         The names for each precinct
     show_all_precincts : bool, optional
-        By default (show_all_precincts=False), we only show the first 50 
+        By default (show_all_precincts=False), we only show the first 50
         precincts. If show_all_precincts is True, we plot the ridgeplots
         for all precincts (i.e., one ridgeplot for every column in the
         voting_prefs matrices)
@@ -151,7 +151,7 @@ def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
     Parameters
     ----------
     voting_prefs_group1 : numpy array
-        shape (# of samples x # of precincts) representing the estimates of support for 
+        shape (# of samples x # of precincts) representing the estimates of support for
         given candidate among group 1 in each precinct in each sample
     voting_prefs_group2 : numpy array
         Same as voting_prefs_group2, except showing support among group 2
@@ -174,7 +174,9 @@ def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
     return ax
 
 
-def plot_boxplots(sampled_voting_prefs, group_names, candidate_names, plot_by='candidate', axes=None):
+def plot_boxplots(
+    sampled_voting_prefs, group_names, candidate_names, plot_by="candidate", axes=None
+):
     """
     Horizontal boxplots for r x c sets of samples between 0 and 1
 
@@ -223,7 +225,7 @@ def plot_boxplots(sampled_voting_prefs, group_names, candidate_names, plot_by='c
         legend = group_names
         if axes is None:
             fig, axes = plt.subplots(num_candidates)
-            
+
     elif plot_by == "group":
         num_plots = num_groups
         num_boxes_per_plot = num_candidates
@@ -253,7 +255,7 @@ def plot_boxplots(sampled_voting_prefs, group_names, candidate_names, plot_by='c
 def plot_summary(
     voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, candidate_name, axes=None
 ):
-    """ Plot KDE, histogram, and boxplot for 2x2 case
+    """Plot KDE, histogram, and boxplot for 2x2 case
 
     Parameters
     ----------
@@ -271,13 +273,13 @@ def plot_summary(
     axes : list or tuple of matplotlib axis objects or None
         Default=None
         Length 2: (ax_box, ax_hist)
-    
+
     Returns
     -------
     ax_box : Matplotlib axis object
     ax_hist : Matplotlib axis object
     """
-    
+
     if axes is None:
         _, (ax_box, ax_hist) = plt.subplots(
             2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (0.15, 0.85)}
@@ -434,9 +436,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
     return ax
 
 
-def plot_conf_or_credible_interval(
-    intervals, group_names, candidate_name, title, ax=None
-):
+def plot_conf_or_credible_interval(intervals, group_names, candidate_name, title, ax=None):
     """
     Plot confidence of credible interval for two different groups
 
@@ -463,8 +463,8 @@ def plot_conf_or_credible_interval(
 
     if ax is None:
         ax = plt.axes(frameon=False)
-    
-    int_heights = 0.2 * np.arange(len(group_names), 0, -1) 
+
+    int_heights = 0.2 * np.arange(len(group_names), 0, -1)
 
     ax.set(
         title=title,
@@ -477,8 +477,8 @@ def plot_conf_or_credible_interval(
 
     ax.get_xaxis().tick_bottom()
     ax.axes.get_yaxis().set_visible(False)
-    for idx in range(len(group_names)):
-        ax.text(1, int_heights[idx], group_names[idx])
+    for idx, group_name in enumerate(group_names):
+        ax.text(1, int_heights[idx], group_name)
         ax.plot(intervals[idx], [int_heights[idx], int_heights[idx]], linewidth=4, alpha=0.8)
 
     return ax
@@ -582,7 +582,7 @@ def tomography_plot(
     group_fraction, votes_fraction, demographic_group_name, candidate_name, ax=None
 ):
     """Tomography plot (basic), applicable for 2x2 ei
-    
+
     Parameters
     ----------
     group_fraction : array

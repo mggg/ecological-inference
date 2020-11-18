@@ -214,9 +214,11 @@ class RowByColumnEI:
                 **self.additional_model_params,
             )
         else:
-            raise ValueError(f'''{self.model_name} is not a supported model_name
+            raise ValueError(
+                f"""{self.model_name} is not a supported model_name
             Currently supported: RxC models: 'multinomial-dirichlet-modified',
-            'multinomial-dirichlet' ''')
+            'multinomial-dirichlet' """
+            )
         with self.sim_model:
             self.sim_trace = pm.sample(target_accept=0.99, tune=1001)
 
@@ -328,8 +330,8 @@ class RowByColumnEI:
                 )
 
     def plot_boxplots(self, plot_by="candidate", axes=None):
-        """ Plot boxplots of voting prefs (one boxplot for each candidate)
-        
+        """Plot boxplots of voting prefs (one boxplot for each candidate)
+
         plot_by: {'candidate', 'group'}
             If candidate, make one plot for each candidate. If group, make
             one subplot for each gropu
@@ -338,13 +340,21 @@ class RowByColumnEI:
             length r if plot_by = 'group'
         """
         return plot_boxplots(
-            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by=plot_by, axes=axes
+            self.sampled_voting_prefs,
+            self.demographic_group_names,
+            self.candidate_names,
+            plot_by=plot_by,
+            axes=axes,
         )
 
     def plot_kdes(self, plot_by="candidate", axes=None):
         """ Kernel density plots of voting preference, plots grouped by candidate or group"""
         return plot_kdes(
-            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by=plot_by, axes=axes
+            self.sampled_voting_prefs,
+            self.demographic_group_names,
+            self.candidate_names,
+            plot_by=plot_by,
+            axes=axes,
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):
