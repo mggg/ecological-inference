@@ -475,9 +475,9 @@ class TwoByTwoEI:
         """ Plot of credible intervals for each group"""
         title = "95% credible intervals"
         return plot_conf_or_credible_interval(
-            self.credible_interval_95_mean_voting_prefs[0],
-            self.credible_interval_95_mean_voting_prefs[1],
-            *self._group_names_for_display(),
+            [self.credible_interval_95_mean_voting_prefs[0],
+            self.credible_interval_95_mean_voting_prefs[1]],
+            self._group_names_for_display(),
             self.candidate_name,
             title,
             ax=ax,
@@ -510,12 +510,13 @@ class TwoByTwoEI:
 
         return plot_gp1, plot_gp2
 
-    def plot(self):
+    def plot(self, axes=None):
         """kde, boxplot, and credible intervals"""
         return plot_summary(
             *self._voting_prefs(),
             *self._group_names_for_display(),
             self.candidate_name,
+            axes=axes
         )
 
     def precinct_level_plot(self, ax=None, show_all_precincts=False, precinct_names=None):

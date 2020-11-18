@@ -4,10 +4,8 @@ where r and c are greater than or
 equal to 2
 
 TODO: Better or reparametrized priors for multinomial-dir
-TODO: Plotting for all r x c
 TODO: Greiner-Quinn Model
 TODO: Refactor to integrate with two_by_two
-TODO: error for model name that's not supported
 """
 
 
@@ -208,13 +206,17 @@ class RowByColumnEI:
             )
 
         # TODO: Probably make the "modified" version the default option
-        if self.model_name == "multinomial-dirichlet-modified":
+        elif self.model_name == "multinomial-dirichlet-modified":
             self.sim_model = ei_multinom_dirichlet_modified(
                 group_fractions,
                 votes_fractions,
                 precinct_pops,
                 **self.additional_model_params,
             )
+        else:
+            raise ValueError(f'''{self.model_name} is not a supported model_name
+            Currently supported: RxC models: 'multinomial-dirichlet-modified',
+            'multinomial-dirichlet' ''')
         with self.sim_model:
             self.sim_trace = pm.sample(target_accept=0.99, tune=1001)
 
@@ -336,13 +338,13 @@ class RowByColumnEI:
             length r if plot_by = 'group'
         """
         return plot_boxplots(
-            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by, axes
+            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by=plot_by, axes=axes
         )
 
-    def plot_kdes(self, plot_by="candidate"):
+    def plot_kdes(self, plot_by="candidate", axes=None):
         """ Kernel density plots of voting preference, plots grouped by candidate or group"""
         return plot_kdes(
-            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by
+            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by=plot_by, axes=axes
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):

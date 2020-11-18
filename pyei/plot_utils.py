@@ -1,7 +1,6 @@
 """
 Plotting functions for visualizing ei outputs
 
-TODO: Complete documentation
 """
 import warnings
 import seaborn as sns
@@ -194,14 +193,16 @@ def plot_boxplots(sampled_voting_prefs, group_names, candidate_names, plot_by='c
         Length = c (where c=# of voting outcomes), the names of the candidates
         or voting outcomes (order should match order of the last dimension of
         sampled_voting_prefs)
-    axes : list of Matplotlib axis object or None
-        Default=None
     plot_by : {"candidate", "group"}
         (Default='candidate')
         If 'candidate', make one plot per candidate, with each plot showing the boxplots of
         estimates of voting preferences of all groups. If 'group', one plot
         per group, with each plot showing the boxplots of estimates of voting
         preferences for all candidates.
+    axes : list of Matplotlib axis object or None
+        Default=None.
+        If not None and plot_by is 'candidate', should have length c (number of candidates).
+        If plot_by is 'group', should have length r (number of groups)
 
     Returns
     -------
@@ -227,7 +228,7 @@ def plot_boxplots(sampled_voting_prefs, group_names, candidate_names, plot_by='c
         num_plots = num_groups
         num_boxes_per_plot = num_candidates
         titles = group_names
-        sampled_voting_prefs = np.swapaxes(sampled_voting_prefs, 1, 2)  # TODO: Check this
+        sampled_voting_prefs = np.swapaxes(sampled_voting_prefs, 1, 2)
         legend = candidate_names
         if axes is None:
             fig, axes = plt.subplots(num_groups)
@@ -250,7 +251,7 @@ def plot_boxplots(sampled_voting_prefs, group_names, candidate_names, plot_by='c
 
 
 def plot_summary(
-    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, candidate_name
+    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, candidate_name, axes=None
 ):
     """ Plot KDE, histogram, and boxplot for 2x2 case
 
@@ -267,17 +268,22 @@ def plot_summary(
         Name of group 2 (used for legend of plot)
     candidate_name: str
         The name of the candidate
+    axes : list or tuple of matplotlib axis objects or None
+        Default=None
+        Length 2: (ax_box, ax_hist)
     
     Returns
     -------
     ax_box : Matplotlib axis object
     ax_hist : Matplotlib axis object
     """
-    #TODO: take axis object as input
-
-    _, (ax_box, ax_hist) = plt.subplots(
-        2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (0.15, 0.85)}
-    )
+    
+    if axes is None:
+        _, (ax_box, ax_hist) = plt.subplots(
+            2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (0.15, 0.85)}
+        )
+    else:
+        ax_box, ax_hist = axes
     sns.despine(ax=ax_hist)
     sns.despine(ax=ax_box, left=True)
     # plot custom boxplot, with two boxplots in the same row
@@ -360,7 +366,7 @@ def plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name,
     return ax
 
 
-def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candidate"):
+def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candidate", axes=None):
     """
     Plot a kernel density plot for prefs of voting groups for each candidate
 
@@ -380,28 +386,34 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         density estimates of voting preferences of all groups. If 'group', one plot
         per group, with each plot showing the kernel density estimates of voting
         preferences for all candidates.
+    axes : list of Matplotlib axis object or None
+        Default=None.
+        If not None and plot_by is 'candidate', should have length c (number of candidates).
+        If plot_by is 'group', should have length r (number of groups)
 
     Returns
     -------
     ax : Matplotlib axis object
     """
 
-    # TODO pass axes as argument
     _, num_groups, num_candidates = sampled_voting_prefs.shape
     if plot_by == "candidate":
         num_plots = num_candidates
         num_kdes_per_plot = num_groups
         titles = candidate_names
         legend = group_names
+        if axes is None:
+            fig, axes = plt.subplots(num_candidates, sharex=True)
     elif plot_by == "group":
         num_plots = num_groups
         num_kdes_per_plot = num_candidates
         titles = group_names
-        sampled_voting_prefs = np.swapaxes(sampled_voting_prefs, 1, 2)  # TODO: Check this
+        sampled_voting_prefs = np.swapaxes(sampled_voting_prefs, 1, 2)
         legend = candidate_names
+        if axes is None:
+            fig, axes = plt.subplots(num_groups, sharex=True)
     else:
         raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
-    fig, axes = plt.subplots(num_candidates, sharex=True)
     fig.subplots_adjust(hspace=0.5)
     for plot_idx in range(num_plots):
         ax = axes[plot_idx]
@@ -423,23 +435,20 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
 
 
 def plot_conf_or_credible_interval(
-    interval_1, interval_2, group1_name, group2_name, candidate_name, title, ax=None
+    intervals, group_names, candidate_name, title, ax=None
 ):
     """
     Plot confidence of credible interval for two different groups
 
     Parameters
     ----------
-    interval_1 : array or tuple
-        Length-2, gives (lower, upper) bounds for credible or confidence interval
+    intervals : list of arrays or tuple
+        Length is number of demographic groups, each element in the array
+        is a length-two array that gives
+        (lower, upper) bounds for credible or confidence interval
         for support from group 1 for the candidate of interest
-    interval_2 : array or tuple
-        Length-2, gives (lower, upper) bounds for credible or confidence interval
-        for support from group 2 for the candidate of interest
-    group1_name : str
-        Name of group 1 (used for legend of plot)
-    group2_name : str
-        Name of group 2 (used for legend of plot)
+    groups_names : list of str
+        Names of groups (ordered to match order of intervals), for plot legend
     candidate_name : str
         Name of candidate (or voting outcome) whose support is to be plotted
     title : str
@@ -452,16 +461,15 @@ def plot_conf_or_credible_interval(
     ax : Matplotlib axis object
     """
 
-    # TODO: generalize for more intervals
-    int1_height = 0.4
-    int2_height = 0.2
     if ax is None:
         ax = plt.axes(frameon=False)
+    
+    int_heights = 0.2 * np.arange(len(group_names), 0, -1) 
 
     ax.set(
         title=title,
         xlim=(0, 1),
-        ylim=(0, 0.5),
+        ylim=(0, int_heights[0] + 0.1),
         xlabel=f"Support for {candidate_name}",
         frame_on=False,
         aspect=0.3,
@@ -469,10 +477,10 @@ def plot_conf_or_credible_interval(
 
     ax.get_xaxis().tick_bottom()
     ax.axes.get_yaxis().set_visible(False)
-    ax.text(1, int1_height, group1_name)
-    ax.text(1, int2_height, group2_name)
-    ax.plot(interval_1, [int1_height, int1_height], linewidth=4, alpha=0.8)
-    ax.plot(interval_2, [int2_height, int2_height], linewidth=4, alpha=0.8)
+    for idx in range(len(group_names)):
+        ax.text(1, int_heights[idx], group_names[idx])
+        ax.plot(intervals[idx], [int_heights[idx], int_heights[idx]], linewidth=4, alpha=0.8)
+
     return ax
 
 
@@ -519,7 +527,7 @@ def plot_intervals_all_precincts(
             f"ridgeplots. Automatically restricting to first 50 precincts "
             f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)"
         )
-        point_estimates = point_estimates[:, :50]
+        point_estimates = point_estimates[:50]
         intervals = intervals[:, :50]
         if precinct_labels is not None:
             precinct_labels = precinct_labels[:50]
