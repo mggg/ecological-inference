@@ -175,7 +175,7 @@ def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_n
     return ax
 
 
-def plot_boxplots(sampled_voting_prefs, group_names, candidate_names):
+def plot_boxplots(sampled_voting_prefs, group_names, candidate_names, plot_by='candidate', axes=None):
     """
     Horizontal boxplots for r x c sets of samples between 0 and 1
 
@@ -194,29 +194,58 @@ def plot_boxplots(sampled_voting_prefs, group_names, candidate_names):
         Length = c (where c=# of voting outcomes), the names of the candidates
         or voting outcomes (order should match order of the last dimension of
         sampled_voting_prefs)
+    axes : list of Matplotlib axis object or None
+        Default=None
+    plot_by : {"candidate", "group"}
+        (Default='candidate')
+        If 'candidate', make one plot per candidate, with each plot showing the boxplots of
+        estimates of voting preferences of all groups. If 'group', one plot
+        per group, with each plot showing the boxplots of estimates of voting
+        preferences for all candidates.
 
     Returns
     -------
     ax : Matplotlib axis object
         Has c subplots, each showing the sampled voting preference of each of r groups.
+
+    Notes
+    -----
+    If passing existing axes within a subplot, consider using, e.g.,
+    plt.subplots_adjust(hspace=0.75) to make control spacing
     """
-    # TODO add ax argument
+
     _, num_groups, num_candidates = sampled_voting_prefs.shape
-    fig, axes = plt.subplots(num_candidates)
+    if plot_by == "candidate":
+        num_plots = num_candidates
+        num_boxes_per_plot = num_groups
+        titles = candidate_names
+        legend = group_names
+        if axes is None:
+            fig, axes = plt.subplots(num_candidates)
+            
+    elif plot_by == "group":
+        num_plots = num_groups
+        num_boxes_per_plot = num_candidates
+        titles = group_names
+        sampled_voting_prefs = np.swapaxes(sampled_voting_prefs, 1, 2)  # TODO: Check this
+        legend = candidate_names
+        if axes is None:
+            fig, axes = plt.subplots(num_groups)
+    else:
+        raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
+    fig.subplots_adjust(hspace=0.75)
 
-    for candidate_idx in range(num_candidates):
+    for plot_idx in range(num_plots):
         samples_df = pd.DataFrame(
-            {group_names[i]: sampled_voting_prefs[:, i, candidate_idx] for i in range(num_groups)}
+            {legend[i]: sampled_voting_prefs[:, i, plot_idx] for i in range(num_boxes_per_plot)}
         )
-
-        ax = axes[candidate_idx]
+        ax = axes[plot_idx]
         sns.despine(ax=ax, left=True)
         sns.boxplot(data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax)
         ax.set_xlim((0, 1))
-        ax.set_title(candidate_names[candidate_idx])
+        ax.set_title(titles[plot_idx])
         ax.tick_params(axis="y", left=False)  # remove y axis ticks
 
-    fig.subplots_adjust(hspace=0.75)
     return ax
 
 
@@ -241,7 +270,8 @@ def plot_summary(
     
     Returns
     -------
-    ax : Matplotlib axis object
+    ax_box : Matplotlib axis object
+    ax_hist : Matplotlib axis object
     """
     #TODO: take axis object as input
 

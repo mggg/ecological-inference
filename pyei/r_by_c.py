@@ -325,10 +325,18 @@ class RowByColumnEI:
                     was higher than for any other candidate"""
                 )
 
-    def plot_boxplots(self):
-        """ Plot boxplots of voting prefs (one boxplot for each candidate)"""
+    def plot_boxplots(self, plot_by="candidate", axes=None):
+        """ Plot boxplots of voting prefs (one boxplot for each candidate)
+        
+        plot_by: {'candidate', 'group'}
+            If candidate, make one plot for each candidate. If group, make
+            one subplot for each gropu
+        axes: list of Matplotlib axis objects
+            Typically subplots within the same figure. Length c if plot_by = 'candidate',
+            length r if plot_by = 'group'
+        """
         return plot_boxplots(
-            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names
+            self.sampled_voting_prefs, self.demographic_group_names, self.candidate_names, plot_by, axes
         )
 
     def plot_kdes(self, plot_by="candidate"):
