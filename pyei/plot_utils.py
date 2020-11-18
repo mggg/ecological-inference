@@ -2,7 +2,6 @@
 Plotting functions for visualizing ei outputs
 
 TODO: Complete documentation
-TODO: update __all__
 """
 import warnings
 import seaborn as sns
@@ -30,6 +29,7 @@ __all__ = [
 def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1.3, num_points=500):
     """Helper function for plot_precincts that plots a single ridgeplot (e.g.,
     for a single precinct for a given candidate.)
+    
     Arguments:
     ax          :   matplotlib axis object
     group1_pref :   The estimates for the support for the candidate among
@@ -81,20 +81,27 @@ def plot_precincts(
     ax=None,
 ):
     """Ridgeplots of sampled voting preferences for each precinct
-    Arguments:
-    voting_prefs_group1 :   A numpy array with shape (# of samples x
-                            # of precincts) representing the estimates
-                            of support for given candidate among group 1
-                            in each precinct in each sample
-    voting_prefs_group2 :   Same as voting_prefs_group2, except showing
-                            support among group 2
-    Optional arguments:
-    precinct_labels     :   The names for each precinct
-    show_all_precincts  :   By default, we only show the first 50 precincts.
-                            If show_all_precincts is True, we plot the
-                            ridgeplots for all precincts (i.e., one ridgeplot
-                            for every column in the voting_prefs matrices)
-    ax                  :   Matplotlib axis object
+
+    Parameters
+    ----------
+    voting_prefs_group1 : numpy array
+        Shape (# of samples x # of precincts) representing the samples
+        of support for given candidate among group 1 in each precinct
+    voting_prefs_group2 : numpy array
+        Same as voting_prefs_group2, except showing support among group 2
+    precinct_labels : list of str (optional)
+        The names for each precinct
+    show_all_precincts : bool, optional
+        By default (show_all_precincts=False), we only show the first 50 
+        precincts. If show_all_precincts is True, we plot the ridgeplots
+        for all precincts (i.e., one ridgeplot for every column in the
+        voting_prefs matrices)
+    ax : Matplotlib axis object or None, optional
+        Default=None
+
+    Returns
+    -------
+    ax: Matplotlib axis object
     """
     N = voting_prefs_group1.shape[1]
     if N > 50 and not show_all_precincts:
@@ -141,6 +148,24 @@ def plot_precincts(
 def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
     """
     Horizontal boxplot of 2 groups of samples between 0 and 1
+
+    Parameters
+    ----------
+    voting_prefs_group1 : numpy array
+        shape (# of samples x # of precincts) representing the estimates of support for 
+        given candidate among group 1 in each precinct in each sample
+    voting_prefs_group2 : numpy array
+        Same as voting_prefs_group2, except showing support among group 2
+    group1_name : str
+        Name of group 1 (used for legend of plot)
+    group2_name : str
+        Name of group 2 (used for legend of plot)
+    ax : Matplotlib axis object or None, optional
+        Default=None
+
+    Returns
+    -------
+    Matplotlib axis object
     """
     if ax is None:
         ax = plt.gca()
@@ -154,9 +179,26 @@ def plot_boxplots(sampled_voting_prefs, group_names, candidate_names):
     """
     Horizontal boxplots for r x c sets of samples between 0 and 1
 
-    sampled_voting_prefs: num_samples x r x c
+    Parameters
+    ----------
+    sampled_voting_prefs : Numpy array
+        Shape is: num_samples x r x c(where r=# of demographic groups,
+        c=# of voting outcomes), representing the samples of the support
+        for each candidate (or voting outcome) among each group (aggregated
+        across all precincts)
+    group_names : list of str
+        Length = r (where r=# of demographic groups), the names of the
+        demographic groups (order should match order of the columns in
+        sampled_voting_prefs)
+    candidate_names : list of str
+        Length = c (where c=# of voting outcomes), the names of the candidates
+        or voting outcomes (order should match order of the last dimension of
+        sampled_voting_prefs)
 
-    c subplots, each showing the sampled voting preference of each of r groups.
+    Returns
+    -------
+    ax : Matplotlib axis object
+        Has c subplots, each showing the sampled voting preference of each of r groups.
     """
     # TODO add ax argument
     _, num_groups, num_candidates = sampled_voting_prefs.shape
@@ -181,7 +223,28 @@ def plot_boxplots(sampled_voting_prefs, group_names, candidate_names):
 def plot_summary(
     voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, candidate_name
 ):
-    """ Plot KDE, histogram, and boxplot"""
+    """ Plot KDE, histogram, and boxplot for 2x2 case
+
+    Parameters
+    ----------
+    voting_prefs_group1 : array
+        Length=num_samples. Samples of estimated voting preferences (support)
+        of group 1 for the candidate.
+    voting_prefs_group2 : array
+        Length=num_samples. Same as voting_prefs_group1 but for group 2
+    group1_name : str
+        Name of group 1 (used for legend of plot)
+    group2_name : str
+        Name of group 2 (used for legend of plot)
+    candidate_name: str
+        The name of the candidate
+    
+    Returns
+    -------
+    ax : Matplotlib axis object
+    """
+    #TODO: take axis object as input
+
     _, (ax_box, ax_hist) = plt.subplots(
         2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (0.15, 0.85)}
     )
@@ -219,6 +282,24 @@ def plot_summary(
 def plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
     """'
     Plot kernel density plots of samples between 0 and 1 (e.g. of voting preferences) for two groups
+
+    Parameters
+    ----------
+    voting_prefs_group1 : array
+        Length=num_samples. Samples of estimated voting preferences (support)
+        of group 1 for the candidate.
+    voting_prefs_group2 : array
+        Length=num_samples. Same as voting_prefs_group1 but for group 2
+    group1_name : str
+        Name of group 1 (used for legend of plot)
+    group2_name : str
+        Name of group 2 (used for legend of plot)
+    ax : Matplotlib axis object or None
+        Default=None
+
+    Returns
+    -------
+    ax : Matplotlib axis object
     """
     if ax is None:
         ax = plt.gca()
@@ -253,11 +334,26 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
     """
     Plot a kernel density plot for prefs of voting groups for each candidate
 
-    by: {"candidate", "group"}. If candidate, one plot per candidate, with each plot
-    showing the kernel density estimates of voting preferences of all groups. If
-    "group", one plot per group, with each plot showing the kernel density estimates
-    of voting preferences for all candidates.
+    Parameters
+    ----------
+    sampled_voting_prefs : numpy array
+        Shape: num_samples x r x c (where r = # of demographic groups, c= #
+        of candidates or voting outcomes). Gives samples of support from each group
+        for each candidate
+    group_names : list of str
+        Names of the demographic groups (length r)
+    candidate_names : list of str
+        Names of the candidates or voting outcomes (length c)
+    plot_by : {"candidate", "group"}
+        (Default='candidate')
+        If 'candidate', make one plot per candidate, with each plot showing the kernel
+        density estimates of voting preferences of all groups. If 'group', one plot
+        per group, with each plot showing the kernel density estimates of voting
+        preferences for all candidates.
 
+    Returns
+    -------
+    ax : Matplotlib axis object
     """
 
     # TODO pass axes as argument
@@ -301,6 +397,29 @@ def plot_conf_or_credible_interval(
 ):
     """
     Plot confidence of credible interval for two different groups
+
+    Parameters
+    ----------
+    interval_1 : array or tuple
+        Length-2, gives (lower, upper) bounds for credible or confidence interval
+        for support from group 1 for the candidate of interest
+    interval_2 : array or tuple
+        Length-2, gives (lower, upper) bounds for credible or confidence interval
+        for support from group 2 for the candidate of interest
+    group1_name : str
+        Name of group 1 (used for legend of plot)
+    group2_name : str
+        Name of group 2 (used for legend of plot)
+    candidate_name : str
+        Name of candidate (or voting outcome) whose support is to be plotted
+    title : str
+        Title of plot
+    ax : Matplotlib axis object or None, optional
+        Default=None
+
+    Returns
+    -------
+    ax : Matplotlib axis object
     """
 
     # TODO: generalize for more intervals
@@ -338,6 +457,29 @@ def plot_intervals_all_precincts(
 ):
     """
     Plot intervals&point estimates of support for candidate, sorted by point estimates for precincts
+
+    Parameters
+    ----------
+    point_estimates: array
+        Array of length num_precincts, each element is the estimate of support for the
+        candidate among the demographic group of interest in that precinct
+    intervals: array
+        Array of arrays (shape num_precincts, each elt an array of length 2)
+        Each element is an array of length two giving the lower, upper limits of a credible
+        or confidence interval for support for the candidate in the precinct
+    candidate_name: str
+        Name of candidate, used in x axis label
+    title: str
+        Title for plot
+    ax : Matplotlib axis object or None, optional
+        Default=None
+    show_all_precincts: bool, optional
+        (default=False). If True, show estimates&intervals for all precincts. If False,
+        show only the first 50, for readibility.
+
+    Returns
+    -------
+    ax : Matplotlib axis object
     """
     num_intervals = len(point_estimates)
 
@@ -401,7 +543,27 @@ def plot_intervals_all_precincts(
 def tomography_plot(
     group_fraction, votes_fraction, demographic_group_name, candidate_name, ax=None
 ):
-    """Tomography plot (basic)"""
+    """Tomography plot (basic), applicable for 2x2 ei
+    
+    Parameters
+    ----------
+    group_fraction : array
+        Array of length num_precincts, giving fraction of population of interest
+        in each precinct represented by demographic group of interest
+    votes_fraction: array
+        An array of length num_precincts giving fraction  of votes in each
+        precinct for candidate of interest
+    demographic_group_name : str
+        Name of demographic group of interest
+    candidate_name : str
+        Name of candidate or voting outcome of interest
+    ax : Matplotlib axis object or None, optional
+        Default=None
+
+    Returns
+    -------
+    ax : Matplotlib axis object
+    """
 
     if ax is None:
         _, ax = plt.subplots()
