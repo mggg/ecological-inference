@@ -15,8 +15,10 @@ import theano.tensor as tt
 import numpy as np
 from .plot_utils import plot_boxplots, plot_kdes, plot_intervals_all_precincts
 
+__all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet", "RowByColumnEI"]
 
-def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda=0.1):
+
+def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda1=4, lmbda2=2):
     """
     An implementation of the r x c dirichlet/multinomial EI model
 
@@ -51,7 +53,10 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
     with pm.Model() as model:
         # TODO: are the prior conc_params what is in the literature? is it a good choice?
         # TODO: make b vs. beta naming consistent
-        conc_params = pm.Exponential("conc_params", lam=lmbda, shape=(num_rows, num_cols))
+        # conc_params = pm.Exponential("conc_params", lam=lmbda, shape=(num_rows, num_cols))
+        conc_params = pm.Gamma(
+            "conc_params", alpha=lmbda1, beta=1 / lmbda2, shape=(num_rows, num_cols)
+        )  # chosen to match eiPack
         beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)
@@ -102,7 +107,7 @@ def ei_multinom_dirichlet_modified(
 
     with pm.Model() as model:
         # TODO: make b vs. beta naming consistent
-        kappa = pm.Pareto("kappa", alpha=pareto_shape, m=pareto_scale, shape=num_rows)
+        kappa = pm.Pareto("kappa", alpha=pareto_shape, m=pareto_scale, shape=num_rows)  # size r
         phi = pm.Dirichlet("phi", a=np.ones(num_cols), shape=(num_rows, num_cols))  # r x c
         phi_kappa = pm.Deterministic("phi_kappa", tt.transpose(kappa * tt.transpose(phi)))
         beta = pm.Dirichlet("b", a=phi_kappa, shape=(num_precincts, num_rows, num_cols))
@@ -145,6 +150,9 @@ class RowByColumnEI:
         precinct_pops,
         demographic_group_names,
         candidate_names,
+        target_accept=0.99,
+        tune=1500,
+        **other_sampling_args
         # precinct_names=None,
     ):
         """Fit the specified model using MCMC sampling
@@ -163,6 +171,14 @@ class RowByColumnEI:
         candidate_names          :  Name of the c candidates or voting outcomes of interest
         precinct_names          :   Length p vector giving the string names
                                     for each precinct.
+        target_accept : float
+            Strictly between zero and 1 (should be close to 1). Passed to pymc's
+            sampling.sample
+        tune : int
+            Passed to pymc's sampling.sample
+        other_sampling_args :
+            For to pymc's sampling.sample
+            https://docs.pymc.io/api/inference.html
 
         """
         # Additional params for hyperparameters
@@ -205,7 +221,6 @@ class RowByColumnEI:
                 **self.additional_model_params,
             )
 
-        # TODO: Probably make the "modified" version the default option
         elif self.model_name == "multinomial-dirichlet-modified":
             self.sim_model = ei_multinom_dirichlet_modified(
                 group_fractions,
@@ -220,7 +235,9 @@ class RowByColumnEI:
             'multinomial-dirichlet' """
             )
         with self.sim_model:
-            self.sim_trace = pm.sample(target_accept=0.99, tune=1001)
+            self.sim_trace = pm.sample(
+                target_accept=target_accept, tune=tune, **other_sampling_args
+            )
 
         self.calculate_summary()
 
@@ -424,7 +441,7 @@ def check_dimensions_of_input(
     if candidate_names is not None:
         if len(candidate_names) != num_groups_and_num_candidates[1]:
             warnings.warn(
-                """Length of candiate_names should be equal to
+                """Length of candidate_names should be equal to
             c = votes_fractions.shape[0]. If not, plotting labels be inaccurate.
             """
             )
