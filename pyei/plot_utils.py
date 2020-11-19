@@ -29,20 +29,26 @@ def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1
     """Helper function for plot_precincts that plots a single ridgeplot (e.g.,
     for a single precinct for a given candidate.)
 
-    Arguments:
-    ax          :   matplotlib axis object
-    group1_pref :   The estimates for the support for the candidate among
-                    Group 1
-    group2_pref :   The estimates for the support for the candidate among
-                    Group 2
-    z_init      :   The initial value for the z-order (helps determine
-                    how plots get drawn over one another)
-    trans       :   The y-translation for this plot
-    Optional arguments:
-    overlap     :   how much this ridgeplot may overlap with the ridgeplot
-                    above it
-    num_points  :   The number of evenly spaced points in [0, 1] that we
-                    use to plot compute the KDE curve
+    Parameters
+    ----------
+    ax : matplotlib axis object
+    group1_pref : array
+        The estimates for the support for the candidate among
+        Group 1 (array of floats, expected to be between 0 and 1)
+    group2_pref : array
+        The estimates for the support for the candidate among
+        Group 2 (array of floats, expected to be between 0 and 1)
+    z_init : float
+        The initial value for the z-order (helps determine
+        how plots get drawn over one another)
+    trans :
+        The y-translation for this plot
+    overlap : float, optional
+        how much this ridgeplot may overlap with the ridgeplot
+        above it
+    num_points : int, optional
+        The number of evenly spaced points in [0, 1] that we
+        use to plot compute the KDE curve
     """
     x = np.linspace(0, 1, num_points)  # 500 points between 0 and 1 on the x-axis
     group1_kde = st.gaussian_kde(group1_pref)
