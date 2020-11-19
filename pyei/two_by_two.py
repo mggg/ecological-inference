@@ -20,7 +20,7 @@ from .plot_utils import (
     plot_intervals_all_precincts,
 )
 
-__all__ = ["TwoByTwoEI"]
+__all__ = ["TwoByTwoEI", "ei_beta_binom_model_modified"]
 
 
 def ei_beta_binom_model_modified(
@@ -301,6 +301,9 @@ class TwoByTwoEI:
         demographic_group_name="given demographic group",
         candidate_name="given candidate",
         precinct_names=None,
+        target_accept=0.99,
+        tune=1500,
+        **other_sampling_args,
     ):
         """Fit the specified model using MCMC sampling
         Required arguments:
@@ -319,6 +322,14 @@ class TwoByTwoEI:
                                     want to analyze
         precinct_names          :   Length p vector giving the string names
                                     for each precinct.
+        target_accept : float, optional
+            Default=.99 Strictly between zero and 1 (should be close to 1). Passed to pymc's
+            sampling.sample
+        tune : int, optional
+            Default=1500, passed to pymc's sampling.sample
+        other_sampling_args :
+            For to pymc's sampling.sample
+            https://docs.pymc.io/api/inference.html
         """
         # Additional params includes lambda for king99, the
         # parameter passed to the exponential hyperpriors,
@@ -368,7 +379,10 @@ class TwoByTwoEI:
 
         with self.sim_model:
             self.sim_trace = pm.sample(
-                target_accept=0.99, tune=1500, compute_convergence_checks=compute_convergence_checks
+                target_accept=target_accept,
+                tune=tune,
+                compute_convergence_checks=compute_convergence_checks,
+                **other_sampling_args,
             )
 
         self.calculate_summary()
