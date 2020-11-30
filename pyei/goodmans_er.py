@@ -14,6 +14,10 @@ from .plot_utils import (
     plot_summary
 )
 
+from .two_by_two import (
+    TwoByTwoEIBaseBayes
+)
+
 __all__ = ["GoodmansER"]
 
 
@@ -97,20 +101,8 @@ class GoodmansER:
         return fig, ax
 
 
-class GoodmansERBayes:
-    def __init__(self, model_name, **additional_model_params):
-        self.model_name = model_name
-        self.sim_model = None
-        self.sim_trace = None
-        self.demographic_group_name = None
-        self.additional_model_params = additional_model_params
-        self.precinct_pops = None
-        self.candidate_name = None
+class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
-        self.posterior_mean_voting_prefs = [None, None]
-        self.credible_interval_95_mean_voting_prefs = [None, None]
-        self.sampled_voting_prefs = [None, None]
-    
     def fit(self,
         group_fraction,
         vote_fraction,
@@ -127,10 +119,6 @@ class GoodmansERBayes:
             self.sim_trace = pm.sample(1000, tune=1000)
 
         self.calculate_summary()
-
-    def _group_names_for_display(self):
-        """Sets the group names to be displayed in plots"""
-        return self.demographic_group_name, "non-" + self.demographic_group_name
 
     def calculate_summary(self):
         """Calculate point estimates (post. means) and credible intervals"""
@@ -154,58 +142,6 @@ class GoodmansERBayes:
         )
         self.credible_interval_95_mean_voting_prefs[1] = np.percentile(
             self.sampled_voting_prefs[1], percentiles
-        )
-
-    def _voting_prefs(self):
-        """Bundles together the samples, for ease of passing to plots"""
-        return (
-            self.sampled_voting_prefs[0],
-            self.sampled_voting_prefs[1],
-        )
-
-    def summary(self):
-        """Return a summary string"""
-        # TODO: probably format this as a table
-        return f"""Model: {self.model_name}
-        Computed from the raw b_i samples by multiplying by population and then getting
-        the proportion of the total pop (total pop=summed across all districts):
-        The posterior mean for the district-level voting preference of
-        {self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs[0]:.3f}
-        The posterior mean for the district-level voting preference of
-        non-{self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs[1]:.3f}
-        95% Bayesian credible interval for district-level voting preference of
-        {self.demographic_group_name} for {self.candidate_name} is
-        {self.credible_interval_95_mean_voting_prefs[0]}
-        95% Bayesian credible interval for district-level voting preference of
-        non-{self.demographic_group_name} for {self.candidate_name} is
-        {self.credible_interval_95_mean_voting_prefs[1]}
-        """
-
-    # def plot(self):
-    # """Plot the linear regression with confidence interval"""
-
-    def plot_kde(self, ax=None):
-        """kernel density estimate/ histogram plot"""
-        return plot_kde(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
-
-    def plot_boxplot(self, ax=None):
-        """ Boxplot of voting prefs for each group"""
-        return plot_boxplot(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
-
-    def plot_intervals(self, ax=None):
-        """ Plot of credible intervals for each group"""
-        title = "95% credible intervals"
-        return plot_conf_or_credible_interval(
-            [
-                self.credible_interval_95_mean_voting_prefs[0],
-                self.credible_interval_95_mean_voting_prefs[1],
-            ],
-            self._group_names_for_display(),
-            self.candidate_name,
-            title,
-            ax=ax,
         )
 
 

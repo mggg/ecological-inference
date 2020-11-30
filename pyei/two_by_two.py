@@ -269,7 +269,87 @@ def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0
     return model
 
 
-class TwoByTwoEI:
+class TwoByTwoEIBaseBayes:
+    """
+    Init, summary, plots for 2 x 2 EI models that proceed via sampling
+
+    Note: does not assume precinct level samples are available,
+    because this is not possible for goodman_er_bayes. So, plots of precinct
+    level quanitities are defined in the subclass TwoByTwoEi
+
+    Note: subclass will need to define methods to fit (sample), and 
+        to define summary quantities
+    """
+    def __init__(self, model_name, **additional_model_params):
+        self.model_name = model_name
+        self.additional_model_params = additional_model_params
+        
+        self.sim_model = None
+        self.sim_trace = None
+
+        self.precinct_pops = None
+        self.demographic_group_name = None
+        self.candidate_name = None
+
+        self.posterior_mean_voting_prefs = [None, None]
+        self.credible_interval_95_mean_voting_prefs = [None, None]
+        self.sampled_voting_prefs = [None, None]
+
+    def _group_names_for_display(self):
+        """Sets the group names to be displayed in plots"""
+        return self.demographic_group_name, "non-" + self.demographic_group_name
+
+    def _voting_prefs(self):
+        """Bundles together the samples, for ease of passing to plots"""
+        return (
+            self.sampled_voting_prefs[0],
+            self.sampled_voting_prefs[1],
+        )
+
+    def summary(self):
+        """Return a summary string"""
+        # TODO: probably format this as a table
+        return f"""Model: {self.model_name}
+        Computed from the raw b_i samples by multiplying by population and then getting
+        the proportion of the total pop (total pop=summed across all districts):
+        The posterior mean for the district-level voting preference of
+        {self.demographic_group_name} for {self.candidate_name} is
+        {self.posterior_mean_voting_prefs[0]:.3f}
+        The posterior mean for the district-level voting preference of
+        non-{self.demographic_group_name} for {self.candidate_name} is
+        {self.posterior_mean_voting_prefs[1]:.3f}
+        95% Bayesian credible interval for district-level voting preference of
+        {self.demographic_group_name} for {self.candidate_name} is
+        {self.credible_interval_95_mean_voting_prefs[0]}
+        95% Bayesian credible interval for district-level voting preference of
+        non-{self.demographic_group_name} for {self.candidate_name} is
+        {self.credible_interval_95_mean_voting_prefs[1]}
+        """
+
+    def plot_kde(self, ax=None):
+        """kernel density estimate/ histogram plot"""
+        return plot_kde(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
+
+    def plot_boxplot(self, ax=None):
+        """ Boxplot of voting prefs for each group"""
+        return plot_boxplot(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
+
+    def plot_intervals(self, ax=None):
+        """ Plot of credible intervals for each group"""
+        title = "95% credible intervals"
+        return plot_conf_or_credible_interval(
+            [
+                self.credible_interval_95_mean_voting_prefs[0],
+                self.credible_interval_95_mean_voting_prefs[1],
+            ],
+            self._group_names_for_display(),
+            self.candidate_name,
+            title,
+            ax=ax,
+        )
+
+
+class TwoByTwoEI(TwoByTwoEIBaseBayes):
     """
     Fitting and plotting for king97, king99, and wakefield models
     """
@@ -277,21 +357,13 @@ class TwoByTwoEI:
     def __init__(self, model_name, **additional_model_params):
         # model_name can be 'king97', 'king99' or 'king99_pareto_modification'
         # 'wakefield_beta' or 'wakefield normal'
+        super().__init__(model_name, **additional_model_params)
         self.vote_fraction = None
-        self.model_name = model_name
-        self.additional_model_params = additional_model_params
 
         self.demographic_group_fraction = None
         self.votes_fraction = None
         self.precinct_pops = None
         self.precinct_names = None
-        self.demographic_group_name = None
-        self.candidate_name = None
-        self.sim_model = None
-        self.sim_trace = None
-        self.sampled_voting_prefs = [None, None]
-        self.posterior_mean_voting_prefs = [None, None]
-        self.credible_interval_95_mean_voting_prefs = [None, None]
 
     def fit(
         self,
@@ -368,7 +440,7 @@ class TwoByTwoEI:
             self.sim_model = wakefield_normal(
                 group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
             )
-
+            
         # TODO: this workaround shouldn't be necessary. Modify the model so that the checks
         # can run without error
         if self.model_name == "wakefield_beta" or self.model_name == "wakefield_normal":
@@ -424,28 +496,9 @@ class TwoByTwoEI:
             self.sampled_voting_prefs[1], percentiles
         )
 
-    def summary(self):
-        """Return a summary string"""
-        # TODO: probably format this as a table
-        return f"""Model: {self.model_name}
-        Computed from the raw b_i samples by multiplying by population and then getting
-        the proportion of the total pop (total pop=summed across all districts):
-        The posterior mean for the district-level voting preference of
-        {self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs[0]:.3f}
-        The posterior mean for the district-level voting preference of
-        non-{self.demographic_group_name} for {self.candidate_name} is
-        {self.posterior_mean_voting_prefs[1]:.3f}
-        95% Bayesian credible interval for district-level voting preference of
-        {self.demographic_group_name} for {self.candidate_name} is
-        {self.credible_interval_95_mean_voting_prefs[0]}
-        95% Bayesian credible interval for district-level voting preference of
-        non-{self.demographic_group_name} for {self.candidate_name} is
-        {self.credible_interval_95_mean_voting_prefs[1]}
-        """
-
     def precinct_level_estimates(self):
         """If desired, we can return precinct-level estimates"""
+        # TODO: make this output match r_by_c version in shape, 
         percentiles = [2.5, 97.5]
         precinct_level_samples_gp1 = self.sim_trace.get_values("b_1")
         precinct_posterior_means_gp1 = precinct_level_samples_gp1.mean(axis=0)
@@ -464,39 +517,6 @@ class TwoByTwoEI:
             precinct_posterior_means_gp2,
             precinct_credible_intervals_gp1,
             precinct_credible_intervals_gp2,
-        )
-
-    def _voting_prefs(self):
-        """Bundles together the samples, for ease of passing to plots"""
-        return (
-            self.sampled_voting_prefs[0],
-            self.sampled_voting_prefs[1],
-        )
-
-    def _group_names_for_display(self):
-        """Sets the group names to be displayed in plots"""
-        return self.demographic_group_name, "non-" + self.demographic_group_name
-
-    def plot_kde(self, ax=None):
-        """kernel density estimate/ histogram plot"""
-        return plot_kde(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
-
-    def plot_boxplot(self, ax=None):
-        """ Boxplot of voting prefs for each group"""
-        return plot_boxplot(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
-
-    def plot_intervals(self, ax=None):
-        """ Plot of credible intervals for each group"""
-        title = "95% credible intervals"
-        return plot_conf_or_credible_interval(
-            [
-                self.credible_interval_95_mean_voting_prefs[0],
-                self.credible_interval_95_mean_voting_prefs[1],
-            ],
-            self._group_names_for_display(),
-            self.candidate_name,
-            title,
-            ax=ax,
         )
 
     def plot_intervals_by_precinct(self):
@@ -555,3 +575,4 @@ class TwoByTwoEI:
             show_all_precincts=show_all_precincts,
             ax=ax,
         )
+
