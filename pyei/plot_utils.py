@@ -41,7 +41,7 @@ def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1
     z_init : float
         The initial value for the z-order (helps determine
         how plots get drawn over one another)
-    trans :
+    trans 
         The y-translation for this plot
     overlap : float, optional
         how much this ridgeplot may overlap with the ridgeplot

@@ -306,7 +306,7 @@ class RowByColumnEI:
 
         Returns:
             precinct_posterior_means: num_precincts x r x c
-            precinct_credible_intervals num_precincts x r x c x 2
+            precinct_credible_intervals: num_precincts x r x c x 2
         """
 
         precinct_level_samples = self.sim_trace.get_values(
