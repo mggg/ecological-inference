@@ -291,6 +291,9 @@ class TwoByTwoEIBaseBayes:
         self.demographic_group_name = None
         self.candidate_name = None
 
+        self.demographic_group_fraction = None
+        self.votes_fraction = None
+
         self.posterior_mean_voting_prefs = [None, None]
         self.credible_interval_95_mean_voting_prefs = [None, None]
         self.sampled_voting_prefs = [None, None]
@@ -358,10 +361,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         # model_name can be 'king97', 'king99' or 'king99_pareto_modification'
         # 'wakefield_beta' or 'wakefield normal'
         super().__init__(model_name, **additional_model_params)
-        self.vote_fraction = None
 
-        self.demographic_group_fraction = None
-        self.votes_fraction = None
         self.precinct_pops = None
         self.precinct_names = None
 
