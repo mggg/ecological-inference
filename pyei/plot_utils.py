@@ -332,7 +332,8 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, group="all", ax=Non
     candidate: string
         Must be a candidate common to both EI runs
     group: string
-        Must be a demographic group common to both EI runs, or "all", which plots and labels each demographic group onto the same axes.
+        Must be a demographic group common to both EI runs, or "all",
+        which plots and labels each demographic group onto the same axes.
 
     Returns
     -------
