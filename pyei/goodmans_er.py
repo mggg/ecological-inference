@@ -101,6 +101,9 @@ class GoodmansER:
 
 
 class GoodmansERBayes(TwoByTwoEIBaseBayes):
+    """Bayesian ecological regression with uniform prior over the voting preferences
+    Generate samples from the posterior.
+    """
 
     def __init__(self, model_name, weighted_by_pop=False, **additional_model_params):
         super().__init__(model_name, **additional_model_params)
@@ -152,8 +155,10 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
             self.sampled_voting_prefs[1], percentiles
         )
 
-    def compute_credible_int_for_line(self):
-        x_vals = np.linspace(0, 1, 100)
+    def compute_credible_int_for_line(self, x_vals=np.linspace(0, 1, 100)):
+        """Computes regression line (mean) and 95% credible interval for the
+        mean line at each of the specified x values(x_vals) 
+        """
         lower_bounds = np.empty_like(x_vals)
         upper_bounds = np.empty_like(x_vals)
         means = np.empty_like(x_vals)
@@ -167,24 +172,26 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         return x_vals, means, lower_bounds, upper_bounds
 
     def plot(self):
-        """Create"""
+        """Plot regression line of votes_fraction vs. group_fraction, with scatter plot and
+        95% credible interval for the line"""
         #TODO: consider renaming these plots for goodman, to disambiguate with TwoByTwoEI.plot()
+        #TODO: accept axis argument
         x_vals, means, lower_bounds, upper_bounds = self.compute_credible_int_for_line()
         _, ax = plt.subplots()
         ax.axis('square')
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
-        ax.scatter(self.demographic_group_fraction, self.votes_fraction, alpha=0.6)
+        ax.scatter(self.demographic_group_fraction, self.votes_fraction, alpha=0.8)
         ax.plot(x_vals, means)
-        ax.fill_between(x_vals, lower_bounds, upper_bounds, color="gray", alpha=0.2)
+        ax.fill_between(x_vals, lower_bounds, upper_bounds, color="steelblue", alpha=0.2)
         ax.grid()
         ax.set_xlim((0, 1))
         ax.set_ylim((0, 1))
 
 
 def goodmans_ER_bayes_model(group_fraction, votes_fraction, sigma=1):
-    """ Ecological regression with priors over b_1, b_2, constraining
-    them to be between zero and 1
+    """ Ecological regression with uniform priors over voting prefs b_1, b_2,
+    constraining them to be between zero and 1
     """
     with pm.Model() as bayes_er_model:
         b_1 = pm.Uniform("b_1")
@@ -199,7 +206,9 @@ def goodmans_ER_bayes_model(group_fraction, votes_fraction, sigma=1):
 
 def goodmans_ER_bayes_pop_weighted_model(group_fraction, votes_fraction, precinct_pops, sigma=1):
     """ Ecological regression with variance of modeled vote fraction inversely proportional to
-    precinct population. Priors over b_1, b_2 constrain them to be between 0 and 1      
+    precinct population. 
+    
+    Uniform priors over voting prefs b_1, b_2 constrain them to be between 0 and 1      
     """
 
     mean_precinct_pop = precinct_pops.mean()
