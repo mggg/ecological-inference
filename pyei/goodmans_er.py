@@ -7,16 +7,9 @@ import numpy as np
 import seaborn as sns
 import pymc3 as pm
 from sklearn.linear_model import LinearRegression
-from .plot_utils import (
-    plot_conf_or_credible_interval,
-    plot_boxplot,
-    plot_kde,
-    plot_summary
-)
+from .plot_utils import plot_conf_or_credible_interval, plot_boxplot, plot_kde, plot_summary
 
-from .two_by_two import (
-    TwoByTwoEIBaseBayes
-)
+from .two_by_two import TwoByTwoEIBaseBayes
 
 __all__ = ["GoodmansER"]
 
@@ -109,12 +102,14 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         super().__init__(model_name, **additional_model_params)
         self.weighted_by_pop = weighted_by_pop
 
-    def fit(self,
+    def fit(
+        self,
         group_fraction,
         votes_fraction,
         precinct_pops=None,
         demographic_group_name="given demographic group",
-        candidate_name="given candidate"):
+        candidate_name="given candidate",
+    ):
 
         self.precinct_pops = precinct_pops
         self.demographic_group_name = demographic_group_name
@@ -123,9 +118,13 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         self.votes_fraction = votes_fraction
 
         if self.weighted_by_pop:
-            self.sim_model = goodmans_ER_bayes_pop_weighted_model(group_fraction, votes_fraction, precinct_pops, **self.additional_model_params)
+            self.sim_model = goodmans_ER_bayes_pop_weighted_model(
+                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
+            )
         else:
-            self.sim_model = goodmans_ER_bayes_model(group_fraction, votes_fraction, **self.additional_model_params)
+            self.sim_model = goodmans_ER_bayes_model(
+                group_fraction, votes_fraction, **self.additional_model_params
+            )
         with self.sim_model:
             self.sim_trace = pm.sample(1000, tune=1000, target_accept=0.9)
 
@@ -135,11 +134,11 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         """Calculate point estimates (post. means) and credible intervals"""
 
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
-        self.sampled_voting_prefs[0] = (
-            self.sim_trace.get_values("b_1")
+        self.sampled_voting_prefs[0] = self.sim_trace.get_values(
+            "b_1"
         )  # sampled voted prefs across precincts
-        self.sampled_voting_prefs[1] = (
-            self.sim_trace.get_values("b_2")
+        self.sampled_voting_prefs[1] = self.sim_trace.get_values(
+            "b_2"
         )  # sampled voted prefs across precincts
 
         # compute point estimates
@@ -157,13 +156,16 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
     def compute_credible_int_for_line(self, x_vals=np.linspace(0, 1, 100)):
         """Computes regression line (mean) and 95% credible interval for the
-        mean line at each of the specified x values(x_vals) 
+        mean line at each of the specified x values(x_vals)
         """
         lower_bounds = np.empty_like(x_vals)
         upper_bounds = np.empty_like(x_vals)
         means = np.empty_like(x_vals)
         for idx, x in enumerate(x_vals):
-            mean_samples = self.sampled_voting_prefs[1] + (self.sampled_voting_prefs[0] - self.sampled_voting_prefs[1]) * x
+            mean_samples = (
+                self.sampled_voting_prefs[1]
+                + (self.sampled_voting_prefs[0] - self.sampled_voting_prefs[1]) * x
+            )
             percentiles = np.percentile(mean_samples, [2.5, 97.5])
             lower_bounds[idx] = percentiles[0]
             upper_bounds[idx] = percentiles[1]
@@ -174,11 +176,11 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
     def plot(self):
         """Plot regression line of votes_fraction vs. group_fraction, with scatter plot and
         95% credible interval for the line"""
-        #TODO: consider renaming these plots for goodman, to disambiguate with TwoByTwoEI.plot()
-        #TODO: accept axis argument
+        # TODO: consider renaming these plots for goodman, to disambiguate with TwoByTwoEI.plot()
+        # TODO: accept axis argument
         x_vals, means, lower_bounds, upper_bounds = self.compute_credible_int_for_line()
         _, ax = plt.subplots()
-        ax.axis('square')
+        ax.axis("square")
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
         ax.scatter(self.demographic_group_fraction, self.votes_fraction, alpha=0.8)
@@ -190,25 +192,30 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
 
 def goodmans_ER_bayes_model(group_fraction, votes_fraction, sigma=1):
-    """ Ecological regression with uniform priors over voting prefs b_1, b_2,
+    """Ecological regression with uniform priors over voting prefs b_1, b_2,
     constraining them to be between zero and 1
     """
     with pm.Model() as bayes_er_model:
         b_1 = pm.Uniform("b_1")
         b_2 = pm.Uniform("b_2")
 
-        eps = pm.HalfNormal('eps', sigma=sigma)
+        eps = pm.HalfNormal("eps", sigma=sigma)
 
-        pm.Normal("votes_count_obs", b_2 + (b_1 - b_2) * group_fraction, sigma=eps, observed=votes_fraction)
-    
+        pm.Normal(
+            "votes_count_obs",
+            b_2 + (b_1 - b_2) * group_fraction,
+            sigma=eps,
+            observed=votes_fraction,
+        )
+
     return bayes_er_model
 
 
 def goodmans_ER_bayes_pop_weighted_model(group_fraction, votes_fraction, precinct_pops, sigma=1):
-    """ Ecological regression with variance of modeled vote fraction inversely proportional to
-    precinct population. 
-    
-    Uniform priors over voting prefs b_1, b_2 constrain them to be between 0 and 1      
+    """Ecological regression with variance of modeled vote fraction inversely proportional to
+    precinct population.
+
+    Uniform priors over voting prefs b_1, b_2 constrain them to be between 0 and 1
     """
 
     mean_precinct_pop = precinct_pops.mean()
@@ -216,8 +223,13 @@ def goodmans_ER_bayes_pop_weighted_model(group_fraction, votes_fraction, precinc
         b_1 = pm.Uniform("b_1")
         b_2 = pm.Uniform("b_2")
 
-        eps = pm.HalfNormal('eps', sigma = sigma)
-        
-        pm.Normal("votes_count_obs", b_2 + (b_1 - b_2) * group_fraction, sigma=eps * pm.math.sqrt(mean_precinct_pop / precinct_pops), observed=votes_fraction)
-    
+        eps = pm.HalfNormal("eps", sigma=sigma)
+
+        pm.Normal(
+            "votes_count_obs",
+            b_2 + (b_1 - b_2) * group_fraction,
+            sigma=eps * pm.math.sqrt(mean_precinct_pop / precinct_pops),
+            observed=votes_fraction,
+        )
+
     return bayes_er_model

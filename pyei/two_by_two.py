@@ -277,13 +277,14 @@ class TwoByTwoEIBaseBayes:
     because this is not possible for goodman_er_bayes. So, plots of precinct
     level quanitities are defined in the subclass TwoByTwoEi
 
-    Note: subclass will need to define methods to fit (sample), and 
+    Note: subclass will need to define methods to fit (sample), and
         to define summary quantities
     """
+
     def __init__(self, model_name, **additional_model_params):
         self.model_name = model_name
         self.additional_model_params = additional_model_params
-        
+
         self.sim_model = None
         self.sim_trace = None
 
@@ -440,7 +441,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             self.sim_model = wakefield_normal(
                 group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
             )
-            
+
         # TODO: this workaround shouldn't be necessary. Modify the model so that the checks
         # can run without error
         if self.model_name == "wakefield_beta" or self.model_name == "wakefield_normal":
@@ -498,7 +499,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
     def precinct_level_estimates(self):
         """If desired, we can return precinct-level estimates"""
-        # TODO: make this output match r_by_c version in shape, 
+        # TODO: make this output match r_by_c version in shape,
         percentiles = [2.5, 97.5]
         precinct_level_samples_gp1 = self.sim_trace.get_values("b_1")
         precinct_posterior_means_gp1 = precinct_level_samples_gp1.mean(axis=0)
@@ -575,4 +576,3 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             show_all_precincts=show_all_precincts,
             ax=ax,
         )
-
