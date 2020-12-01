@@ -19,6 +19,7 @@ __all__ = [
     "plot_intervals_all_precincts",
     "plot_kdes",
     "plot_kde",
+    "plot_precinct_scatterplot",
     "plot_precincts",
     "plot_summary",
     "tomography_plot",
@@ -321,6 +322,72 @@ def plot_summary(
     plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=ax_hist)
     ax_hist.set_xlabel(f"Support for {candidate_name}")
     return (ax_box, ax_hist)
+
+
+def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="all", ax=None):
+    """
+    Given two EI runs, plot precinct-by-precinct comparison of preferences
+    for a given candidate from a given demographic group.
+
+    Parameters
+    ----------
+    ei_runs: array
+        Length = 2
+        Element Type = RowByColumnEI
+    run_names: array
+        Length = 2
+        Element Type = string
+        Name of each EI run (in the same order as ei_runs!)
+    candidate: string
+        Must be a candidate common to both EI runs
+    demographic_group: string
+        Must be a demographic group common to both EI runs, or "all",
+        which plots and labels each demographic group onto the same axes.
+
+    Returns
+    -------
+    ax: Matplotlib axis object
+    """
+    if ax is None:
+        _, ax = plt.subplots(1, figsize=(10, 6))
+    ax.set_xlim((0, 1))
+    ax.set_ylim((0, 1))
+
+    prec_means1, _ = ei_runs[0].precinct_level_estimates()
+    prec_means2, _ = ei_runs[1].precinct_level_estimates()
+
+    common_groups = [
+        g for g in ei_runs[0].demographic_group_names if g in ei_runs[1].demographic_group_names
+    ]
+    group_dict = {}
+    for group in common_groups:
+        group_dict[group] = (
+            prec_means1[
+                :,
+                ei_runs[0].demographic_group_names.index(group),
+                ei_runs[0].candidate_names.index(candidate),
+            ],
+            prec_means2[
+                :,
+                ei_runs[1].demographic_group_names.index(group),
+                ei_runs[1].candidate_names.index(candidate),
+            ],
+        )
+
+    if demographic_group == "all":
+        for k, (x_vals, y_vals) in group_dict.items():
+            sns.scatterplot(x=x_vals, y=y_vals, label=k)
+    else:
+        sns.scatterplot(
+            x=group_dict[demographic_group][0],
+            y=group_dict[demographic_group][1],
+            label=demographic_group,
+        )
+    sns.lineplot(x=[0, 1], y=[0, 1], alpha=0.5, color="grey")
+    ax.set_xlabel(f"{demographic_group} support for {candidate}: {run_names[0]}")
+    ax.set_ylabel(f"{demographic_group} support for {candidate}: {run_names[1]}")
+    ax.legend()
+    return ax
 
 
 def plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
