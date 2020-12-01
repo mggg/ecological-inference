@@ -19,6 +19,7 @@ __all__ = [
     "plot_intervals_all_precincts",
     "plot_kdes",
     "plot_kde",
+    "plot_precinct_scatterplot",
     "plot_precincts",
     "plot_summary",
     "tomography_plot",
@@ -60,12 +61,20 @@ def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1
     group2_y = overlap * group2_y / group2_y.max()
 
     ax.fill_between(
-        x, group1_y + trans, trans, color="steelblue", zorder=z_init,
+        x,
+        group1_y + trans,
+        trans,
+        color="steelblue",
+        zorder=z_init,
     )
     ax.plot(x, group1_y + trans, color="black", linewidth=1, zorder=z_init + 1)
 
     ax.fill_between(
-        x, group2_y + trans, trans, color="orange", zorder=z_init + 2,
+        x,
+        group2_y + trans,
+        trans,
+        color="orange",
+        zorder=z_init + 2,
     )
     ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=z_init + 3)
 
@@ -315,7 +324,7 @@ def plot_summary(
     return (ax_box, ax_hist)
 
 
-def plot_precinct_scatterplot(ei_runs, run_names, candidate, group="all", ax=None):
+def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="all", ax=None):
     """
     Given two EI runs, plot precinct-by-precinct comparison of preferences
     for a given candidate from a given demographic group.
@@ -331,7 +340,7 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, group="all", ax=Non
         Name of each EI run (in the same order as ei_runs!)
     candidate: string
         Must be a candidate common to both EI runs
-    group: string
+    demographic_group: string
         Must be a demographic group common to both EI runs, or "all",
         which plots and labels each demographic group onto the same axes.
 
@@ -344,35 +353,39 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, group="all", ax=Non
     ax.set_xlim((0, 1))
     ax.set_ylim((0, 1))
 
-    prec_means1, prec_intervals1 = ei_runs[0].precinct_level_estimates()
-    prec_means2, prec_intervals2 = ei_runs[1].precinct_level_estimates()
+    prec_means1, _ = ei_runs[0].precinct_level_estimates()
+    prec_means2, _ = ei_runs[1].precinct_level_estimates()
 
     common_groups = [
         g for g in ei_runs[0].demographic_group_names if g in ei_runs[1].demographic_group_names
     ]
     group_dict = {}
-    for g in common_groups:
-        group_dict[g] = (
+    for group in common_groups:
+        group_dict[group] = (
             prec_means1[
                 :,
-                ei_runs[0].demographic_group_names.index(g),
+                ei_runs[0].demographic_group_names.index(group),
                 ei_runs[0].candidate_names.index(candidate),
             ],
             prec_means2[
                 :,
-                ei_runs[1].demographic_group_names.index(g),
+                ei_runs[1].demographic_group_names.index(group),
                 ei_runs[1].candidate_names.index(candidate),
             ],
         )
 
-    if group == "all":
-        for k, (x, y) in group_dict.items():
-            sns.scatterplot(x=x, y=y, label=k)
+    if demographic_group == "all":
+        for k, (x_vals, y_vals) in group_dict.items():
+            sns.scatterplot(x=x_vals, y=y_vals, label=k)
     else:
-        sns.scatterplot(x=group_dict[group][0], y=group_dict[group][1], label=group)
+        sns.scatterplot(
+            x=group_dict[demographic_group][0],
+            y=group_dict[demographic_group][1],
+            label=demographic_group,
+        )
     sns.lineplot(x=[0, 1], y=[0, 1], alpha=0.5, color="grey")
-    ax.set_xlabel(f"{group} support for {candidate}: {run_names[0]}")
-    ax.set_ylabel(f"{group} support for {candidate}: {run_names[1]}")
+    ax.set_xlabel(f"{demographic_group} support for {candidate}: {run_names[0]}")
+    ax.set_ylabel(f"{demographic_group} support for {candidate}: {run_names[1]}")
     ax.legend()
     return ax
 
