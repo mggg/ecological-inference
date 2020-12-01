@@ -7,7 +7,6 @@ import numpy as np
 import seaborn as sns
 import pymc3 as pm
 from sklearn.linear_model import LinearRegression
-from .plot_utils import plot_conf_or_credible_interval, plot_boxplot, plot_kde, plot_summary
 
 from .two_by_two import TwoByTwoEIBaseBayes
 
@@ -110,7 +109,7 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         demographic_group_name="given demographic group",
         candidate_name="given candidate",
     ):
-
+        """Fit a bayesian er modeling via sampling."""
         self.precinct_pops = precinct_pops
         self.demographic_group_name = demographic_group_name
         self.candidate_name = candidate_name
@@ -118,21 +117,21 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         self.votes_fraction = votes_fraction
 
         if self.weighted_by_pop:
-            self.sim_model = goodmans_ER_bayes_pop_weighted_model(
+            self.sim_model = goodmans_er_bayes_pop_weighted_model(
                 group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
             )
         else:
-            self.sim_model = goodmans_ER_bayes_model(
+            self.sim_model = goodmans_er_bayes_model(
                 group_fraction, votes_fraction, **self.additional_model_params
             )
         with self.sim_model:
             self.sim_trace = pm.sample(1000, tune=1000, target_accept=0.9)
 
-        self.calculate_summary()
+        self.calculate_sampled_voting_prefs()
+        super().calculate_summary()
 
-    def calculate_summary(self):
-        """Calculate point estimates (post. means) and credible intervals"""
-
+    def calculate_sampled_voting_prefs(self):
+        """Sets sampled_voting_prefs"""
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
         self.sampled_voting_prefs[0] = self.sim_trace.get_values(
             "b_1"
@@ -140,19 +139,6 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         self.sampled_voting_prefs[1] = self.sim_trace.get_values(
             "b_2"
         )  # sampled voted prefs across precincts
-
-        # compute point estimates
-        self.posterior_mean_voting_prefs[0] = self.sampled_voting_prefs[0].mean()
-        self.posterior_mean_voting_prefs[1] = self.sampled_voting_prefs[1].mean()
-
-        # compute credible intervals
-        percentiles = [2.5, 97.5]
-        self.credible_interval_95_mean_voting_prefs[0] = np.percentile(
-            self.sampled_voting_prefs[0], percentiles
-        )
-        self.credible_interval_95_mean_voting_prefs[1] = np.percentile(
-            self.sampled_voting_prefs[1], percentiles
-        )
 
     def compute_credible_int_for_line(self, x_vals=np.linspace(0, 1, 100)):
         """Computes regression line (mean) and 95% credible interval for the
@@ -191,7 +177,7 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         ax.set_ylim((0, 1))
 
 
-def goodmans_ER_bayes_model(group_fraction, votes_fraction, sigma=1):
+def goodmans_er_bayes_model(group_fraction, votes_fraction, sigma=1):
     """Ecological regression with uniform priors over voting prefs b_1, b_2,
     constraining them to be between zero and 1
     """
@@ -211,7 +197,7 @@ def goodmans_ER_bayes_model(group_fraction, votes_fraction, sigma=1):
     return bayes_er_model
 
 
-def goodmans_ER_bayes_pop_weighted_model(group_fraction, votes_fraction, precinct_pops, sigma=1):
+def goodmans_er_bayes_pop_weighted_model(group_fraction, votes_fraction, precinct_pops, sigma=1):
     """Ecological regression with variance of modeled vote fraction inversely proportional to
     precinct population.
 

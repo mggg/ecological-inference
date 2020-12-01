@@ -310,6 +310,23 @@ class TwoByTwoEIBaseBayes:
             self.sampled_voting_prefs[1],
         )
 
+    def calculate_summary(self):
+        """Calculate point estimates (post. means) and credible intervals
+        Assumes sampled_voting_prefs has already been set"""
+
+        # compute point estimates
+        self.posterior_mean_voting_prefs[0] = self.sampled_voting_prefs[0].mean()
+        self.posterior_mean_voting_prefs[1] = self.sampled_voting_prefs[1].mean()
+
+        # compute credible intervals
+        percentiles = [2.5, 97.5]
+        self.credible_interval_95_mean_voting_prefs[0] = np.percentile(
+            self.sampled_voting_prefs[0], percentiles
+        )
+        self.credible_interval_95_mean_voting_prefs[1] = np.percentile(
+            self.sampled_voting_prefs[1], percentiles
+        )
+
     def summary(self):
         """Return a summary string"""
         # TODO: probably format this as a table
@@ -458,10 +475,11 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
                 **other_sampling_args,
             )
 
-        self.calculate_summary()
+        self.calculate_sampled_voting_prefs()
+        super().calculate_summary()
 
-    def calculate_summary(self):
-        """Calculate point estimates (post. means) and credible intervals"""
+    def calculate_sampled_voting_prefs(self):
+        """Sampled voting preferences (combining samples with precinct pops)"""
         # multiply sample proportions by precinct pops to get samples of
         # number of voters the demographic group who voted for the candidate
         # in each precinct
@@ -483,19 +501,6 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         self.sampled_voting_prefs[1] = (
             samples_of_votes_summed_across_district_gp2 / self.precinct_pops.sum()
         )  # sampled voted prefs across precincts
-
-        # compute point estimates
-        self.posterior_mean_voting_prefs[0] = self.sampled_voting_prefs[0].mean()
-        self.posterior_mean_voting_prefs[1] = self.sampled_voting_prefs[1].mean()
-
-        # compute credible intervals
-        percentiles = [2.5, 97.5]
-        self.credible_interval_95_mean_voting_prefs[0] = np.percentile(
-            self.sampled_voting_prefs[0], percentiles
-        )
-        self.credible_interval_95_mean_voting_prefs[1] = np.percentile(
-            self.sampled_voting_prefs[1], percentiles
-        )
 
     def precinct_level_estimates(self):
         """If desired, we can return precinct-level estimates"""
