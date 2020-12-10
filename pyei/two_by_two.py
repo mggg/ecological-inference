@@ -55,7 +55,7 @@ def ei_beta_binom_model_modified(
     """
     votes_count_obs = votes_fraction * precinct_pops
     num_precincts = len(precinct_pops)
-    tot_pop = precinct_pops.sum()
+    #tot_pop = precinct_pops.sum()
     with pm.Model() as model:
         phi_1 = pm.Uniform("phi_1", lower=0.0, upper=1.0)
         kappa_1 = pm.Pareto("kappa_1", m=pareto_scale, alpha=pareto_shape)
