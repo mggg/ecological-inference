@@ -238,7 +238,7 @@ class RowByColumnEI:
             Currently supported: RxC models: 'multinomial-dirichlet-modified',
             'multinomial-dirichlet' """
             )
-        
+
         if draw_samples:
             with self.sim_model:
                 self.sim_trace = pm.sample(

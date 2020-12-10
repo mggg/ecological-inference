@@ -78,9 +78,9 @@ def ei_beta_binom_model_modified(
 
         theta = group_fraction * b_1 + (1 - group_fraction) * b_2
         pm.Binomial("votes_count", n=precinct_pops, p=theta, observed=votes_count_obs)
-        #pm.Deterministic("voting_prefs_gp1", (b_1 * precinct_pops).sum() / tot_pop)
-        #pm.Deterministic("voting_prefs_gp2", (b_2 * precinct_pops).sum() / tot_pop)
-        
+        # pm.Deterministic("voting_prefs_gp1", (b_1 * precinct_pops).sum() / tot_pop)
+        # pm.Deterministic("voting_prefs_gp2", (b_2 * precinct_pops).sum() / tot_pop)
+
     return model
 
 
