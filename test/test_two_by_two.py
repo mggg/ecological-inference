@@ -1,12 +1,18 @@
 """Test two by two ecological inference."""
-from pyei import two_by_two
-
 import numpy as np
 import scipy.stats as st
 from scipy.special import logsumexp
 
+from pyei import two_by_two
+
 
 def generate_kwargs_for_log_binom_sum():
+    """Randomly generate inputs for log_binom_sum.
+
+    Note that these should probably _not_ be random eventually, but should deterministically
+    pass. For now, this will give us more confidence that the implementation matches scipy for
+    a range of numeric inputs.
+    """
     lower = np.random.poisson(10)
     upper = lower + np.random.poisson(100)
     obs_vote = np.random.randint(lower, upper)
