@@ -20,7 +20,7 @@ class _DataSet:
         return pd.read_csv(self.url)
 
 
-class Datasets:
+class Datasets:  # pylint: disable=too-few-public-methods
     """Available datasets related to ecological inference.
 
     These support examples in the library. Please open an issue or pull request if you would
