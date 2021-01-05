@@ -63,16 +63,10 @@ def ei_beta_binom_model_modified(
         kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
 
         b_1 = pm.Beta(
-            "b_1",
-            alpha=phi_1 * kappa_1,
-            beta=(1.0 - phi_1) * kappa_1,
-            shape=num_precincts,
+            "b_1", alpha=phi_1 * kappa_1, beta=(1.0 - phi_1) * kappa_1, shape=num_precincts
         )
         b_2 = pm.Beta(
-            "b_2",
-            alpha=phi_2 * kappa_2,
-            beta=(1.0 - phi_2) * kappa_2,
-            shape=num_precincts,
+            "b_2", alpha=phi_2 * kappa_2, beta=(1.0 - phi_2) * kappa_2, shape=num_precincts
         )
 
         theta = group_fraction * b_1 + (1 - group_fraction) * b_2
@@ -129,7 +123,7 @@ def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, 
     component_for_current_precinct = pm.math.logsumexp(
         pm.Binomial.dist(n0_curr, b_1_curr).logp(votes_within_group_count)
         + pm.Binomial.dist(n1_curr, b_2_curr).logp(obs_vote - votes_within_group_count)
-    )[0]
+    )
     return prev + component_for_current_precinct
 
 
@@ -140,9 +134,9 @@ def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
     Parameters
     ----------
     b_1: corresponds to p0 in wakefield's notation, the probability that an individual
-        the given demographic group votes for the given candidate
+        in the given demographic group votes for the given candidate
     b_2: corresponds to p1 in wakefield's notation, the probability that an individual
-        the complement of the given demographic group votes for the given candidate
+        in the complement of the given demographic group votes for the given candidate
 
     n_0: the count of given demographic group in the precinct
     n_1: the count of the complement of given demographic group in the precinct
@@ -197,16 +191,10 @@ def wakefield_model_beta(
         kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
 
         b_1 = pm.Beta(
-            "b_1",
-            alpha=phi_1 * kappa_1,
-            beta=(1.0 - phi_1) * kappa_1,
-            shape=num_precincts,
+            "b_1", alpha=phi_1 * kappa_1, beta=(1.0 - phi_1) * kappa_1, shape=num_precincts
         )
         b_2 = pm.Beta(
-            "b_2",
-            alpha=phi_2 * kappa_2,
-            beta=(1.0 - phi_2) * kappa_2,
-            shape=num_precincts,
+            "b_2", alpha=phi_2 * kappa_2, beta=(1.0 - phi_2) * kappa_2, shape=num_precincts
         )
 
         pm.DensityDist(
@@ -305,10 +293,7 @@ class TwoByTwoEIBaseBayes:
 
     def _voting_prefs(self):
         """Bundles together the samples, for ease of passing to plots"""
-        return (
-            self.sampled_voting_prefs[0],
-            self.sampled_voting_prefs[1],
-        )
+        return (self.sampled_voting_prefs[0], self.sampled_voting_prefs[1])
 
     def calculate_summary(self):
         """Calculate point estimates (post. means) and credible intervals
@@ -441,10 +426,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         if self.model_name == "king99":
             self.sim_model = ei_beta_binom_model(
-                group_fraction,
-                votes_fraction,
-                precinct_pops,
-                **self.additional_model_params,
+                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
             )
         elif self.model_name == "king99_pareto_modification":
             self.sim_model = ei_beta_binom_model_modified(
