@@ -152,6 +152,7 @@ class RowByColumnEI:
         candidate_names,
         target_accept=0.99,
         tune=1500,
+        draw_samples=True,
         **other_sampling_args
         # precinct_names=None,
     ):
@@ -176,6 +177,9 @@ class RowByColumnEI:
             sampling.sample
         tune : int
             Passed to pymc's sampling.sample
+        draw_samples: bool, optional
+            Default=True. Set to False to only set up the variable but not generate
+            posterior samples (i.e. if you want to generate prior predictive samples only)
         other_sampling_args :
             For to pymc's sampling.sample
             https://docs.pymc.io/api/inference.html
@@ -234,12 +238,14 @@ class RowByColumnEI:
             Currently supported: RxC models: 'multinomial-dirichlet-modified',
             'multinomial-dirichlet' """
             )
-        with self.sim_model:
-            self.sim_trace = pm.sample(
-                target_accept=target_accept, tune=tune, **other_sampling_args
-            )
 
-        self.calculate_summary()
+        if draw_samples:
+            with self.sim_model:
+                self.sim_trace = pm.sample(
+                    target_accept=target_accept, tune=tune, **other_sampling_args
+                )
+
+            self.calculate_summary()
 
     def calculate_summary(self):
         """Calculate point estimates (post. means) and credible intervals"""

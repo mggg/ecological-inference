@@ -55,6 +55,7 @@ def ei_beta_binom_model_modified(
     """
     votes_count_obs = votes_fraction * precinct_pops
     num_precincts = len(precinct_pops)
+    # tot_pop = precinct_pops.sum()
     with pm.Model() as model:
         phi_1 = pm.Uniform("phi_1", lower=0.0, upper=1.0)
         kappa_1 = pm.Pareto("kappa_1", m=pareto_scale, alpha=pareto_shape)
@@ -77,6 +78,9 @@ def ei_beta_binom_model_modified(
 
         theta = group_fraction * b_1 + (1 - group_fraction) * b_2
         pm.Binomial("votes_count", n=precinct_pops, p=theta, observed=votes_count_obs)
+        # pm.Deterministic("voting_prefs_gp1", (b_1 * precinct_pops).sum() / tot_pop)
+        # pm.Deterministic("voting_prefs_gp2", (b_2 * precinct_pops).sum() / tot_pop)
+
     return model
 
 
@@ -393,6 +397,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         precinct_names=None,
         target_accept=0.99,
         tune=1500,
+        draw_samples=True,
         **other_sampling_args,
     ):
         """Fit the specified model using MCMC sampling
@@ -417,6 +422,9 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             sampling.sample
         tune : int, optional
             Default=1500, passed to pymc's sampling.sample
+        draw_samples: bool, optional
+            Default=True. Set to False to only set up the variable but not generate
+            posterior samples (i.e. if you want to generate prior predictive samples only)
         other_sampling_args :
             For to pymc's sampling.sample
             https://docs.pymc.io/api/inference.html
@@ -459,24 +467,25 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
                 group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
             )
 
-        # TODO: this workaround shouldn't be necessary. Modify the model so that the checks
-        # can run without error
-        if self.model_name == "wakefield_beta" or self.model_name == "wakefield_normal":
-            compute_convergence_checks = False
-            print("WARNING: some convergence checks currently disabled for wakefield model")
-        else:
-            compute_convergence_checks = True
+        if draw_samples:
+            # TODO: this workaround shouldn't be necessary. Modify the model so that the checks
+            # can run without error
+            if self.model_name == "wakefield_beta" or self.model_name == "wakefield_normal":
+                compute_convergence_checks = False
+                print("WARNING: some convergence checks currently disabled for wakefield model")
+            else:
+                compute_convergence_checks = True
 
-        with self.sim_model:
-            self.sim_trace = pm.sample(
-                target_accept=target_accept,
-                tune=tune,
-                compute_convergence_checks=compute_convergence_checks,
-                **other_sampling_args,
-            )
+            with self.sim_model:
+                self.sim_trace = pm.sample(
+                    target_accept=target_accept,
+                    tune=tune,
+                    compute_convergence_checks=compute_convergence_checks,
+                    **other_sampling_args,
+                )
 
-        self.calculate_sampled_voting_prefs()
-        super().calculate_summary()
+            self.calculate_sampled_voting_prefs()
+            super().calculate_summary()
 
     def calculate_sampled_voting_prefs(self):
         """Sampled voting preferences (combining samples with precinct pops)"""
