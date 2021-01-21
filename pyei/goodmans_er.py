@@ -45,7 +45,9 @@ class GoodmansER:
         self.candidate_name = candidate_name
         if self.is_weighted_regression:
             reg = LinearRegression().fit(
-                group_fraction.reshape(-1, 1), vote_fraction, sample_weight=precinct_pops,
+                group_fraction.reshape(-1, 1),
+                vote_fraction,
+                sample_weight=precinct_pops,
             )
         else:
             reg = LinearRegression().fit(group_fraction.reshape(-1, 1), vote_fraction)
@@ -81,7 +83,11 @@ class GoodmansER:
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
         sns.regplot(
-            x=self.demographic_group_fraction, y=self.vote_fraction, ax=ax, ci=95, truncate=False,
+            x=self.demographic_group_fraction,
+            y=self.vote_fraction,
+            ax=ax,
+            ci=95,
+            truncate=False,
         )
         return fig, ax
 
@@ -112,7 +118,10 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
         if self.weighted_by_pop:
             self.sim_model = goodmans_er_bayes_pop_weighted_model(
-                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params,
+                group_fraction,
+                votes_fraction,
+                precinct_pops,
+                **self.additional_model_params,
             )
         else:
             self.sim_model = goodmans_er_bayes_model(
