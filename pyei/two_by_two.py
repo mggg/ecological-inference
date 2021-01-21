@@ -64,10 +64,10 @@ def ei_beta_binom_model_modified(
         kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
 
         b_1 = pm.Beta(
-            "b_1", alpha=phi_1 * kappa_1, beta=(1.0 - phi_1) * kappa_1, shape=num_precincts
+            "b_1", alpha=phi_1 * kappa_1, beta=(1.0 - phi_1) * kappa_1, shape=num_precincts,
         )
         b_2 = pm.Beta(
-            "b_2", alpha=phi_2 * kappa_2, beta=(1.0 - phi_2) * kappa_2, shape=num_precincts
+            "b_2", alpha=phi_2 * kappa_2, beta=(1.0 - phi_2) * kappa_2, shape=num_precincts,
         )
 
         theta = group_fraction * b_1 + (1 - group_fraction) * b_2
@@ -195,10 +195,10 @@ def wakefield_model_beta(
         kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
 
         b_1 = pm.Beta(
-            "b_1", alpha=phi_1 * kappa_1, beta=(1.0 - phi_1) * kappa_1, shape=num_precincts
+            "b_1", alpha=phi_1 * kappa_1, beta=(1.0 - phi_1) * kappa_1, shape=num_precincts,
         )
         b_2 = pm.Beta(
-            "b_2", alpha=phi_2 * kappa_2, beta=(1.0 - phi_2) * kappa_2, shape=num_precincts
+            "b_2", alpha=phi_2 * kappa_2, beta=(1.0 - phi_2) * kappa_2, shape=num_precincts,
         )
 
         pm.DensityDist(
@@ -434,19 +434,19 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         if self.model_name == "king99":
             self.sim_model = ei_beta_binom_model(
-                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
+                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params,
             )
         elif self.model_name == "king99_pareto_modification":
             self.sim_model = ei_beta_binom_model_modified(
-                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
+                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params,
             )
         elif self.model_name == "wakefield_beta":
             self.sim_model = wakefield_model_beta(
-                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
+                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params,
             )
         elif self.model_name == "wakefield_normal":
             self.sim_model = wakefield_normal(
-                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
+                group_fraction, votes_fraction, precinct_pops, **self.additional_model_params,
             )
 
         if draw_samples:
@@ -546,7 +546,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
     def plot(self, axes=None):
         """kde, boxplot, and credible intervals"""
         return plot_summary(
-            *self._voting_prefs(), *self._group_names_for_display(), self.candidate_name, axes=axes
+            *self._voting_prefs(), *self._group_names_for_display(), self.candidate_name, axes=axes,
         )
 
     def precinct_level_plot(self, ax=None, show_all_precincts=False, precinct_names=None):

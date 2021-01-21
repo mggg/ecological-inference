@@ -55,7 +55,7 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
         # TODO: make b vs. beta naming consistent
         # conc_params = pm.Exponential("conc_params", lam=lmbda, shape=(num_rows, num_cols))
         conc_params = pm.Gamma(
-            "conc_params", alpha=lmbda1, beta= 1 / lmbda2, shape=(num_rows, num_cols)
+            "conc_params", alpha=lmbda1, beta=1 / lmbda2, shape=(num_rows, num_cols)
         )  # chosen to match eiPack
         beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
@@ -190,11 +190,11 @@ class RowByColumnEI:
         self.demographic_group_fractions = group_fractions
         self.votes_fractions = votes_fractions
         self.precinct_pops = precinct_pops
-        #give demographic groups and candidate names 1-indexed numbers as names if names are not specified
+        # give demographic groups and candidate names 1-indexed numbers as names if names are not specified
         if demographic_group_names is None:
-            demographic_group_names = [str(i) for i in range(1, group_fractions.shape[0] + 1)] 
+            demographic_group_names = [str(i) for i in range(1, group_fractions.shape[0] + 1)]
         if candidate_names is None:
-            demographic_group_names = [str(i) for i in range(1, votes_fractions.shape[0] + 1)] 
+            demographic_group_names = [str(i) for i in range(1, votes_fractions.shape[0] + 1)]
         self.demographic_group_names = demographic_group_names
         self.candidate_names = candidate_names
 
@@ -224,18 +224,12 @@ class RowByColumnEI:
 
         if self.model_name == "multinomial-dirichlet":
             self.sim_model = ei_multinom_dirichlet(
-                group_fractions,
-                votes_fractions,
-                precinct_pops,
-                **self.additional_model_params,
+                group_fractions, votes_fractions, precinct_pops, **self.additional_model_params,
             )
 
         elif self.model_name == "multinomial-dirichlet-modified":
             self.sim_model = ei_multinom_dirichlet_modified(
-                group_fractions,
-                votes_fractions,
-                precinct_pops,
-                **self.additional_model_params,
+                group_fractions, votes_fractions, precinct_pops, **self.additional_model_params,
             )
         else:
             raise ValueError(
@@ -282,11 +276,7 @@ class RowByColumnEI:
         # compute credible intervals
         percentiles = [2.5, 97.5]
         self.credible_interval_95_mean_voting_prefs = np.zeros(
-            (
-                self.num_groups_and_num_candidates[0],
-                self.num_groups_and_num_candidates[1],
-                2,
-            )
+            (self.num_groups_and_num_candidates[0], self.num_groups_and_num_candidates[1], 2,)
         )
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1]):
