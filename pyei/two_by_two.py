@@ -445,28 +445,38 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             self.precinct_names = precinct_names
 
         if self.model_name == "king99":
-            self.sim_model = ei_beta_binom_model(
-                group_fraction,
-                votes_fraction,
-                precinct_pops,
-                **self.additional_model_params,
-            )
+            model_function = ei_beta_binom_model
+            # self.sim_model = ei_beta_binom_model(
+            #     group_fraction,
+            #     votes_fraction,
+            #     precinct_pops,
+            #     **self.additional_model_params,
         elif self.model_name == "king99_pareto_modification":
-            self.sim_model = ei_beta_binom_model_modified(
-                group_fraction,
-                votes_fraction,
-                precinct_pops,
-                **self.additional_model_params,
-            )
+            model_function = ei_beta_binom_model_modified
+            # self.sim_model = ei_beta_binom_model_modified(
+            #     group_fraction,
+            #     votes_fraction,
+            #     precinct_pops,
+            #     **self.additional_model_params,
+            # )
         elif self.model_name == "wakefield_beta":
-            self.sim_model = wakefield_model_beta(
-                group_fraction,
-                votes_fraction,
-                precinct_pops,
-                **self.additional_model_params,
-            )
+            model_function = wakefield_model_beta
+            # self.sim_model = wakefield_model_beta(
+            #     group_fraction,
+            #     votes_fraction,
+            #     precinct_pops,
+            #     **self.additional_model_params,
+            # )
         elif self.model_name == "wakefield_normal":
-            self.sim_model = wakefield_normal(
+            model_function = wakefield_normal
+            # self.sim_model = wakefield_normal(
+            #     group_fraction,
+            #     votes_fraction,
+            #     precinct_pops,
+            #     **self.additional_model_params,
+            # )
+
+        self.sim_model = model_function(
                 group_fraction,
                 votes_fraction,
                 precinct_pops,
