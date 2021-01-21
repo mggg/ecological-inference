@@ -55,7 +55,7 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
         # TODO: make b vs. beta naming consistent
         # conc_params = pm.Exponential("conc_params", lam=lmbda, shape=(num_rows, num_cols))
         conc_params = pm.Gamma(
-            "conc_params", alpha=lmbda1, beta=1 / lmbda2, shape=(num_rows, num_cols)
+            "conc_params", alpha=lmbda1, beta= 1 / lmbda2, shape=(num_rows, num_cols)
         )  # chosen to match eiPack
         beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
@@ -148,8 +148,8 @@ class RowByColumnEI:
         group_fractions,
         votes_fractions,
         precinct_pops,
-        demographic_group_names,
-        candidate_names,
+        demographic_group_names=None,
+        candidate_names=None,
         target_accept=0.99,
         tune=1500,
         draw_samples=True,
@@ -190,6 +190,11 @@ class RowByColumnEI:
         self.demographic_group_fractions = group_fractions
         self.votes_fractions = votes_fractions
         self.precinct_pops = precinct_pops
+        #give demographic groups and candidate names 1-indexed numbers as names if names are not specified
+        if demographic_group_names is None:
+            demographic_group_names = [str(i) for i in range(1, group_fractions.shape[0] + 1)] 
+        if candidate_names is None:
+            demographic_group_names = [str(i) for i in range(1, votes_fractions.shape[0] + 1)] 
         self.demographic_group_names = demographic_group_names
         self.candidate_names = candidate_names
 
