@@ -1,48 +1,32 @@
 """Helpers for managing data files."""
-# import io
-# import os
-# import pkgutil
+from dataclasses import dataclass
 
 import pandas as pd
 
-__all__ = ["get_data"]
+__all__ = ["Datasets"]
 
 
-def get_data(filename):
-    """Returns a dataframe for example datasets.
+@dataclass
+class _DataSet:
+    """Class to hold datasets and related information.
 
-    Will either load remotely, or locally. Currently supports:
-
-    - santaClara.csv
-    - waterbury.csv
-
-    TODO: Add details about these datasets.
-
-    Parameters
-    ----------
-    filename: str
-        File to load. See above for valid files.
-
-    Returns
-    -------
-    BytesIO of the data
+    TODO: Add description, provenance, and other metadata here.
     """
-    if filename == "santaClara.csv":
-        return pd.read_csv(
-            "https://raw.githubusercontent.com/gerrymandr/ei-app/master/santaClara.csv"
-        )
-    elif filename == "waterbury.csv":
-        return pd.read_csv(
-            "https://raw.githubusercontent.com/gerrymandr/ei-app/master/waterbury.csv"
-        )
-    else:
-        raise ValueError(
-            """get_data() currently only supports filenames "santaClara.csv" or "waterbury.csv".
-        Use, e.g., pandas.read_csv()" if you'd like to load your own data file"""
-        )
 
-    # This does not work yet (9/2/20), but will collect
-    # files checked into pyei/examples/data/<filename>
-    # else:
-    #    data_pkg = "pyei.examples"
-    #    return pd.read_csv(io.BytesIO(pkgutil.get_data(data_pkg, os.path.join("data", filename))))
+    url: str
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Materialize as a pandas dataframe."""
+        return pd.read_csv(self.url)
+
+
+class Datasets:  # pylint: disable=too-few-public-methods
+    """Available datasets related to ecological inference.
+
+    These support examples in the library. Please open an issue or pull request if you would
+    like to see other specific examples, or have questions about these."""
+
+    Santa_Clara = _DataSet(
+        "https://raw.githubusercontent.com/gerrymandr/ei-app/master/santaClara.csv"
+    )
+    Waterbury = _DataSet("https://raw.githubusercontent.com/gerrymandr/ei-app/master/waterbury.csv")
