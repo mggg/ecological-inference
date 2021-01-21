@@ -116,14 +116,14 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         self.demographic_group_fraction = group_fraction
         self.votes_fraction = votes_fraction
 
-        model_
-
         if self.weighted_by_pop:
             model_function = goodmans_er_bayes_pop_weighted_model
         else:
-            self.sim_model = goodmans_er_bayes_model
+            model_function = goodmans_er_bayes_model
+        self.sim_model = model_function(
+            group_fraction, votes_fraction, **self.additional_model_params
+        )
 
-        sim.model = model_function(group_fraction, votes_fraction, **self.additional_model_params)
         with self.sim_model:
             self.sim_trace = pm.sample(1000, tune=1000, target_accept=0.9)
 
