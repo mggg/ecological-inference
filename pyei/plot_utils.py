@@ -260,7 +260,12 @@ def plot_boxplots(
 
 
 def plot_summary(
-    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, candidate_name, axes=None
+    voting_prefs_group1,
+    voting_prefs_group2,
+    group1_name,
+    group2_name,
+    candidate_name,
+    axes=None,
 ):
     """Plot KDE, histogram, and boxplot for 2x2 case
 
@@ -289,7 +294,10 @@ def plot_summary(
 
     if axes is None:
         _, (ax_box, ax_hist) = plt.subplots(
-            2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (0.15, 0.85)}
+            2,
+            sharex=True,
+            figsize=(12, 6.4),
+            gridspec_kw={"height_ratios": (0.15, 0.85)},
         )
     else:
         ax_box, ax_hist = axes
