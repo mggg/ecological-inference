@@ -477,11 +477,11 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             # )
 
         self.sim_model = model_function(
-                group_fraction,
-                votes_fraction,
-                precinct_pops,
-                **self.additional_model_params,
-            )
+            group_fraction,
+            votes_fraction,
+            precinct_pops,
+            **self.additional_model_params,
+        )
 
         if draw_samples:
             # TODO: this workaround shouldn't be necessary. Modify the model so that the checks
