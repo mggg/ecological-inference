@@ -26,7 +26,7 @@ def example_r_by_c_data():
 
 
 @pytest.fixture(scope="session")
-def example_r_by_c_ei(example_r_by_c_data):
+def example_r_by_c_ei(example_r_by_c_data): # pylint: disable=redefined-outer-name
     """run an r by c ei example method"""
     ei_ex = RowByColumnEI(model_name="multinomial-dirichlet")
     ei_ex.fit(
@@ -39,17 +39,17 @@ def example_r_by_c_ei(example_r_by_c_data):
     return ei_ex
 
 
-def test_ei_r_by_c_boxplots(example_r_by_c_ei):
+def test_ei_r_by_c_boxplots(example_r_by_c_ei): # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
     example_r_by_c_ei.plot_boxplots()
     example_r_by_c_ei.plot_boxplots(plot_by="group")
 
 
-def test_ei_r_by_c_kdes(example_r_by_c_ei):
+def test_ei_r_by_c_kdes(example_r_by_c_ei): # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
     example_r_by_c_ei.plot_kdes(plot_by="candidate")
     example_r_by_c_ei.plot_kdes(plot_by="group")
 
 
-def test_ei_r_by_c_intervals_by_precinct(example_r_by_c_ei):
+def test_ei_r_by_c_intervals_by_precinct(example_r_by_c_ei): # pylint: disable=redefined-outer-name
     example_r_by_c_ei.plot_intervals_by_precinct("e_asian", "Kolstad")
