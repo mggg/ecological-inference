@@ -1,6 +1,34 @@
-# pyei
+# PyEI
 
-## Getting started
+PyEI is a Python library for ecological inference. It is new and under active development, so expect rough edges and bugs -- and for additional features and documentation to be coming quickly!
+
+## Want to use PyEI? Start here.
+
+### Installation
+You can install with pip:
+
+```
+pip install git+git://github.com/mggg/ecological-inference.git
+```
+### Example notebooks
+
+Check out the [example notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/examples) for sample code
+that shows how to run and adjust the various models in PyEI on datesets.  
+
+For two-by-two cases, check out the examples in `santa_clara_demo.ipynb`.
+
+For r-by-c cases, check out the examples in `santa_clara_demo_r_by_c.ipynb`.
+
+For examples of more in depth model comparison and checking steps with PyEI, see `model_eval_and_comparison_demo.ipynb`.
+
+### Issues
+
+Feel free to file an issue if you are running into trouble or if there is a feature you'd particularly like to see, and we will do our best to get to it!
+
+
+## Want to contribute to PyEI? Start here.
+
+Contributions are welcome! 
 
 Uses Python>=3.7. After cloning the environment, you should be able to use either `virtualenv` or `conda` to run the code. The second (`conda`) is probably easier for development, but `virtualenv` is used for the project's CI.
 
@@ -25,9 +53,9 @@ source activate pyei                 # activate conda env
 conda install pymc3 mkl-service scikit-learn matplotlib seaborn black mypy pylint pytest pytest-cov
 ```
 
-## Contributing
+### Testing
 
-Contributions are welcome! See the `Getting started` section for installing the project. After making changes, make sure everything works by running
+After making changes, make sure everything works by running
 
 ```bash
 ./scripts/lint_and_test.sh
