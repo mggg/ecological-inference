@@ -20,7 +20,7 @@ def example_two_by_two_data():
     return {
         "group_fractions": group_fractions,
         "votes_fractions": votes_fractions,
-        "precint_pops": precint_pops,
+        "precint_pops": precinct_pops,
         "demographic_group_name": demographic_group_name,
         "candidate_name": candidate_name,
         "precinct_names": precinct_names,
