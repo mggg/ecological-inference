@@ -28,7 +28,7 @@ def example_two_by_two_data():
 
 
 @pytest.fixture(scope="session")
-def example_two_by_two_ei(example_two_by_two_data): # pylint: disable=redefined-outer-name
+def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined-outer-name
     """"""
     ei_ex = TwoByTwoEI(model_name="king99_pareto_modification", pareto_scale=8, pareto_shape=2)
     ei_ex.fit(
@@ -51,37 +51,39 @@ def test_tomography_plot(example_two_by_two_data):
     )
 
 
-def test_ei_plot_and_plot_summary(example_two_by_two_ei): # pylint: disable=redefined-outer-name
+def test_ei_plot_and_plot_summary(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
     axes = example_two_by_two_ei.plot()
     assert len(axes) == 2  ## one axis each for boxplot and kde
 
 
-def test_ei_plot_kdes(example_two_by_two_ei): # pylint: disable=redefined-outer-name
+def test_ei_plot_kdes(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.plot_kde()
     assert ax is not None
 
 
-def test_ei_plot_boxplot(example_two_by_two_ei): # pylint: disable=redefined-outer-name
+def test_ei_plot_boxplot(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.plot_boxplot()
     assert ax is not None
 
 
-def test_ei_plot_intervals(example_two_by_two_ei): # pylint: disable=redefined-outer-name
+def test_ei_plot_intervals(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.plot_intervals()
     assert ax is not None
 
 
-def test_ei_precinct_level_plots(example_two_by_two_ei):# pylint: disable=redefined-outer-name
+def test_ei_precinct_level_plots(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.precinct_level_plot()
     assert ax is not None
 
 
-def test_ei_plot_intervals_by_precinct(example_two_by_two_ei): # pylint: disable=redefined-outer-name
+def test_ei_plot_intervals_by_precinct(
+    example_two_by_two_ei,
+):  # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.plot_intervals_by_precinct()
     assert ax is not None
