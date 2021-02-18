@@ -61,12 +61,20 @@ def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1
     group2_y = overlap * group2_y / group2_y.max()
 
     ax.fill_between(
-        x, group1_y + trans, trans, color="steelblue", zorder=z_init,
+        x,
+        group1_y + trans,
+        trans,
+        color="steelblue",
+        zorder=z_init,
     )
     ax.plot(x, group1_y + trans, color="black", linewidth=1, zorder=z_init + 1)
 
     ax.fill_between(
-        x, group2_y + trans, trans, color="orange", zorder=z_init + 2,
+        x,
+        group2_y + trans,
+        trans,
+        color="orange",
+        zorder=z_init + 2,
     )
     ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=z_init + 3)
 
@@ -252,7 +260,12 @@ def plot_boxplots(
 
 
 def plot_summary(
-    voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, candidate_name, axes=None,
+    voting_prefs_group1,
+    voting_prefs_group2,
+    group1_name,
+    group2_name,
+    candidate_name,
+    axes=None,
 ):
     """Plot KDE, histogram, and boxplot for 2x2 case
 
@@ -281,7 +294,10 @@ def plot_summary(
 
     if axes is None:
         _, (ax_box, ax_hist) = plt.subplots(
-            2, sharex=True, figsize=(12, 6.4), gridspec_kw={"height_ratios": (0.15, 0.85)},
+            2,
+            sharex=True,
+            figsize=(12, 6.4),
+            gridspec_kw={"height_ratios": (0.15, 0.85)},
         )
     else:
         ax_box, ax_hist = axes
