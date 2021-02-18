@@ -9,11 +9,11 @@ from pyei.two_by_two import TwoByTwoEI
 
 @pytest.fixture(scope="session")
 def example_two_by_two_data():
-    """"""
+    """load santa clara data to test two by two ei and plots"""
     sc_data = data.Datasets.Santa_Clara.to_dataframe()
     group_fractions = np.array(sc_data["pct_e_asian_vote"])
-    T = np.array(sc_data["pct_for_hardy2"])
-    N = np.array(sc_data["total2"])
+    votes_fractions = np.array(sc_data["pct_for_hardy2"])
+    precinct_pops = np.array(sc_data["total2"])
     demographic_group_name = "e_asian"
     candidate_name = "Hardy"
     precinct_names = sc_data["precinct"]
@@ -29,7 +29,7 @@ def example_two_by_two_data():
 
 @pytest.fixture(scope="session")
 def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined-outer-name
-    """"""
+    """run example two by two ei method - can use to test plotting"""
     ei_ex = TwoByTwoEI(model_name="king99_pareto_modification", pareto_scale=8, pareto_shape=2)
     ei_ex.fit(
         example_two_by_two_data["group_fractions"],
@@ -42,7 +42,7 @@ def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined
     return ei_ex
 
 
-def test_tomography_plot(example_two_by_two_data):
+def test_tomography_plot(example_two_by_two_data):  # pylint: disable=redefined-outer-name
     tomography_plot(
         example_two_by_two_data["group_fractions"],
         example_two_by_two_data["votes_fractions"],
