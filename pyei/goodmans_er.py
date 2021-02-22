@@ -121,7 +121,7 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         else:
             model_function = goodmans_er_bayes_model
         self.sim_model = model_function(
-            group_fraction, votes_fraction, **self.additional_model_params
+            group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
         )
 
         with self.sim_model:
