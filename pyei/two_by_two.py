@@ -362,10 +362,10 @@ class TwoByTwoEIBaseBayes:
         preferences for the given candidate is more than threshold
         OR
         for a given probability, return the associated percentile/threshold
-        
+
         Exactly one of probability or threshold must be None
         """
-        return_threshold = (threshold is None)
+        return_threshold = threshold is None
 
         threshold, probability, _, group, group_complement = self._calculate_polarization(
             threshold, probability, reference_group
@@ -374,13 +374,11 @@ class TwoByTwoEIBaseBayes:
             return f"""The probability that the difference between the groups' preferences
             for {self.candidate_name} ( {group_complement} - {group} ) is more than
             {threshold:.5f} is {probability:.5f}"""
-        
+
         elif return_threshold:
             return threshold
         else:
             return probability
-        
-        
 
     def summary(self):
         """Return a summary string"""
