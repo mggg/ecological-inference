@@ -19,6 +19,7 @@ __all__ = [
     "plot_intervals_all_precincts",
     "plot_kdes",
     "plot_kde",
+    "plot_polarization_kde",
     "plot_precinct_scatterplot",
     "plot_precincts",
     "plot_summary",
@@ -446,6 +447,58 @@ def plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name,
     )
 
     ax.legend()
+    return ax
+
+
+def plot_polarization_kde(
+    diff_samples,
+    threshold,
+    probability,
+    group,
+    group_complement,
+    candidate_name,
+    show_threshold=False,
+    ax=None,
+):
+    """
+    Plots a kde for the differences in voting prefernces between two groups
+
+    diff_samples: array
+        samples of the differences in voting preferences (group_complement - group)
+    probability: float
+        the probability that (group_complement - group) > threshold
+    threshold: float
+        a threshold for the difference in voting patterns between two groups
+    group_complement : str
+        the name of the group that is not being used as the reference group
+    group: str
+        the name of the reference group
+    show_threshold: bool
+        if true, add a vertical line at the threshold on the plot and display the associated
+        tail probability
+    """
+
+    if ax is None:
+        ax = plt.gca()
+    ax.set_xlim((-1, 1))
+    sns.histplot(
+        diff_samples,
+        kde=True,
+        ax=ax,
+        element="step",
+        stat="density",
+        label=group_complement + " - " + group,
+        color=f"C{2}",
+        linewidth=0,
+    )
+    if show_threshold:
+        ax.axvline(threshold, c="gray")
+        ax.text(threshold + 0.05, 0.5, f"Prob (difference > {threshold:.3f} )  = {probability:.3f}")
+
+    ax.set_title(
+        f"Difference in voter preference for {candidate_name}: {group_complement} -  {group}"
+    )
+
     return ax
 
 
