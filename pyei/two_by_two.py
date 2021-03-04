@@ -16,6 +16,7 @@ from .plot_utils import (
     plot_boxplot,
     plot_kde,
     plot_precincts,
+    plot_polarization_kde,
     plot_summary,
     plot_intervals_all_precincts,
 )
@@ -328,6 +329,47 @@ class TwoByTwoEIBaseBayes:
             self.sampled_voting_prefs[1], percentiles
         )
 
+    def _calculate_polarization(self, threshold=None, probability=None, reference_group=0):
+        """calculate percentile given a threshold, or threshold if given a probability
+        exactly one of probabilty and threshold must be null
+        """
+        samples = self.sampled_voting_prefs[1] - self.sampled_voting_prefs[0]
+        group = self.demographic_group_name
+        group_complement = "non-" + self.demographic_group_name
+        if reference_group == 1:
+            samples = -samples
+            group = "non-" + self.demographic_group_name
+            group_complement = self.demographic_group_name
+
+        if probability is None and threshold is not None:
+            probability = (samples > threshold).sum() / len(self.sampled_voting_prefs[0])
+        elif threshold is None and probability is not None:
+            threshold = np.percentile(samples, probability)
+        else:
+            raise ValueError(
+                """Exactly one of threshold or probability must be None.
+            Set a threshold to calculate the associated probability, or a probability
+            to calculate the associated probability/percentile
+            """
+            )
+        return threshold, probability, samples, group, group_complement
+
+    def polarization_report(
+        self, threshold=None, probability=None, reference_group=0, verbose=True
+    ):
+        """return probabiity that the difference between the group's
+        preferences for the given candidate is more than threshold
+        """
+        threshold, probability, _, group, group_complement = self._calculate_polarization(
+            threshold, probability, reference_group
+        )
+        if verbose:
+            return f"""The probability that the difference between the groups' preferences
+            for {self.candidate_name} ( {group_complement} - {group} ) iss more than
+            {threshold:.5f} is {probability:.5f}"""
+        else:
+            return probability
+
     def summary(self):
         """Return a summary string"""
         # TODO: probably format this as a table
@@ -368,6 +410,24 @@ class TwoByTwoEIBaseBayes:
             self.candidate_name,
             title,
             ax=ax,
+        )
+
+    def plot_polarization_kde(
+        self, threshold=None, probability=None, reference_group=0, show_threshold=False, ax=None
+    ):
+        """Plot kde of differences between voting preferences"""
+        threshold, probability, samples, group, group_complement = self._calculate_polarization(
+            threshold, probability, reference_group
+        )
+        return plot_polarization_kde(
+            samples,
+            threshold,
+            probability,
+            group,
+            group_complement,
+            self.candidate_name,
+            show_threshold,
+            ax,
         )
 
 
