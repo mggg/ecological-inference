@@ -28,7 +28,9 @@ __all__ = [
 ]
 
 
-def plot_single_ridgeplot(ax, group1_pref, group2_pref, colors, z_init, trans, overlap=1.3, num_points=500):
+def plot_single_ridgeplot(
+    ax, group1_pref, group2_pref, colors, z_init, trans, overlap=1.3, num_points=500
+):
     """Helper function for plot_precincts that plots a single ridgeplot (e.g.,
     for a single precinct for a given candidate.)
 
@@ -82,6 +84,7 @@ def plot_single_ridgeplot(ax, group1_pref, group2_pref, colors, z_init, trans, o
     )
     ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=z_init + 3)
 
+
 def plot_precincts(
     voting_prefs_group1,
     voting_prefs_group2,
@@ -133,7 +136,7 @@ def plot_precincts(
     legend_space = 5
     if ax is None:
         # adapt height of plot to the number of precincts
-        _, ax = plt.subplots(figsize=(6.4, 0.2 * (N+legend_space)))
+        _, ax = plt.subplots(figsize=(6.4, 0.2 * (N + legend_space)))
 
     iterator = zip(voting_prefs_group1.T, voting_prefs_group2.T)
 
@@ -144,7 +147,7 @@ def plot_precincts(
         plot_single_ridgeplot(ax, group1, group2, colors, 4 * N - 4 * idx, trans)
     for i in range(legend_space):
         # add `legend_space` number of lines to the top of the plot for legend
-        ax.plot([0], [idx+i+1])
+        ax.plot([0], [idx + i + 1])
 
     def replace_ticks_with_precinct_labels(value, pos):
         # pylint: disable=unused-argument
@@ -161,9 +164,9 @@ def plot_precincts(
     ax.set_xlabel("Percent vote for candidate")
     ax.set_ylabel("Precinct")
 
-    proxy_handles = [mpatches.Patch(color=colors[i],
-                                    ec="black",
-                                    label=group_names[i]) for i in range(2)]
+    proxy_handles = [
+        mpatches.Patch(color=colors[i], ec="black", label=group_names[i]) for i in range(2)
+    ]
     ax.legend(handles=proxy_handles, loc="upper center")
     return ax
 
