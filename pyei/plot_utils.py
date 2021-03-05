@@ -147,7 +147,7 @@ def plot_precincts(
         plot_single_ridgeplot(ax, group1, group2, colors, 4 * N - 4 * idx, trans)
     for i in range(legend_space):
         # add `legend_space` number of lines to the top of the plot for legend
-        ax.plot([0], [idx + i + 1])
+        ax.plot([0], [N + i])
 
     def replace_ticks_with_precinct_labels(value, pos):
         # pylint: disable=unused-argument
