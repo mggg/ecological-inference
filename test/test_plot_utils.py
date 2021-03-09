@@ -38,6 +38,8 @@ def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined
         demographic_group_name=example_two_by_two_data["demographic_group_name"],
         candidate_name=example_two_by_two_data["candidate_name"],
         precinct_names=example_two_by_two_data["precinct_names"],
+        draws=100,
+        tune=100
     )
     return ei_ex
 
