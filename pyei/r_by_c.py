@@ -382,7 +382,6 @@ class RowByColumnEI:
             self.demographic_group_names,
             self.candidate_names,
             plot_by=plot_by,
-            show_first_plot_only=True, #'TODO: THIS SHOULD BE FALSE!!'
             axes=axes,
         )
 

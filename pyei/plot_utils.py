@@ -266,7 +266,7 @@ def plot_boxplots(
     fig.subplots_adjust(hspace=0.75)
 
     for plot_idx in range(num_plots):
-        
+
         samples_df = pd.DataFrame(
             {legend[i]: sampled_voting_prefs[:, i, plot_idx] for i in range(num_boxes_per_plot)}
         )
@@ -547,8 +547,8 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         preferences for all candidates.
     show_first_plot_only: bool
         Default=False
-        Show ony the first set of kdes (useful for 2x2. For example, if plot_by="candidate" and there are
-        only two candidates/voting outcomes, so that if we know support for candidate A we know support
+        Show ony the first set of kdes (useful for 2x2. E.g., if plot_by="candidate" and there are
+        only two candidates/voting outcomes, so that if we know support for candidate A, know supp
         for candidate B is 1-supp for A, then we may only want to visualize support for A)
     axes : list of Matplotlib axis object or None
         Default=None.
@@ -579,13 +579,13 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
     else:
         raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
     fig.subplots_adjust(hspace=0.5)
-    
+
     for plot_idx in range(num_plots):
         if num_plots > 1:
             ax = axes[plot_idx]
         else:
             ax = axes
-        ax.set_title('Support for ' + titles[plot_idx])
+        ax.set_title("Support for " + titles[plot_idx])
         ax.set_xlim((0, 1))
         for kde_idx in range(num_kdes_per_plot):
             sns.histplot(
@@ -598,7 +598,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
                 color=f"C{kde_idx}",
                 linewidth=0,
             )
-        
+
     if num_plots > 1:
         axes[0].legend(bbox_to_anchor=(1, 1), loc="upper left")
     else:
