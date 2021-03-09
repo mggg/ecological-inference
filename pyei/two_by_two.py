@@ -13,8 +13,8 @@ import theano.tensor as tt
 import theano
 from .plot_utils import (
     plot_conf_or_credible_interval,
-    plot_boxplot,
-    plot_kde,
+    plot_boxplots,
+    plot_kdes,
     plot_precincts,
     plot_polarization_kde,
     plot_summary,
@@ -312,6 +312,16 @@ class TwoByTwoEIBaseBayes:
         """Bundles together the samples, for ease of passing to plots"""
         return (self.sampled_voting_prefs[0], self.sampled_voting_prefs[1])
 
+    def _voting_prefs_array(self):
+        """Bundles together the samples as num_samples x 2 x 1 array,
+        for ease of passing to plots"""
+        #TODO: should use this instead of _voting_prefs, for compatibility with r by c
+        num_samples = len(self.sampled_voting_prefs[0])
+        sampled_voting_prefs = np.empty((num_samples, 2, 1)) #num_samples x 2 x 1
+        sampled_voting_prefs[:,0, 0] = self.sampled_voting_prefs[0]
+        sampled_voting_prefs[:,1, 0] = self.sampled_voting_prefs[1]
+        return sampled_voting_prefs
+
     def calculate_summary(self):
         """Calculate point estimates (post. means) and credible intervals
         Assumes sampled_voting_prefs has already been set"""
@@ -402,11 +412,11 @@ class TwoByTwoEIBaseBayes:
 
     def plot_kde(self, ax=None):
         """kernel density estimate/ histogram plot"""
-        return plot_kde(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
+        return plot_kdes(self._voting_prefs_array(),self._group_names_for_display(), [self.candidate_name], plot_by="candidate", axes=ax)
 
     def plot_boxplot(self, ax=None):
         """ Boxplot of voting prefs for each group"""
-        return plot_boxplot(*self._voting_prefs(), *self._group_names_for_display(), ax=ax)
+        return plot_boxplots(self._voting_prefs_array(), self._group_names_for_display(), [self.candidate_name], plot_by="candidate", axes=ax)
 
     def plot_intervals(self, ax=None):
         """ Plot of credible intervals for each group"""
