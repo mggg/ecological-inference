@@ -404,7 +404,7 @@ class RowByColumnEI:
         point_estimates = point_estimates_all[:, group_index, candidate_index]
         intervals = intervals_all[:, group_index, candidate_index, :]
 
-        plot_intervals_all_precincts(
+        return plot_intervals_all_precincts(
             point_estimates,
             intervals,
             candidate_name,
