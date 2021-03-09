@@ -38,7 +38,7 @@ def example_r_by_c_ei(example_r_by_c_data):  # pylint: disable=redefined-outer-n
         example_r_by_c_data["demographic_group_names"],
         example_r_by_c_data["candidate_names"],
         draws=100,
-        tune=100
+        tune=100,
     )
     return ei_ex
 
