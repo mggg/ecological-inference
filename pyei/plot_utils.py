@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker as mticker
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
+import matplotlib.patches as mpatches
 import numpy as np
 import scipy.stats as st
 
@@ -27,7 +28,9 @@ __all__ = [
 ]
 
 
-def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1.3, num_points=500):
+def plot_single_ridgeplot(
+    ax, group1_pref, group2_pref, colors, z_init, trans, overlap=1.3, num_points=500
+):
     """Helper function for plot_precincts that plots a single ridgeplot (e.g.,
     for a single precinct for a given candidate.)
 
@@ -40,6 +43,8 @@ def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1
     group2_pref : array
         The estimates for the support for the candidate among
         Group 2 (array of floats, expected to be between 0 and 1)
+    colors : array
+        The (ordered) names of colors to use to fill ridgeplots
     z_init : float
         The initial value for the z-order (helps determine
         how plots get drawn over one another)
@@ -65,7 +70,7 @@ def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1
         x,
         group1_y + trans,
         trans,
-        color="steelblue",
+        color=colors[0],
         zorder=z_init,
     )
     ax.plot(x, group1_y + trans, color="black", linewidth=1, zorder=z_init + 1)
@@ -74,7 +79,7 @@ def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1
         x,
         group2_y + trans,
         trans,
-        color="orange",
+        color=colors[1],
         zorder=z_init + 2,
     )
     ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=z_init + 3)
@@ -83,6 +88,7 @@ def plot_single_ridgeplot(ax, group1_pref, group2_pref, z_init, trans, overlap=1
 def plot_precincts(
     voting_prefs_group1,
     voting_prefs_group2,
+    group_names,
     precinct_labels=None,
     show_all_precincts=False,
     ax=None,
@@ -96,6 +102,8 @@ def plot_precincts(
         of support for given candidate among group 1 in each precinct
     voting_prefs_group2 : numpy array
         Same as voting_prefs_group2, except showing support among group 2
+    group_names: list of str
+        The demographic group names, for display in the legend
     precinct_labels : list of str (optional)
         The names for each precinct
     show_all_precincts : bool, optional
@@ -124,16 +132,22 @@ def plot_precincts(
         N = 50
     if precinct_labels is None:
         precinct_labels = range(1, N + 1)
+
+    legend_space = 5
     if ax is None:
         # adapt height of plot to the number of precincts
-        _, ax = plt.subplots(figsize=(6.4, 0.2 * N))
+        _, ax = plt.subplots(figsize=(6.4, 0.2 * (N + legend_space)))
 
     iterator = zip(voting_prefs_group1.T, voting_prefs_group2.T)
 
+    colors = ["steelblue", "orange"]
     for idx, (group1, group2) in enumerate(iterator, 0):
         ax.plot([0], [idx])
         trans = ax.convert_yunits(idx)
-        plot_single_ridgeplot(ax, group1, group2, 4 * N - 4 * idx, trans)
+        plot_single_ridgeplot(ax, group1, group2, colors, 4 * N - 4 * idx, trans)
+    for i in range(legend_space):
+        # add `legend_space` number of lines to the top of the plot for legend
+        ax.plot([0], [N + i])
 
     def replace_ticks_with_precinct_labels(value, pos):
         # pylint: disable=unused-argument
@@ -149,6 +163,11 @@ def plot_precincts(
     ax.set_title("Precinct level estimates of voting preferences")
     ax.set_xlabel("Percent vote for candidate")
     ax.set_ylabel("Precinct")
+
+    proxy_handles = [
+        mpatches.Patch(color=colors[i], ec="black", label=group_names[i]) for i in range(2)
+    ]
+    ax.legend(handles=proxy_handles, loc="upper center")
     return ax
 
 

@@ -668,6 +668,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         """
         voting_prefs_group1 = self.sim_trace.get_values("b_1")
         voting_prefs_group2 = self.sim_trace.get_values("b_2")
+        group_names = self._group_names_for_display()
         if precinct_names is not None:
             precinct_idxs = [self.precinct_names.index(name) for name in precinct_names]
             voting_prefs_group1 = voting_prefs_group1[:, precinct_idxs]
@@ -675,6 +676,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         return plot_precincts(
             voting_prefs_group1,
             voting_prefs_group2,
+            group_names=group_names,
             precinct_labels=precinct_names,
             show_all_precincts=show_all_precincts,
             ax=ax,
