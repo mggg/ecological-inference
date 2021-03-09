@@ -354,7 +354,7 @@ def plot_summary(
 
 def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="all", ax=None):
     """
-    Given two EI runs, plot precinct-by-precinct comparison of preferences
+    Given two RxC EI runs, plot precinct-by-precinct comparison of preferences
     for a given candidate from a given demographic group.
 
     Parameters

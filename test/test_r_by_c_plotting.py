@@ -2,6 +2,7 @@
 import pytest
 import numpy as np
 from pyei import data
+from pyei.plot_utils import plot_precinct_scatterplot
 from pyei.r_by_c import RowByColumnEI
 
 
@@ -26,9 +27,9 @@ def example_r_by_c_data():
     }
 
 
-@pytest.fixture(scope="session")
 def example_r_by_c_ei(example_r_by_c_data):  # pylint: disable=redefined-outer-name
-    """run an r by c ei example method"""
+    """Run this to generate an EI instance"""
+
     ei_ex = RowByColumnEI(model_name="multinomial-dirichlet")
     ei_ex.fit(
         example_r_by_c_data["group_fractions"],
@@ -40,17 +41,46 @@ def example_r_by_c_ei(example_r_by_c_data):  # pylint: disable=redefined-outer-n
     return ei_ex
 
 
-def test_ei_r_by_c_boxplots(example_r_by_c_ei):  # pylint: disable=redefined-outer-name
+@pytest.fixture(scope="session")
+def two_r_by_c_ei_runs(example_r_by_c_data):  # pylint: disable=redefined-outer-name
+    """use the EI Factory to fix two EI instances for our tests"""
+    example_ei_r_by_c_1 = example_r_by_c_ei(example_r_by_c_data)
+    example_ei_r_by_c_2 = example_r_by_c_ei(example_r_by_c_data)
+    return [example_ei_r_by_c_1, example_ei_r_by_c_2]
+
+
+def test_ei_r_by_c_precinct_scatterplot(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+    all_demographics_ax = plot_precinct_scatterplot(
+        two_r_by_c_ei_runs, ["Run 1", "Run 2"], "Kolstad"
+    )
+    just_ind_ax = plot_precinct_scatterplot(two_r_by_c_ei_runs, ["Run 1", "Run 2"], "Nadeem", "ind")
+    assert all_demographics_ax is not None
+    assert just_ind_ax is not None
+
+
+def test_ei_r_by_c_boxplots(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
-    example_r_by_c_ei.plot_boxplots()
-    example_r_by_c_ei.plot_boxplots(plot_by="group")
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    assert example_r_by_c_ei.plot_boxplots() is not None
+    assert example_r_by_c_ei.plot_boxplots(plot_by="group") is not None
+    with pytest.raises(ValueError):
+        example_r_by_c_ei.plot_boxplots(plot_by="grupo")
 
 
-def test_ei_r_by_c_kdes(example_r_by_c_ei):  # pylint: disable=redefined-outer-name
+def test_ei_r_by_c_kdes(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
     # TODO: maybe uncouple this to test the plot utils piece alone
-    example_r_by_c_ei.plot_kdes(plot_by="candidate")
-    example_r_by_c_ei.plot_kdes(plot_by="group")
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    assert example_r_by_c_ei.plot_kdes(plot_by="candidate") is not None
+    assert example_r_by_c_ei.plot_kdes(plot_by="group") is not None
+    with pytest.raises(ValueError):
+        example_r_by_c_ei.plot_kdes(plot_by="grupo")
 
 
-def test_ei_r_by_c_intervals_by_precinct(example_r_by_c_ei):  # pylint: disable=redefined-outer-name
-    example_r_by_c_ei.plot_intervals_by_precinct("e_asian", "Kolstad")
+def test_ei_r_by_c_intervals_by_precinct(
+    two_r_by_c_ei_runs,
+):  # pylint: disable=redefined-outer-name
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]
+    assert example_r_by_c_ei.plot_intervals_by_precinct("e_asian", "Kolstad") is not None
+    with pytest.raises(ValueError):
+        example_r_by_c_ei.plot_intervals_by_precinct("e_asian", "Kolstaad")
+        example_r_by_c_ei.plot_intervals_by_precinct("ibnd", "Hardy")
