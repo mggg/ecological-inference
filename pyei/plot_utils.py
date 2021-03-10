@@ -14,12 +14,10 @@ import numpy as np
 import scipy.stats as st
 
 __all__ = [
-    "plot_boxplot",
     "plot_boxplots",
     "plot_conf_or_credible_interval",
     "plot_intervals_all_precincts",
     "plot_kdes",
-    "plot_kde",
     "plot_polarization_kde",
     "plot_precinct_scatterplot",
     "plot_precincts",
@@ -171,36 +169,6 @@ def plot_precincts(
     return ax
 
 
-def plot_boxplot(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
-    """
-    Horizontal boxplot of 2 groups of samples between 0 and 1
-
-    Parameters
-    ----------
-    voting_prefs_group1 : numpy array
-        shape (# of samples x # of precincts) representing the estimates of support for
-        given candidate among group 1 in each precinct in each sample
-    voting_prefs_group2 : numpy array
-        Same as voting_prefs_group2, except showing support among group 2
-    group1_name : str
-        Name of group 1 (used for legend of plot)
-    group2_name : str
-        Name of group 2 (used for legend of plot)
-    ax : Matplotlib axis object or None, optional
-        Default=None
-
-    Returns
-    -------
-    Matplotlib axis object
-    """
-    if ax is None:
-        ax = plt.gca()
-    samples_df = pd.DataFrame({group1_name: voting_prefs_group1, group2_name: voting_prefs_group2})
-    ax = sns.boxplot(data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax)
-    ax.set_xlim((0, 1))
-    return ax
-
-
 def plot_boxplots(
     sampled_voting_prefs, group_names, candidate_names, plot_by="candidate", axes=None
 ):
@@ -284,8 +252,7 @@ def plot_boxplots(
 
 
 def plot_summary(
-    voting_prefs_group1,
-    voting_prefs_group2,
+    sampled_voting_prefs,
     group1_name,
     group2_name,
     candidate_name,
@@ -295,11 +262,9 @@ def plot_summary(
 
     Parameters
     ----------
-    voting_prefs_group1 : array
-        Length=num_samples. Samples of estimated voting preferences (support)
+    sampled_voting_prefs : array
+        num_samples x 2 x 1 Samples of estimated voting preferences (support)
         of group 1 for the candidate.
-    voting_prefs_group2 : array
-        Length=num_samples. Same as voting_prefs_group1 but for group 2
     group1_name : str
         Name of group 1 (used for legend of plot)
     group2_name : str
@@ -333,7 +298,7 @@ def plot_summary(
     flier1_props = dict(marker="o", markerfacecolor=colors[0], alpha=0.5)
     flier2_props = dict(marker="d", markerfacecolor=colors[1], alpha=0.5)
     sns.boxplot(
-        x=voting_prefs_group1,
+        x=sampled_voting_prefs[:, 0, 0],
         orient="h",
         color=colors[0],
         ax=ax_box,
@@ -341,7 +306,7 @@ def plot_summary(
         **plot_props,
     )
     sns.boxplot(
-        x=voting_prefs_group2,
+        x=sampled_voting_prefs[:, 1, 0],
         orient="h",
         color=colors[1],
         ax=ax_box,
@@ -351,7 +316,8 @@ def plot_summary(
     ax_box.tick_params(axis="y", left=False)  # remove y axis ticks
 
     # plot distribution
-    plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=ax_hist)
+    plot_kdes(sampled_voting_prefs, [group1_name, group2_name], [candidate_name], axes=ax_hist)
+    ax_hist.set_title("")
     ax_hist.set_xlabel(f"Support for {candidate_name}")
     return (ax_box, ax_hist)
 
@@ -422,57 +388,6 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="
     return ax
 
 
-def plot_kde(voting_prefs_group1, voting_prefs_group2, group1_name, group2_name, ax=None):
-    """'
-    Plot kernel density plots of samples between 0 and 1 (e.g. of voting preferences) for two groups
-
-    Parameters
-    ----------
-    voting_prefs_group1 : array
-        Length=num_samples. Samples of estimated voting preferences (support)
-        of group 1 for the candidate.
-    voting_prefs_group2 : array
-        Length=num_samples. Same as voting_prefs_group1 but for group 2
-    group1_name : str
-        Name of group 1 (used for legend of plot)
-    group2_name : str
-        Name of group 2 (used for legend of plot)
-    ax : Matplotlib axis object or None
-        Default=None
-
-    Returns
-    -------
-    ax : Matplotlib axis object
-    """
-    if ax is None:
-        ax = plt.gca()
-    ax.set_xlim((0, 1))
-
-    sns.histplot(
-        voting_prefs_group1,
-        kde=True,
-        ax=ax,
-        element="step",
-        stat="density",
-        label=group1_name,
-        color=f"C{0}",
-        linewidth=0,
-    )
-    sns.histplot(
-        voting_prefs_group2,
-        kde=True,
-        ax=ax,
-        element="step",
-        stat="density",
-        label=group2_name,
-        color=f"C{1}",
-        linewidth=0,
-    )
-
-    ax.legend()
-    return ax
-
-
 def plot_polarization_kde(
     diff_samples,
     threshold,
@@ -534,7 +449,8 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
     sampled_voting_prefs : numpy array
         Shape: num_samples x r x c (where r = # of demographic groups, c= #
         of candidates or voting outcomes). Gives samples of support from each group
-        for each candidate
+        for each candidate. NOTE: for a 2 x 2 case where we have just two candidates/outcomes
+        and want only one plot, have c=1
     group_names : list of str
         Names of the demographic groups (length r)
     candidate_names : list of str
@@ -545,11 +461,6 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         density estimates of voting preferences of all groups. If 'group', one plot
         per group, with each plot showing the kernel density estimates of voting
         preferences for all candidates.
-    show_first_plot_only: bool
-        Default=False
-        Show ony the first set of kdes (useful for 2x2. E.g., if plot_by="candidate" and there are
-        only two candidates/voting outcomes, so that if we know support for candidate A, know supp
-        for candidate B is 1-supp for A, then we may only want to visualize support for A)
     axes : list of Matplotlib axis object or None
         Default=None.
         If not None and plot_by is 'candidate', should have length c (number of candidates).
@@ -567,7 +478,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         titles = candidate_names
         legend = group_names
         if axes is None:
-            fig, axes = plt.subplots(num_candidates, sharex=True)
+            _, axes = plt.subplots(num_candidates, sharex=True)
     elif plot_by == "group":
         num_plots = num_groups
         num_kdes_per_plot = num_candidates
@@ -575,10 +486,10 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         sampled_voting_prefs = np.swapaxes(sampled_voting_prefs, 1, 2)
         legend = candidate_names
         if axes is None:
-            fig, axes = plt.subplots(num_groups, sharex=True)
+            _, axes = plt.subplots(num_groups, sharex=True)
     else:
         raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
-    fig.subplots_adjust(hspace=0.5)
+    # fig.subplots_adjust(hspace=0.5)
 
     for plot_idx in range(num_plots):
         if num_plots > 1:

@@ -308,12 +308,6 @@ class TwoByTwoEIBaseBayes:
         """Sets the group names to be displayed in plots"""
         return self.demographic_group_name, "non-" + self.demographic_group_name
 
-    def _voting_prefs(self):
-        """Bundles together the samples, for ease of passing to plots"""
-        # TODO: eliminate the need for this by updating the plot() method
-        # use voting_prefs_array for plotting instead, for compatibility with r by c
-        return (self.sampled_voting_prefs[0], self.sampled_voting_prefs[1])
-
     def _voting_prefs_array(self):
         """Bundles together the samples as num_samples x 2 x 1 array,
         for ease of passing to plots"""
@@ -673,8 +667,9 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
     def plot(self, axes=None):
         """kde, boxplot, and credible intervals"""
         return plot_summary(
-            *self._voting_prefs(),
-            *self._group_names_for_display(),
+            self._voting_prefs_array(),
+            self._group_names_for_display()[0],
+            self._group_names_for_display()[1],
             self.candidate_name,
             axes=axes,
         )
