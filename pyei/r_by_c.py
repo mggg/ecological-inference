@@ -252,8 +252,6 @@ class RowByColumnEI:
 
             self.calculate_summary()
 
-    
-
     def calculate_summary(self):
         """Calculate point estimates (post. means) and credible intervals"""
         # multiply sample proportions by precinct pops to get samples of
@@ -296,7 +294,7 @@ class RowByColumnEI:
                     self.sampled_voting_prefs[:, row, col], percentiles
                 )
 
-    def _calculate_polarization(self, threshold=None, probability=None, groups, candidate)
+    def _calculate_polarization(self, groups, candidate, threshold=None, probability=None):
         """
         Calculate percentile given a threshold, or vice versa.
         Exactly one of {probability, threshold} must be None.
@@ -308,7 +306,9 @@ class RowByColumnEI:
         """
         return None
 
-    def polarization_report(self, threshold=None, probability=None, groups, candidate, verbose=True)
+    def polarization_report(
+        self, groups, candidate, threshold=None, probability=None, verbose=True
+    ):
         """
         For a given threshold, return the probability that the difference between the two demographic
         groups' preferences for the candidate is greater than the threshold
