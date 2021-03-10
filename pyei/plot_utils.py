@@ -449,7 +449,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
     sampled_voting_prefs : numpy array
         Shape: num_samples x r x c (where r = # of demographic groups, c= #
         of candidates or voting outcomes). Gives samples of support from each group
-        for each candidate. NOT: for a 2 x 2 case where we have just two candidates/outcomes
+        for each candidate. NOTE: for a 2 x 2 case where we have just two candidates/outcomes
         and want only one plot, have c=1
     group_names : list of str
         Names of the demographic groups (length r)
