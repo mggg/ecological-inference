@@ -158,7 +158,7 @@ class RowByColumnEI:
     ):
         """Fit the specified model using MCMC sampling
         Required arguments:
-        group_fractions :   r x p (p =#precincts = num_precicts) matrix giving demographic
+        group_fractions :   r x p (p =#precincts = num_precincts) matrix giving demographic
             information as the fraction of precinct_pop in the demographic group for each
             of p precincts and r demographic groups (sometimes denoted X)
         votes_fractions  :  c x p giving the fraction of each precinct_pop that votes
@@ -252,10 +252,12 @@ class RowByColumnEI:
 
             self.calculate_summary()
 
+    
+
     def calculate_summary(self):
         """Calculate point estimates (post. means) and credible intervals"""
         # multiply sample proportions by precinct pops to get samples of
-        # number of voters the demographic group who voted for the candidate
+        # number of voters of the demographic group who voted for the candidate
         # in each precinct
         # self.sim_trace.get_values("b") is num_samples x num_precincts x r x c
         b_reshaped = np.swapaxes(
@@ -293,6 +295,33 @@ class RowByColumnEI:
                 self.credible_interval_95_mean_voting_prefs[row][col][:] = np.percentile(
                     self.sampled_voting_prefs[:, row, col], percentiles
                 )
+
+    def _calculate_polarization(self, threshold=None, probability=None, groups, candidate)
+        """
+        Calculate percentile given a threshold, or vice versa.
+        Exactly one of {probability, threshold} must be None.
+        Parameters:
+        -----------
+        threshold OR probability: Float in [0, 1], used to calculate the other variable that is None
+        groups: Length 2 vector of demographic groups from which to calculate polarization
+        candidate: String that matches a candidate on which to calculate polarization
+        """
+        return None
+
+    def polarization_report(self, threshold=None, probability=None, groups, candidate, verbose=True)
+        """
+        For a given threshold, return the probability that the difference between the two demographic
+        groups' preferences for the candidate is greater than the threshold
+        OR
+        For a given probability, calculate the associated percentile/threshold.
+        Exactly one of {probability, threshold} must be None.
+        Parameters:
+        -----------
+        threshold OR probability: Float in [0, 1], used to calculate the other variable that is None
+        groups: Length 2 vector of demographic groups from which to calculate polarization
+        candidate: String that matches a candidate on which to calculate polarization
+        """
+        return None
 
     def summary(self):
         """Return a summary string"""
