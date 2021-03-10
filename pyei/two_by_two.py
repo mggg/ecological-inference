@@ -667,7 +667,6 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
     def plot(self, axes=None):
         """kde, boxplot, and credible intervals"""
         return plot_summary(
-            # *self._voting_prefs(),
             self._voting_prefs_array(),
             self._group_names_for_display()[0],
             self._group_names_for_display()[1],
