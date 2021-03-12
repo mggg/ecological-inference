@@ -10,7 +10,7 @@ from sklearn.linear_model import LinearRegression
 
 from .two_by_two import TwoByTwoEIBaseBayes
 
-__all__ = ["GoodmansER"]
+__all__ = ["GoodmansER", "GoodmansERBayes"]
 
 
 class GoodmansER:
@@ -108,8 +108,20 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         precinct_pops=None,
         demographic_group_name="given demographic group",
         candidate_name="given candidate",
+        target_accept=0.9,
+        tune=1000,
+        **other_sampling_args,
     ):
-        """Fit a bayesian er modeling via sampling."""
+        """Fit a bayesian er modeling via sampling.
+        target_accept : float, optional
+            Default=.99 Strictly between zero and 1 (should be close to 1). Passed to pymc's
+            sampling.sample
+        tune : int, optional
+            Default=1500, passed to pymc's sampling.sample
+        other_sampling_args :
+            For to pymc's sampling.sample
+            https://docs.pymc.io/api/inference.html
+        """
         self.precinct_pops = precinct_pops
         self.demographic_group_name = demographic_group_name
         self.candidate_name = candidate_name
@@ -118,14 +130,17 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
         if self.weighted_by_pop:
             model_function = goodmans_er_bayes_pop_weighted_model
+            self.additional_model_params["precinct_pops"] = precinct_pops
         else:
             model_function = goodmans_er_bayes_model
         self.sim_model = model_function(
-            group_fraction, votes_fraction, precinct_pops, **self.additional_model_params
+            group_fraction, votes_fraction, **self.additional_model_params
         )
 
         with self.sim_model:
-            self.sim_trace = pm.sample(1000, tune=1000, target_accept=0.9)
+            self.sim_trace = pm.sample(
+                1000, tune=tune, target_accept=target_accept, **other_sampling_args
+            )
 
         self.calculate_sampled_voting_prefs()
         super().calculate_summary()
@@ -175,12 +190,14 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         ax.grid()
         ax.set_xlim((0, 1))
         ax.set_ylim((0, 1))
+        return ax
 
 
 def goodmans_er_bayes_model(group_fraction, votes_fraction, sigma=1):
     """Ecological regression with uniform priors over voting prefs b_1, b_2,
     constraining them to be between zero and 1
     """
+
     with pm.Model() as bayes_er_model:
         b_1 = pm.Uniform("b_1")
         b_2 = pm.Uniform("b_2")
