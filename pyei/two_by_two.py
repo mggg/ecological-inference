@@ -349,7 +349,7 @@ class TwoByTwoEIBaseBayes:
         if percentile is None and threshold is not None:
             percentile = 100 * (samples > threshold).sum() / len(self.sampled_voting_prefs[0])
         elif threshold is None and percentile is not None:
-            threshold = np.percentile(samples, (100 - percentile))
+            threshold = np.percentile(samples, 100 - percentile)
         else:
             raise ValueError(
                 """Exactly one of threshold or percentile must be None.

@@ -194,7 +194,7 @@ class RowByColumnEI:
         if demographic_group_names is None:
             demographic_group_names = [str(i) for i in range(1, group_fractions.shape[0] + 1)]
         if candidate_names is None:
-            demographic_group_names = [str(i) for i in range(1, votes_fractions.shape[0] + 1)]
+            candidate_names = [str(i) for i in range(1, votes_fractions.shape[0] + 1)]
         self.demographic_group_names = demographic_group_names
         self.candidate_names = candidate_names
 
@@ -294,34 +294,66 @@ class RowByColumnEI:
                     self.sampled_voting_prefs[:, row, col], percentiles
                 )
 
-    def _calculate_polarization(self, groups, candidate, threshold=None, probability=None):
+    def _calculate_polarization(self, groups, candidate, threshold=None, percentile=None):
         """
         Calculate percentile given a threshold, or vice versa.
-        Exactly one of {probability, threshold} must be None.
+        Exactly one of {percentile, threshold} must be None.
         Parameters:
         -----------
-        threshold OR probability: Float in [0, 1], used to calculate the other variable that is None
         groups: Length 2 vector of demographic groups from which to calculate polarization
         candidate: String that matches a candidate on which to calculate polarization
+        threshold OR percentile: Float in [0, 1], used to calculate the other variable that is None
         """
-        return None
 
-    def polarization_report(
-        self, groups, candidate, threshold=None, probability=None, verbose=True
-    ):
+        candidate_index = self.candidate_names.index(candidate)
+        group_index_0 = self.demographic_group_names.index(groups[0])
+        group_index_1 = self.demographic_group_names.index(groups[1])
+
+        samples = (
+            self.sampled_voting_prefs[:, group_index_0, candidate_index]
+            - self.sampled_voting_prefs[:, group_index_1, candidate_index]
+        )
+
+        if percentile is None and threshold is not None:
+            percentile = 100 * (samples > threshold).sum() / len(self.sampled_voting_prefs)
+        elif threshold is None and percentile is not None:
+            threshold = np.percentile(samples, 100 - percentile)
+        else:
+            raise ValueError(
+                """Exactly one of threshold or percentile must be None.
+            Set a threshold to calculate the associated percentile, or a percentile
+            to calculate the associated threshold.
+            """
+            )
+        return threshold, percentile, samples, groups, candidate
+
+    def polarization_report(self, groups, candidate, threshold=None, percentile=None, verbose=True):
         """
-        For a given threshold, return the probability that the difference between the two demographic
+        For a given threshold, return the percentile that the difference between the two demographic
         groups' preferences for the candidate is greater than the threshold
         OR
-        For a given probability, calculate the associated percentile/threshold.
-        Exactly one of {probability, threshold} must be None.
+        For a given percentile, calculate the associated threshold.
+        Exactly one of {percentile, threshold} must be None.
         Parameters:
         -----------
-        threshold OR probability: Float in [0, 1], used to calculate the other variable that is None
         groups: Length 2 vector of demographic groups from which to calculate polarization
         candidate: String that matches a candidate on which to calculate polarization
+        threshold OR percentile: Float in [0, 1], used to calculate the other variable that is None
         """
-        return None
+        return_threshold = threshold is None
+
+        threshold, percentile, _, groups, candidate = self._calculate_polarization(
+            groups, candidate, threshold, percentile
+        )
+        if verbose:
+            return f"""There is a {percentile:.3f}% probability that the difference between the groups' preferences
+            for {candidate} ( {groups[0]} - {groups[1]} ) is more than
+            {threshold:.5f}."""
+
+        elif return_threshold:
+            return threshold
+        else:
+            return percentile
 
     def summary(self):
         """Return a summary string"""
