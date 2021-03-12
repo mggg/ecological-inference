@@ -353,7 +353,8 @@ class RowByColumnEI:
         if verbose:
             print(
                 f"There is a {percentile:.2f}% probability that the difference between the groups'"
-                + f" preferences for {candidate} ( {groups[0]} - {groups[1]} ) is more than {threshold:.2f}."
+                + f" preferences for {candidate} ({groups[0]} - {groups[1]}) is "
+                + "more than {threshold:.2f}."
             )
             if return_threshold:
                 return threshold

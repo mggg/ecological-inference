@@ -376,7 +376,8 @@ class TwoByTwoEIBaseBayes:
         if verbose:
             print(
                 f"There is a {percentile:.2f}% probability that the difference between the groups'"
-                + f" preferences for {self.candidate_name} ( {groups[0]} - {groups[1]} ) is more than {threshold:.2f}."
+                + f" preferences for {self.candidate_name} ({groups[0]} - {groups[1]}) is "
+                + "more than {threshold:.2f}."
             )
             if return_threshold:
                 return threshold
