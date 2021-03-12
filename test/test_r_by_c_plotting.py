@@ -86,3 +86,16 @@ def test_ei_r_by_c_intervals_by_precinct(
     with pytest.raises(ValueError):
         example_r_by_c_ei.plot_intervals_by_precinct("e_asian", "Kolstaad")
         example_r_by_c_ei.plot_intervals_by_precinct("ibnd", "Hardy")
+
+
+def test_polarization_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    groups = ["e_asian", "non_asian"]
+    candidate = "Kolstad"
+    prob_20 = example_r_by_c_ei.polarization_report(groups, candidate, threshold=0.2)
+    prob_40 = example_r_by_c_ei.polarization_report(groups, candidate, threshold=0.4)
+    thresh_95 = example_r_by_c_ei.polarization_report(groups, candidate, percentile=95)
+    thresh_90 = example_r_by_c_ei.polarization_report(groups, candidate, percentile=90)
+
+    assert prob_20 >= prob_40
+    assert thresh_95 <= thresh_90
