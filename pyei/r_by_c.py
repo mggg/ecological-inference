@@ -13,7 +13,12 @@ import warnings
 import pymc3 as pm
 import theano.tensor as tt
 import numpy as np
-from .plot_utils import plot_boxplots, plot_kdes, plot_intervals_all_precincts
+from .plot_utils import (
+    plot_boxplots,
+    plot_kdes,
+    plot_intervals_all_precincts,
+    plot_polarization_kde,
+)
 
 __all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet", "RowByColumnEI"]
 
@@ -346,10 +351,14 @@ class RowByColumnEI:
             groups, candidate, threshold, percentile
         )
         if verbose:
-            return f"""There is a {percentile:.3f}% probability that the difference between the groups' preferences
-            for {candidate} ( {groups[0]} - {groups[1]} ) is more than
-            {threshold:.5f}."""
-
+            print(
+                f"There is a {percentile:.2f}% probability that the difference between the groups'"
+                + f" preferences for {candidate} ( {groups[0]} - {groups[1]} ) is more than {threshold:.2f}."
+            )
+            if return_threshold:
+                return threshold
+            else:
+                return percentile
         elif return_threshold:
             return threshold
         else:
@@ -444,6 +453,17 @@ class RowByColumnEI:
             self.candidate_names,
             plot_by=plot_by,
             axes=axes,
+        )
+
+    def plot_polarization_kde(
+        self, groups, candidate, threshold=None, percentile=None, show_threshold=False, ax=None
+    ):
+        """Plot kde of differences between voting preferences"""
+        threshold, percentile, samples, groups, candidate = self._calculate_polarization(
+            groups, candidate, threshold, percentile
+        )
+        return plot_polarization_kde(
+            samples, threshold, percentile, groups, candidate, show_threshold, ax
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):

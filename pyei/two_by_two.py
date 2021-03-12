@@ -338,7 +338,7 @@ class TwoByTwoEIBaseBayes:
         """calculate percentile given a threshold, or threshold if given a percentile
         exactly one of percentile and threshold must be null
         """
-        samples = self.sampled_voting_prefs[1] - self.sampled_voting_prefs[0]
+        samples = self.sampled_voting_prefs[0] - self.sampled_voting_prefs[1]
         group = self.demographic_group_name
         group_complement = "non-" + self.demographic_group_name
         if reference_group == 1:
@@ -357,7 +357,7 @@ class TwoByTwoEIBaseBayes:
             to calculate the associated threshold.
             """
             )
-        return threshold, percentile, samples, group, group_complement
+        return threshold, percentile, samples, [group, group_complement]
 
     def polarization_report(self, threshold=None, percentile=None, reference_group=0, verbose=True):
         """
@@ -370,14 +370,18 @@ class TwoByTwoEIBaseBayes:
         """
         return_threshold = threshold is None
 
-        threshold, percentile, _, group, group_complement = self._calculate_polarization(
+        threshold, percentile, _, groups = self._calculate_polarization(
             threshold, percentile, reference_group
         )
         if verbose:
-            return f"""There is a {percentile:.3f}% probability that the difference between the groups' preferences
-            for {self.candidate_name} ( {group_complement} - {group} ) is more than
-            {threshold:.5f}."""
-
+            print(
+                f"There is a {percentile:.2f}% probability that the difference between the groups'"
+                + f" preferences for {self.candidate_name} ( {groups[0]} - {groups[1]} ) is more than {threshold:.2f}."
+            )
+            if return_threshold:
+                return threshold
+            else:
+                return percentile
         elif return_threshold:
             return threshold
         else:
@@ -441,15 +445,14 @@ class TwoByTwoEIBaseBayes:
         self, threshold=None, percentile=None, reference_group=0, show_threshold=False, ax=None
     ):
         """Plot kde of differences between voting preferences"""
-        threshold, percentile, samples, group, group_complement = self._calculate_polarization(
+        threshold, percentile, samples, groups = self._calculate_polarization(
             threshold, percentile, reference_group
         )
         return plot_polarization_kde(
             samples,
             threshold,
             percentile,
-            group,
-            group_complement,
+            groups,
             self.candidate_name,
             show_threshold,
             ax,
