@@ -2,7 +2,9 @@
 # pylint:disable=redefined-outer-name
 import numpy as np
 import pytest
-from pyei import GoodmansER
+
+from test_plot_utils import example_two_by_two_data  # pylint:disable=unused-import
+from pyei.goodmans_er import GoodmansER, GoodmansERBayes
 
 
 @pytest.fixture
@@ -29,6 +31,36 @@ def group_and_vote_fractions_with_pop():
     vote_share = np.array([0.1, 0.3, 0.5, 0.7, 0.9, 0.9])
     populations = np.array([1000, 1000, 1000, 1000, 1000, 1])
     return group_share, vote_share, populations
+
+
+@pytest.fixture
+def goodmans_er_bayes_examples(example_two_by_two_data):  # pylint: disable=redefined-outer-name
+    """Run Bayesian Goodman's ER"""
+    ex = example_two_by_two_data
+    bayes_goodman_ei_weighted = GoodmansERBayes("goodman_er_bayes", weighted_by_pop=True, sigma=1)
+    bayes_goodman_ei_weighted.fit(
+        ex["group_fractions"],
+        ex["votes_fractions"],
+        ex["precint_pops"],
+        demographic_group_name=ex["demographic_group_name"],
+        candidate_name=ex["candidate_name"],
+        tune=2000,
+    )
+
+    bayes_goodman_ei_unweighted = GoodmansERBayes(
+        "goodman_er_bayes", weighted_by_pop=False, sigma=1
+    )
+    bayes_goodman_ei_unweighted.fit(
+        ex["group_fractions"],
+        ex["votes_fractions"],
+        ex["precint_pops"],
+        demographic_group_name=ex["demographic_group_name"],
+        candidate_name=ex["candidate_name"],
+    )
+    return {
+        "bayes_goodman_ei_weighted": bayes_goodman_ei_weighted,
+        "bayes_goodman_ei_unweighted": bayes_goodman_ei_unweighted,
+    }
 
 
 def test_fit(group_and_vote_fractions):
@@ -83,3 +115,43 @@ def test_plot(group_and_vote_fractions):
     np.testing.assert_allclose(x_plot, y_plot, atol=1e-10)
     assert (0.0, 1.0) == ax.get_xlim()
     assert (0.0, 1.0) == ax.get_ylim()
+
+
+def test_goodman_er_bayes_posterior_means(goodmans_er_bayes_examples):
+    goodmans_er_bayes_weighted = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"]
+    np.testing.assert_almost_equal(
+        goodmans_er_bayes_weighted.sampled_voting_prefs[0].mean(), 0.840, decimal=2
+    )
+    np.testing.assert_almost_equal(
+        goodmans_er_bayes_weighted.sampled_voting_prefs[1].mean(), 0.240, decimal=2
+    )
+
+    goodmans_er_bayes_unweighted = goodmans_er_bayes_examples["bayes_goodman_ei_unweighted"]
+    np.testing.assert_almost_equal(
+        goodmans_er_bayes_unweighted.sampled_voting_prefs[0].mean(), 0.835, decimal=2
+    )
+    np.testing.assert_almost_equal(
+        goodmans_er_bayes_unweighted.sampled_voting_prefs[1].mean(), 0.244, decimal=2
+    )
+
+
+def test_goodman_er_bayes_bounds(goodmans_er_bayes_examples):
+    goodmans_er_bayes_example = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"]
+    (
+        _,
+        _,
+        lower_bounds,
+        upper_bounds,
+    ) = goodmans_er_bayes_example.compute_credible_int_for_line()
+
+    assert all(upper_bounds) <= 1.0
+    assert all(upper_bounds) >= 0
+
+    assert all(lower_bounds) <= 1.0
+    assert all(lower_bounds) >= 0
+
+
+def test_goodman_er_bayes_plot(goodmans_er_bayes_examples):
+
+    ax = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"].plot()
+    assert ax is not None
