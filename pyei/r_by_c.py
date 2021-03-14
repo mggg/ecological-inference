@@ -307,7 +307,7 @@ class RowByColumnEI:
         -----------
         groups: Length 2 vector of demographic groups from which to calculate polarization
         candidate: String that matches a candidate on which to calculate polarization
-        threshold OR percentile: Float in [0, 1], used to calculate the other variable that is None
+        threshold OR percentile: Float used to calculate the other variable that is None
         """
 
         candidate_index = self.candidate_names.index(candidate)
@@ -343,7 +343,7 @@ class RowByColumnEI:
         -----------
         groups: Length 2 vector of demographic groups from which to calculate polarization
         candidate: String that matches a candidate on which to calculate polarization
-        threshold OR percentile: Float in [0, 1], used to calculate the other variable that is None
+        threshold OR percentile: Float used to calculate the other variable that is None
         """
         return_threshold = threshold is None
 
