@@ -357,13 +357,13 @@ class RowByColumnEI:
                 + "more than {threshold:.2f}."
             )
             if return_threshold:
-                return threshold
+                return threshold  #
             else:
                 return percentile
-        elif return_threshold:
+        elif return_threshold:  #
             return threshold
         else:
-            return percentile
+            return percentile  #
 
     def summary(self):
         """Return a summary string"""

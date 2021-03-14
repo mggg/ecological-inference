@@ -11,35 +11,35 @@ from pyei.two_by_two import TwoByTwoEI
 
 @pytest.fixture(scope="session")
 def example_two_by_two_data():
-    """load santa clara data to test two by two ei and plots"""
+    """load santa clara data to test two by two ei and plots"""  #
     sc_data = data.Datasets.Santa_Clara.to_dataframe()
     group_fractions = np.array(sc_data["pct_e_asian_vote"])
-    votes_fractions = np.array(sc_data["pct_for_hardy2"])
+    votes_fractions = np.array(sc_data["pct_for_hardy2"])  #
     precinct_pops = np.array(sc_data["total2"])
     demographic_group_name = "e_asian"
     candidate_name = "Hardy"
     precinct_names = sc_data["precinct"]
-    return {
+    return {  #
         "group_fractions": group_fractions,
         "votes_fractions": votes_fractions,
-        "precint_pops": precinct_pops,
+        "precint_pops": precinct_pops,  #
         "demographic_group_name": demographic_group_name,
         "candidate_name": candidate_name,
         "precinct_names": precinct_names,
-    }
+    }  #
 
 
 @pytest.fixture(scope="session")
 def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined-outer-name
     """run example two by two ei method - can use to test plotting"""
     ei_ex = TwoByTwoEI(model_name="king99_pareto_modification", pareto_scale=8, pareto_shape=2)
-    ei_ex.fit(
+    ei_ex.fit(  #
         example_two_by_two_data["group_fractions"],
         example_two_by_two_data["votes_fractions"],
-        example_two_by_two_data["precint_pops"],
+        example_two_by_two_data["precint_pops"],  #
         demographic_group_name=example_two_by_two_data["demographic_group_name"],
         candidate_name=example_two_by_two_data["candidate_name"],
-        precinct_names=example_two_by_two_data["precinct_names"],
+        precinct_names=example_two_by_two_data["precinct_names"],  #
         draws=100,
         tune=100,
     )
