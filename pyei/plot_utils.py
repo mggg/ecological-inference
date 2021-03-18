@@ -392,14 +392,13 @@ def plot_polarization_kde(
     diff_samples,
     threshold,
     probability,
-    group,
-    group_complement,
+    groups,
     candidate_name,
     show_threshold=False,
     ax=None,
 ):
     """
-    Plots a kde for the differences in voting prefernces between two groups
+    Plots a kde for the differences in voting preferences between two groups
 
     diff_samples: array
         samples of the differences in voting preferences (group_complement - group)
@@ -407,10 +406,8 @@ def plot_polarization_kde(
         the probability that (group_complement - group) > threshold
     threshold: float
         a threshold for the difference in voting patterns between two groups
-    group_complement : str
-        the name of the group that is not being used as the reference group
-    group: str
-        the name of the reference group
+    groups: list
+        the names of the two groups being compared
     show_threshold: bool
         if true, add a vertical line at the threshold on the plot and display the associated
         tail probability
@@ -425,7 +422,7 @@ def plot_polarization_kde(
         ax=ax,
         element="step",
         stat="density",
-        label=group_complement + " - " + group,
+        label=groups[0] + " - " + groups[1],
         color=f"C{2}",
         linewidth=0,
     )
@@ -433,9 +430,7 @@ def plot_polarization_kde(
         ax.axvline(threshold, c="gray")
         ax.text(threshold + 0.05, 0.5, f"Prob (difference > {threshold:.3f} )  = {probability:.3f}")
 
-    ax.set_title(
-        f"Difference in voter preference for {candidate_name}: {group_complement} -  {group}"
-    )
+    ax.set_title(f"Difference in voter preference for {candidate_name}: {groups[0]} - {groups[1]}")
 
     return ax
 

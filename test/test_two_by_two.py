@@ -1,9 +1,49 @@
 """Test two by two ecological inference."""
+import pytest
 import numpy as np
 import scipy.stats as st
 from scipy.special import logsumexp
 
 from pyei import two_by_two
+from pyei import data
+from pyei.two_by_two import TwoByTwoEI
+
+
+@pytest.fixture(scope="session")
+def example_two_by_two_data():
+    """load santa clara data to test two by two ei and plots"""  #
+    sc_data = data.Datasets.Santa_Clara.to_dataframe()
+    group_fractions = np.array(sc_data["pct_e_asian_vote"])
+    votes_fractions = np.array(sc_data["pct_for_hardy2"])  #
+    precinct_pops = np.array(sc_data["total2"])
+    demographic_group_name = "e_asian"
+    candidate_name = "Hardy"
+    precinct_names = sc_data["precinct"]
+    return {  #
+        "group_fractions": group_fractions,
+        "votes_fractions": votes_fractions,
+        "precint_pops": precinct_pops,  #
+        "demographic_group_name": demographic_group_name,
+        "candidate_name": candidate_name,
+        "precinct_names": precinct_names,
+    }  #
+
+
+@pytest.fixture(scope="session")
+def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined-outer-name
+    """run example two by two ei method - can use to test plotting"""
+    ei_ex = TwoByTwoEI(model_name="king99_pareto_modification", pareto_scale=8, pareto_shape=2)
+    ei_ex.fit(  #
+        example_two_by_two_data["group_fractions"],
+        example_two_by_two_data["votes_fractions"],
+        example_two_by_two_data["precint_pops"],  #
+        demographic_group_name=example_two_by_two_data["demographic_group_name"],
+        candidate_name=example_two_by_two_data["candidate_name"],
+        precinct_names=example_two_by_two_data["precinct_names"],  #
+        draws=100,
+        tune=100,
+    )
+    return ei_ex
 
 
 def generate_kwargs_for_log_binom_sum():
@@ -83,3 +123,13 @@ def test_binom_conv_log_p():
         prev = log_binom_sum_in_scipy(**kwargs)
 
     np.testing.assert_allclose(theano_result, prev)
+
+
+def test_polarization_report(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
+    prob_20 = example_two_by_two_ei.polarization_report(threshold=0.2)
+    prob_40 = example_two_by_two_ei.polarization_report(threshold=0.4)
+    thresh_95 = example_two_by_two_ei.polarization_report(percentile=95)
+    thresh_90 = example_two_by_two_ei.polarization_report(percentile=90)
+
+    assert prob_20 >= prob_40
+    assert thresh_95 <= thresh_90

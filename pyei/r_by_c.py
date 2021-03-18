@@ -13,7 +13,12 @@ import warnings
 import pymc3 as pm
 import theano.tensor as tt
 import numpy as np
-from .plot_utils import plot_boxplots, plot_kdes, plot_intervals_all_precincts
+from .plot_utils import (
+    plot_boxplots,
+    plot_kdes,
+    plot_intervals_all_precincts,
+    plot_polarization_kde,
+)
 
 __all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet", "RowByColumnEI"]
 
@@ -158,7 +163,7 @@ class RowByColumnEI:
     ):
         """Fit the specified model using MCMC sampling
         Required arguments:
-        group_fractions :   r x p (p =#precincts = num_precicts) matrix giving demographic
+        group_fractions :   r x p (p =#precincts = num_precincts) matrix giving demographic
             information as the fraction of precinct_pop in the demographic group for each
             of p precincts and r demographic groups (sometimes denoted X)
         votes_fractions  :  c x p giving the fraction of each precinct_pop that votes
@@ -194,7 +199,7 @@ class RowByColumnEI:
         if demographic_group_names is None:
             demographic_group_names = [str(i) for i in range(1, group_fractions.shape[0] + 1)]
         if candidate_names is None:
-            demographic_group_names = [str(i) for i in range(1, votes_fractions.shape[0] + 1)]
+            candidate_names = [str(i) for i in range(1, votes_fractions.shape[0] + 1)]
         self.demographic_group_names = demographic_group_names
         self.candidate_names = candidate_names
 
@@ -255,7 +260,7 @@ class RowByColumnEI:
     def calculate_summary(self):
         """Calculate point estimates (post. means) and credible intervals"""
         # multiply sample proportions by precinct pops to get samples of
-        # number of voters the demographic group who voted for the candidate
+        # number of voters of the demographic group who voted for the candidate
         # in each precinct
         # self.sim_trace.get_values("b") is num_samples x num_precincts x r x c
         b_reshaped = np.swapaxes(
@@ -293,6 +298,72 @@ class RowByColumnEI:
                 self.credible_interval_95_mean_voting_prefs[row][col][:] = np.percentile(
                     self.sampled_voting_prefs[:, row, col], percentiles
                 )
+
+    def _calculate_polarization(self, groups, candidate, threshold=None, percentile=None):
+        """
+        Calculate percentile given a threshold, or vice versa.
+        Exactly one of {percentile, threshold} must be None.
+        Parameters:
+        -----------
+        groups: Length 2 vector of demographic groups from which to calculate polarization
+        candidate: String that matches a candidate on which to calculate polarization
+        threshold OR percentile: Float used to calculate the other variable that is None
+        """
+
+        candidate_index = self.candidate_names.index(candidate)
+        group_index_0 = self.demographic_group_names.index(groups[0])
+        group_index_1 = self.demographic_group_names.index(groups[1])
+
+        samples = (
+            self.sampled_voting_prefs[:, group_index_0, candidate_index]
+            - self.sampled_voting_prefs[:, group_index_1, candidate_index]
+        )
+
+        if percentile is None and threshold is not None:
+            percentile = 100 * (samples > threshold).sum() / len(self.sampled_voting_prefs)
+        elif threshold is None and percentile is not None:
+            threshold = np.percentile(samples, 100 - percentile)
+        else:
+            raise ValueError(
+                """Exactly one of threshold or percentile must be None.
+            Set a threshold to calculate the associated percentile, or a percentile
+            to calculate the associated threshold.
+            """
+            )
+        return threshold, percentile, samples, groups, candidate
+
+    def polarization_report(self, groups, candidate, threshold=None, percentile=None, verbose=True):
+        """
+        For a given threshold, return the percentile that the difference between the two demographic
+        groups' preferences for the candidate is greater than the threshold
+        OR
+        For a given percentile, calculate the associated threshold.
+        Exactly one of {percentile, threshold} must be None.
+        Parameters:
+        -----------
+        groups: Length 2 vector of demographic groups from which to calculate polarization
+        candidate: String that matches a candidate on which to calculate polarization
+        threshold OR percentile: Float used to calculate the other variable that is None
+        """
+        return_threshold = threshold is None
+
+        threshold, percentile, _, groups, candidate = self._calculate_polarization(
+            groups, candidate, threshold, percentile
+        )
+        if verbose:
+            print(
+                f"There is a {percentile:.2f}% probability that the difference between the groups'"
+                + f" preferences for {candidate} ({groups[0]} - {groups[1]}) is "
+                + "more than {threshold:.2f}."
+            )
+            if return_threshold:
+                return threshold  #
+            else:
+                return percentile
+        elif return_threshold:  #
+            return threshold
+        else:
+            return percentile  #
 
     def summary(self):
         """Return a summary string"""
@@ -383,6 +454,17 @@ class RowByColumnEI:
             self.candidate_names,
             plot_by=plot_by,
             axes=axes,
+        )
+
+    def plot_polarization_kde(
+        self, groups, candidate, threshold=None, percentile=None, show_threshold=False, ax=None
+    ):
+        """Plot kde of differences between voting preferences"""
+        threshold, percentile, samples, groups, candidate = self._calculate_polarization(
+            groups, candidate, threshold, percentile
+        )
+        return plot_polarization_kde(
+            samples, threshold, percentile, groups, candidate, show_threshold, ax
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):

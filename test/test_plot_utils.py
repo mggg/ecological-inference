@@ -89,3 +89,8 @@ def test_ei_plot_intervals_by_precinct(
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.plot_intervals_by_precinct()
     assert ax is not None
+
+
+def test_plot_polarization_kde(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
+    ax = example_two_by_two_ei.plot_polarization_kde(threshold=0.4, show_threshold=True)
+    assert ax is not None
