@@ -413,7 +413,7 @@ class RowByColumnEI:
 
         return (precinct_posterior_means, precinct_credible_intervals)
 
-    def candidate_of_choice_report(self, verbose = True):
+    def candidate_of_choice_report(self, verbose=True):
         """ For each group, look at differences in preference within that group"""
         candidate_preference_rate_dict = {}
         for row in range(self.num_groups_and_num_candidates[0]):
@@ -425,33 +425,40 @@ class RowByColumnEI:
                 ).sum() / self.sampled_voting_prefs.shape[0]
                 if verbose:
                     print(
-                        f"""In {round(frac*100,3)} percent of samples, the district-level vote preference of
-                        {self.demographic_group_names[row]} for {self.candidate_names[candidate_idx]}
-                        was higher than for any other candidate"""
+                        f"     - In {round(frac*100,3)} percent of samples, the district-level "
+                        f"vote preference of \n"
+                        f"       {self.demographic_group_names[row]} for "
+                        f"{self.candidate_names[candidate_idx]} "
+                        f"was higher than for any other candidate."
                     )
-                candidate_preference_rate_dict[(self.demographic_group_names[row],self.candidate_names[candidate_idx])]=frac
-        if not verbose:
-            return candidate_preference_rate_dict
+                candidate_preference_rate_dict[
+                    (self.demographic_group_names[row], self.candidate_names[candidate_idx])
+                ] = frac
+        return candidate_preference_rate_dict
 
-
-    def candidate_of_choice_polaization_report(self, verbose = True):
-        """ For each group, look at differences in preference within that group"""
+    def candidate_of_choice_polaization_report(self, verbose=True):
+        """For each pair of groups, look at differences in preferences
+        between those groups"""
         candidate_differ_rate_dict = {}
         for dem1 in range(self.num_groups_and_num_candidates[0]):
             for dem2 in range(dem1):
                 differ_frac = (
-                    np.argmax(self.sampled_voting_prefs[:, dem1, :], axis=1) != np.argmax(self.sampled_voting_prefs[:, dem2, :], axis=1)
+                    np.argmax(self.sampled_voting_prefs[:, dem1, :], axis=1)
+                    != np.argmax(self.sampled_voting_prefs[:, dem2, :], axis=1)
                 ).sum() / self.sampled_voting_prefs.shape[0]
                 if verbose:
                     print(
-                        f"""In {round(differ_frac*100,3)} percent of samples, the district-level candidates of choice for
-                        {self.demographic_group_names[dem1]} and {self.demographic_group_names[dem2]} voters differ"""
+                        f"In {round(differ_frac*100,3)} percent of samples, the district-level "
+                        f"candidates of choice for {self.demographic_group_names[dem1]} and "
+                        f"{self.demographic_group_names[dem2]} voters differ."
                     )
-                candidate_differ_rate_dict[(self.demographic_group_names[dem1],self.demographic_group_names[dem2])]=differ_frac
-                candidate_differ_rate_dict[(self.demographic_group_names[dem2],self.demographic_group_names[dem1])]=differ_frac
-        if not verbose:
-            return candidate_differ_rate_dict
-
+                candidate_differ_rate_dict[
+                    (self.demographic_group_names[dem1], self.demographic_group_names[dem2])
+                ] = differ_frac
+                candidate_differ_rate_dict[
+                    (self.demographic_group_names[dem2], self.demographic_group_names[dem1])
+                ] = differ_frac
+        return candidate_differ_rate_dict
 
     def plot_boxplots(self, plot_by="candidate", axes=None):
         """Plot boxplots of voting prefs (one boxplot for each candidate)
