@@ -94,8 +94,35 @@ def test_polarization_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-o
     candidate = "Kolstad"
     prob_20 = example_r_by_c_ei.polarization_report(groups, candidate, threshold=0.2)
     prob_40 = example_r_by_c_ei.polarization_report(groups, candidate, threshold=0.4)
-    thresh_95 = example_r_by_c_ei.polarization_report(groups, candidate, percentile=95)
-    thresh_90 = example_r_by_c_ei.polarization_report(groups, candidate, percentile=90)
+    thresh_95_range = example_r_by_c_ei.polarization_report(groups, candidate, percentile=95)
+    thresh_90_range = example_r_by_c_ei.polarization_report(groups, candidate, percentile=90)
 
     assert prob_20 >= prob_40
-    assert thresh_95 <= thresh_90
+    assert thresh_95_range[1] > thresh_95_range[0]
+    assert thresh_95_range[1] - thresh_95_range[0] >= thresh_90_range[1] - thresh_90_range[0]
+
+
+def test_plot_polarization_kde(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    groups = ["ind", "e_asian"]
+    candidate = "Kolstad"
+    percentile_ax = example_r_by_c_ei.plot_polarization_kde(
+        groups, candidate, threshold=0.4, show_threshold=True
+    )
+    percentile_ax_2 = example_r_by_c_ei.plot_polarization_kde(
+        groups, candidate, threshold=0.4, show_threshold=True
+    )
+    threshold_ax = example_r_by_c_ei.plot_polarization_kde(
+        groups, candidate, percentile=95, show_threshold=True
+    )
+    assert percentile_ax is not None
+    print("done 1")
+    assert percentile_ax_2 is not None
+    print("done 2")
+    assert threshold_ax is not None
+    print("done 3")
+    with pytest.raises(ValueError):
+        example_r_by_c_ei.plot_polarization_kde(
+            groups, candidate, threshold=0.4, percentile=95, show_threshold=True
+        )
+    print("done")

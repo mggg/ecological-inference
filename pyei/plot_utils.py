@@ -390,7 +390,7 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="
 
 def plot_polarization_kde(
     diff_samples,
-    threshold,
+    thresholds,
     probability,
     groups,
     candidate_name,
@@ -404,8 +404,8 @@ def plot_polarization_kde(
         samples of the differences in voting preferences (group_complement - group)
     probability: float
         the probability that (group_complement - group) > threshold
-    threshold: float
-        a threshold for the difference in voting patterns between two groups
+    thresholds: array
+        a list of thresholds for the difference in voting patterns between two groups
     groups: list
         the names of the two groups being compared
     show_threshold: bool
@@ -426,9 +426,16 @@ def plot_polarization_kde(
         color=f"C{2}",
         linewidth=0,
     )
+    if len(thresholds) == 1:
+        threshold_string = f"> {thresholds[0]:.2f}"
+    else:
+        threshold_string = f"in [{thresholds[0]:.2f}, {thresholds[1]:.2f}]"
     if show_threshold:
-        ax.axvline(threshold, c="gray")
-        ax.text(threshold + 0.05, 0.5, f"Prob (difference > {threshold:.3f} )  = {probability:.3f}")
+        for threshold in thresholds:
+            ax.axvline(threshold, c="gray")
+        ax.text(
+            thresholds[-1] + 0.05, 0.5, f"Prob (difference {threshold_string} ) = {probability:.1f}"
+        )
 
     ax.set_title(f"Difference in voter preference for {candidate_name}: {groups[0]} - {groups[1]}")
 
