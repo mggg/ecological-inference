@@ -364,8 +364,8 @@ class TwoByTwoEIBaseBayes:
         For a given threshold, return the probability that difference between the group's
         preferences for the given candidate is more than threshold
         OR
-        For a given confidence interval, return the associated lower and upper bounds
-        of the threshold.
+        For a given confidence level, return the associated confidence of the difference
+        between the two groups' preferences.
         Exactly one {percentile,threshold} must be None/
         """
         return_interval = threshold is None

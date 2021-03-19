@@ -335,11 +335,11 @@ class RowByColumnEI:
     def polarization_report(self, groups, candidate, threshold=None, percentile=None, verbose=True):
         """
         For a given threshold, return the probability that the difference between
-        the two demographicgroups' preferences for the candidate is greater than
+        the two demographic groups' preferences for the candidate is greater than
         the threshold
         OR
-        For a given confidence interval, calculate the associated lower and upper
-        bounds of the threshold.
+        For a given confidence level, calculate the associated confidence interval
+        of the difference between the two groups' preferences.
         Exactly one of {percentile, threshold} must be None.
         Parameters:
         -----------
