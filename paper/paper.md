@@ -59,6 +59,27 @@ Several R libraries for ecological inference exist, such as `ei` [@ei], `eiCompa
 - existing libraries do not all expose samples directly (CHECK THAT THIS IS STILL THE CASE) and do not incorporate convergence-related checks and warnings
 - not all libraries are oriented towards careful uncertainty quantification (CHECK AND EXPLAIN/SAY THIS MORE CAREFULLY)
 
+\textcolor{violet}{Notes on R packages}
+
+  - `ei`
+    - main function is inplementation of King's EI (truncated normal~1997)... functionality is mainly oriented toward 2x2.  Does include RxC generalization and Goodman ER
+    - Can get samples of psi, aggregated betas (at the polity level), and precinct-level betas.  The first two are easily grabed by eiread() function.  the latter doesn't seem to be designed to be grabbed, but the samples can be read.
+    - convergence testing/diagnostics are not transparent (if they are done at all)... there is a 'resamp' parameter that appears to be some sort of diagnostic, but I'm not sure what it is exactly (not explained much in documentation)
+    - standard errors and 80% "confidence intervals" (these appear to be just .1 and .9 percentiles of sample) for precinct-level betas.  Also gives standard errors for psis and aggregate betas.
+  - `eiPack`
+    - includes multinomial dirichlet (ala Rosen), Goodman ER, ER w/ Bayesian normal regression, and some plotting functionality (density and bounds)
+    - outputs draws for alphas, betas, and cell counts as well as acceptance ratios of these variable draws
+    - no convergence tests/diagnostics included or described.  Presumably the outputs can make use of the functionality of the coda package to perform these, but user would have to write this script.
+    - Has plotting functionality for unit (precinct)-level credible intervals, though this appears to be just for visualization and less for actually grabbing/using these values... no functionality/attention to uncertainty for other measures of interest
+  - `eiCompare`
+    - Appears to be primarily a wrapper around `ei` and `eiPack` packages.  Some added funcationality (including capturing uncertainty, visualization, and comparison of results across methods).  Some instances appear to be literally rewritten from these packages with minor/trivial tweaks, rather than significantly different implementations.
+  - `RxCEcolInf`
+    - package really just includes the model from the 2009 Greiner/Quinn paper
+    - outputs draws for: internal cell counts, thetas, mu, and the standard deviations and correlations in sigma.
+    - convergence tests not directly incorporated, but returns mcmc object with intention of using functionality of R's coda package.  Documentation examples show using coda's Geweke's as well as Heidelberger and Welch's convergence diagnostics, but ackwledges that chains created by `RxCEcolInf` will cause error in coda's Gelman-Rubin diagnostic.
+    - the `RxCEcolInf` package itself does not include careful uncertainty quantification functionality, but digging through some of their replication code from their paper does show some examples of uncertainty calculations and credible intervals, though not particularly well documented/clear how to apply
+
+
 To meet the needs described here, `PyEI` incorporates the following key features and characteristics. First, the Bayesian hierarchical methods implemented in `PyEI` rest on modern probabilistic programming tooling [@salvatier2016probabilistic] and MCMC methods [@hoffman2014no]. Integration with existing tools `PyMC` [@salvatier2016probabilistic] and ArViZ [@arviz_2019] makes the results amenable to state of the art diagnostics (e.g. convergence diagostics) and some reasonable checks are automatically performed. Second, summary and plotting utilities for reporting, visualizing, and comparing results are included (see example plots below), with an emphasis on visualizations and reports that make clear the uncertainty of estimates under a model. Lastly, clear documentation and examples are provided.
 
 # Examples of plotting functionality
@@ -69,7 +90,7 @@ To meet the needs described here, `PyEI` incorporates the following key features
 
 ![Visualizing and quantifying degree of polarization.\label{fig:polarization}](figs/polarization.png){ width=70% }
 
-![Visualizing estimats and uncertainty for precinct-level estimates.\label{fig:precinct_level}](figs/precinct_level.png){ width=60% }
+![Visualizing estimates and uncertainty for precinct-level estimates.\label{fig:precinct_level}](figs/precinct_level.png){ width=60% }
 
 !["Tomography" plots for two-by-two ecological inference.\label{fig:tomography}](figs/tomography.png){ width=40% }
 
