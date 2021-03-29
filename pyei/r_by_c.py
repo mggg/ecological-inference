@@ -372,7 +372,7 @@ class RowByColumnEI:
             )
             if verbose:
                 print(
-                    f"There is a {percentile:.1f}% probability that the difference between"
+                    f"There is a {percentile:.0f}% probability that the difference between"
                     + f" the groups' preferences for {candidate} ({groups[0]} - {groups[1]}) "
                     + f" is more than {threshold:.2f}."
                 )
