@@ -334,10 +334,12 @@ class RowByColumnEI:
 
     def polarization_report(self, groups, candidate, threshold=None, percentile=None, verbose=True):
         """
-        For a given threshold, return the percentile that the difference between the two demographic
-        groups' preferences for the candidate is greater than the threshold
+        For a given threshold, return the probability that the difference between
+        the two demographic groups' preferences for the candidate is greater than
+        the threshold
         OR
-        For a given percentile, calculate the associated threshold.
+        For a given confidence level, calculate the associated confidence interval
+        of the difference between the two groups' preferences.
         Exactly one of {percentile, threshold} must be None.
         Parameters:
         -----------
@@ -345,25 +347,36 @@ class RowByColumnEI:
         candidate: String that matches a candidate on which to calculate polarization
         threshold OR percentile: Float used to calculate the other variable that is None
         """
-        return_threshold = threshold is None
+        return_interval = threshold is None
 
-        threshold, percentile, _, groups, candidate = self._calculate_polarization(
-            groups, candidate, threshold, percentile
-        )
-        if verbose:
-            print(
-                f"There is a {percentile:.2f}% probability that the difference between the groups'"
-                + f" preferences for {candidate} ({groups[0]} - {groups[1]}) is "
-                + "more than {threshold:.2f}."
+        if return_interval:
+            lower_percentile = (100 - percentile) / 2
+            upper_percentile = lower_percentile + percentile
+            lower_threshold, _, _, groups, candidate = self._calculate_polarization(
+                groups, candidate, threshold, upper_percentile
             )
-            if return_threshold:
-                return threshold  #
-            else:
-                return percentile
-        elif return_threshold:  #
-            return threshold
+            upper_threshold, _, _, groups, candidate = self._calculate_polarization(
+                groups, candidate, threshold, lower_percentile
+            )
+
+            if verbose:
+                print(
+                    f"There is a {percentile}% probability that the difference between"
+                    + f" the groups' preferences for {candidate} ({groups[0]} - {groups[1]}) is"
+                    + f" between [{lower_threshold:.2f}, {upper_threshold:.2f}]."
+                )
+            return (lower_threshold, upper_threshold)
         else:
-            return percentile  #
+            threshold, percentile, _, groups, candidate = self._calculate_polarization(
+                groups, candidate, threshold, percentile
+            )
+            if verbose:
+                print(
+                    f"There is a {percentile:.0f}% probability that the difference between"
+                    + f" the groups' preferences for {candidate} ({groups[0]} - {groups[1]}) "
+                    + f" is more than {threshold:.2f}."
+                )
+            return percentile
 
     def summary(self):
         """Return a summary string"""
@@ -492,11 +505,26 @@ class RowByColumnEI:
         self, groups, candidate, threshold=None, percentile=None, show_threshold=False, ax=None
     ):
         """Plot kde of differences between voting preferences"""
-        threshold, percentile, samples, groups, candidate = self._calculate_polarization(
-            groups, candidate, threshold, percentile
-        )
+        return_interval = threshold is None
+
+        if return_interval:
+            lower_percentile = (100 - percentile) / 2
+            upper_percentile = lower_percentile + percentile
+            lower_threshold, _, samples, groups, candidate = self._calculate_polarization(
+                groups, candidate, threshold, upper_percentile
+            )
+            upper_threshold, _, samples, groups, candidate = self._calculate_polarization(
+                groups, candidate, threshold, lower_percentile
+            )
+            thresholds = [lower_threshold, upper_threshold]
+        else:
+            threshold, percentile, samples, groups, candidate = self._calculate_polarization(
+                groups, candidate, threshold, percentile
+            )
+            thresholds = [threshold]
+
         return plot_polarization_kde(
-            samples, threshold, percentile, groups, candidate, show_threshold, ax
+            samples, thresholds, percentile, groups, candidate, show_threshold, ax
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):

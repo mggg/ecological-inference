@@ -128,8 +128,9 @@ def test_binom_conv_log_p():
 def test_polarization_report(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
     prob_20 = example_two_by_two_ei.polarization_report(threshold=0.2)
     prob_40 = example_two_by_two_ei.polarization_report(threshold=0.4)
-    thresh_95 = example_two_by_two_ei.polarization_report(percentile=95)
-    thresh_90 = example_two_by_two_ei.polarization_report(percentile=90)
+    thresh_95_range = example_two_by_two_ei.polarization_report(percentile=95)
+    thresh_90_range = example_two_by_two_ei.polarization_report(percentile=90)
 
     assert prob_20 >= prob_40
-    assert thresh_95 <= thresh_90
+    assert thresh_95_range[1] > thresh_95_range[0]
+    assert thresh_95_range[1] - thresh_95_range[0] >= thresh_90_range[1] - thresh_90_range[0]

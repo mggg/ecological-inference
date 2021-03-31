@@ -361,31 +361,41 @@ class TwoByTwoEIBaseBayes:
 
     def polarization_report(self, threshold=None, percentile=None, reference_group=0, verbose=True):
         """
-        for a given threshold return percentile that difference between the group's
+        For a given threshold, return the probability that difference between the group's
         preferences for the given candidate is more than threshold
         OR
-        for a given percentile, return the associated threshold
-
-        Exactly one of percentile or threshold must be None
+        For a given confidence level, return the associated confidence of the difference
+        between the two groups' preferences.
+        Exactly one {percentile,threshold} must be None/
         """
-        return_threshold = threshold is None
+        return_interval = threshold is None
 
-        threshold, percentile, _, groups = self._calculate_polarization(
-            threshold, percentile, reference_group
-        )
-        if verbose:
-            print(
-                f"There is a {percentile:.2f}% probability that the difference between the groups'"
-                + f" preferences for {self.candidate_name} ({groups[0]} - {groups[1]}) is "
-                + "more than {threshold:.2f}."
+        if return_interval:
+            lower_percentile = (100 - percentile) / 2
+            upper_percentile = lower_percentile + percentile
+            lower_threshold, _, _, groups = self._calculate_polarization(
+                threshold, upper_percentile, reference_group
             )
-            if return_threshold:
-                return threshold
-            else:
-                return percentile
-        elif return_threshold:
-            return threshold
+            upper_threshold, _, _, groups = self._calculate_polarization(
+                threshold, lower_percentile, reference_group
+            )
+            if verbose:
+                print(
+                    f"There is a {percentile}% probability that the difference between the groups'"
+                    + f" preferences for {self.candidate_name} ({groups[0]} - {groups[1]}) is "
+                    + f"between [{lower_threshold:.2f}, {upper_threshold:.2f}]."
+                )
+            return (lower_threshold, upper_threshold)
         else:
+            threshold, percentile, _, groups = self._calculate_polarization(
+                threshold, percentile, reference_group
+            )
+            if verbose:
+                print(
+                    f"There is a {percentile:.0f}% probability that the difference between"
+                    + f" the groups' preferences for {self.candidate_name} ({groups[0]} -"
+                    + f"  {groups[1]}) is more than {threshold:.2f}."
+                )
             return percentile
 
     def summary(self):
@@ -446,12 +456,27 @@ class TwoByTwoEIBaseBayes:
         self, threshold=None, percentile=None, reference_group=0, show_threshold=False, ax=None
     ):
         """Plot kde of differences between voting preferences"""
-        threshold, percentile, samples, groups = self._calculate_polarization(
-            threshold, percentile, reference_group
-        )
+        return_interval = threshold is None
+
+        if return_interval:
+            lower_percentile = (100 - percentile) / 2
+            upper_percentile = lower_percentile + percentile
+            lower_threshold, _, samples, groups = self._calculate_polarization(
+                threshold, upper_percentile, reference_group
+            )
+            upper_threshold, _, samples, groups = self._calculate_polarization(
+                threshold, lower_percentile, reference_group
+            )
+            thresholds = [lower_threshold, upper_threshold]
+        else:
+            threshold, percentile, samples, groups = self._calculate_polarization(
+                threshold, percentile, reference_group
+            )
+            thresholds = [threshold]
+
         return plot_polarization_kde(
             samples,
-            threshold,
+            thresholds,
             percentile,
             groups,
             self.candidate_name,
