@@ -438,7 +438,7 @@ def plot_polarization_kde(
         else:
             ax.axvspan(thresholds[0], 1, facecolor="gray", alpha=0.2)
         ax.text(
-            thresholds[-1] + 0.05, 0.5, f"Prob (difference {threshold_string} ) = {probability:.1f}"
+            thresholds[-1] + 0.05, 0.5, f"Prob (difference {threshold_string} ) = {probability:.1f}%"
         )
 
     ax.set_title(f"Difference in voter preference for {candidate_name}: {groups[0]} - {groups[1]}")
