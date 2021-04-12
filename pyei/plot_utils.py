@@ -438,7 +438,9 @@ def plot_polarization_kde(
         else:
             ax.axvspan(thresholds[0], 1, facecolor="gray", alpha=0.2)
         ax.text(
-            thresholds[-1] + 0.05, 0.5, f"Prob (difference {threshold_string} ) = {probability:.1f}%"
+            thresholds[-1] + 0.05,
+            0.5,
+            f"Prob (difference {threshold_string} ) = {probability:.1f}%",
         )
 
     ax.set_title(f"Difference in voter preference for {candidate_name}: {groups[0]} - {groups[1]}")
@@ -483,6 +485,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         num_kdes_per_plot = num_groups
         titles = candidate_names
         legend = group_names
+        support = "for"
         if axes is None:
             _, axes = plt.subplots(num_candidates, sharex=True)
             plt.subplots_adjust(hspace=0.5)
@@ -492,22 +495,19 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         titles = group_names
         sampled_voting_prefs = np.swapaxes(sampled_voting_prefs, 1, 2)
         legend = candidate_names
+        support = "among"
         if axes is None:
             _, axes = plt.subplots(num_groups, sharex=True)
             plt.subplots_adjust(hspace=0.5)
     else:
         raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
-    # fig.subplots_adjust(hspace=0.5)
 
     for plot_idx in range(num_plots):
         if num_plots > 1:
             ax = axes[plot_idx]
         else:
             ax = axes
-        if plot_by == "candidate":
-            ax.set_title("Support for " + titles[plot_idx])
-        else:
-            ax.set_title("Support among " + titles[plot_idx])
+        ax.set_title(f"Support {support} " + titles[plot_idx])
         ax.set_xlim((0, 1))
         for kde_idx in range(num_kdes_per_plot):
             sns.histplot(
