@@ -485,6 +485,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         legend = group_names
         if axes is None:
             _, axes = plt.subplots(num_candidates, sharex=True)
+            plt.subplots_adjust(hspace=0.5)
     elif plot_by == "group":
         num_plots = num_groups
         num_kdes_per_plot = num_candidates
@@ -493,6 +494,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         legend = candidate_names
         if axes is None:
             _, axes = plt.subplots(num_groups, sharex=True)
+            plt.subplots_adjust(hspace=0.5)
     else:
         raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
     # fig.subplots_adjust(hspace=0.5)
@@ -502,7 +504,10 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
             ax = axes[plot_idx]
         else:
             ax = axes
-        ax.set_title("Support for " + titles[plot_idx])
+        if plot_by == "candidate":
+            ax.set_title("Support for " + titles[plot_idx])
+        else:
+            ax.set_title("Support among " + titles[plot_idx])
         ax.set_xlim((0, 1))
         for kde_idx in range(num_kdes_per_plot):
             sns.histplot(
