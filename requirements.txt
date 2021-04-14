@@ -4,4 +4,4 @@ scikit-learn
 matplotlib
 pandas
 seaborn
-python-graphviz
+graphviz
