@@ -372,7 +372,7 @@ class RowByColumnEI:
             )
             if verbose:
                 print(
-                    f"There is a {percentile:.0f}% probability that the difference between"
+                    f"There is a {percentile:.1f}% probability that the difference between"
                     + f" the groups' preferences for {candidate} ({groups[0]} - {groups[1]}) "
                     + f" is more than {threshold:.2f}."
                 )
@@ -391,7 +391,7 @@ class RowByColumnEI:
                 summ = f"""The posterior mean for the district-level voting preference of
                 {self.demographic_group_names[row]} for {self.candidate_names[col]} is
                 {self.posterior_mean_voting_prefs[row][col]:.3f}
-                Credible interval:  {self.credible_interval_95_mean_voting_prefs[row][col]}
+                95% credible interval:  {self.credible_interval_95_mean_voting_prefs[row][col]}
                 """
                 summary_str += summ
         return summary_str
@@ -472,6 +472,10 @@ class RowByColumnEI:
                     (self.demographic_group_names[dem2], self.demographic_group_names[dem1])
                 ] = differ_frac
         return candidate_differ_rate_dict
+
+    def plot(self):
+        """Plot with no arguments returns the kde plots, with one plot for each candidate"""
+        return self.plot_kdes(plot_by="candidate", axes=None)
 
     def plot_boxplots(self, plot_by="candidate", axes=None):
         """Plot boxplots of voting prefs (one boxplot for each candidate)
