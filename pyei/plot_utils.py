@@ -28,16 +28,24 @@ __all__ = [
 PALETTE = "Dark2"  # set library-wide color palette
 colors = sns.color_palette(PALETTE)
 FONTSIZE = 20
+TITLESIZE = 24
 TICKSIZE = 15
 
 
-def get_ticks(ax):
+def size_xticks(ax):
     """
-    Return the x and y ticks for a given matplotlib axis.
+    Helper function to size the xtick (numbers) of a matplotlib Axis
     """
     xticks = [round(xtick, 1) for xtick in ax.get_xticks()]
-    yticks = [round(ytick, 1) for ytick in ax.get_yticks()]
-    return xticks, yticks
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticks, size=TICKSIZE)
+
+
+def size_yticklabels(ax):
+    """
+    Helper function to size the ytick labels of a matplotlib Axis
+    """
+    ax.set_yticklabels(ax.get_yticklabels(), size=TICKSIZE)
 
 
 def plot_single_ridgeplot(
@@ -238,6 +246,7 @@ def plot_boxplots(
         num_boxes_per_plot = num_groups
         titles = candidate_names
         legend = group_names
+        support = "for"
         if axes is None:
             fig, axes = plt.subplots(num_candidates)
 
@@ -247,6 +256,7 @@ def plot_boxplots(
         titles = group_names
         sampled_voting_prefs = np.swapaxes(sampled_voting_prefs, 1, 2)
         legend = candidate_names
+        support = "among"
         if axes is None:
             fig, axes = plt.subplots(num_groups)
     else:
@@ -265,8 +275,10 @@ def plot_boxplots(
         sns.despine(ax=ax, left=True)
         sns.boxplot(data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax, palette=colors)
         ax.set_xlim((0, 1))
-        ax.set_title(titles[plot_idx])
+        ax.set_title(f"Support {support} {titles[plot_idx]}", fontsize=TITLESIZE)
         ax.tick_params(axis="y", left=False)  # remove y axis ticks
+        size_xticks(ax)
+        size_yticklabels(ax)
 
     return ax
 
@@ -301,15 +313,17 @@ def plot_summary(
     ax_hist : Matplotlib axis object
     """
     if axes is None:
-        _, (ax_box, ax_hist) = plt.subplots(
+        _, (ax_hist, ax_box) = plt.subplots(
             2,
             sharex=True,
             figsize=(12, 6.4),
-            gridspec_kw={"height_ratios": (0.15, 0.85)},
+            gridspec_kw={"height_ratios": (0.85, 0.15)},
         )
     else:
-        ax_box, ax_hist = axes
-    ax_box.set_title("EI Summary", fontsize=FONTSIZE)
+        ax_hist, ax_box = axes
+    size_xticks(ax_box)
+    ax_box.set_title("")
+    ax_box.set_xlabel(f"Support for {candidate_name}", fontsize=FONTSIZE)
     sns.despine(ax=ax_hist)
     sns.despine(ax=ax_box, left=True)
     # plot custom boxplot, with two boxplots in the same row
@@ -336,8 +350,8 @@ def plot_summary(
 
     # plot distribution
     plot_kdes(sampled_voting_prefs, [group1_name, group2_name], [candidate_name], axes=ax_hist)
-    ax_hist.set_title("")
-    ax_hist.set_xlabel(f"Support for {candidate_name}", fontsize=FONTSIZE)
+    ax_hist.set_title("EI Summary", fontsize=TITLESIZE)
+    plt.subplots_adjust(hspace=0.01)
     return (ax_box, ax_hist)
 
 
@@ -526,15 +540,9 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
             ax = axes[plot_idx]
         else:
             ax = axes
-        ax.set_title(f"Support {support} " + titles[plot_idx])
+        ax.set_title(f"Support {support} " + titles[plot_idx], fontsize=TITLESIZE)
         ax.set_xlim((0, 1))
-        print(ax.get_yticks())
-        xticks, yticks = get_ticks(ax)
-        print(yticks)
-        ax.set_xticks(xticks)
-        # ax.set_yticks(yticks)
-        ax.set_xticklabels(xticks, size=TICKSIZE)
-        # ax.set_yticklabels(yticks, size=TICKSIZE)
+        size_xticks(ax)
         ax.set_ylabel("Probability Density", fontsize=FONTSIZE)
         for kde_idx in range(num_kdes_per_plot):
             sns.histplot(
