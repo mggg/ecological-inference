@@ -304,7 +304,7 @@ class TwoByTwoEIBaseBayes:
         self.credible_interval_95_mean_voting_prefs = [None, None]
         self.sampled_voting_prefs = [None, None]
 
-    def _group_names_for_display(self):
+    def group_names_for_display(self):
         """Sets the group names to be displayed in plots"""
         return self.demographic_group_name, "non-" + self.demographic_group_name
 
@@ -422,7 +422,7 @@ class TwoByTwoEIBaseBayes:
         """kernel density estimate/ histogram plot"""
         return plot_kdes(
             self._voting_prefs_array(),
-            self._group_names_for_display(),
+            self.group_names_for_display(),
             [self.candidate_name],
             plot_by="candidate",
             axes=ax,
@@ -432,7 +432,7 @@ class TwoByTwoEIBaseBayes:
         """ Boxplot of voting prefs for each group"""
         return plot_boxplots(
             self._voting_prefs_array(),
-            self._group_names_for_display(),
+            self.group_names_for_display(),
             [self.candidate_name],
             plot_by="candidate",
             axes=ax,
@@ -446,7 +446,7 @@ class TwoByTwoEIBaseBayes:
                 self.credible_interval_95_mean_voting_prefs[0],
                 self.credible_interval_95_mean_voting_prefs[1],
             ],
-            self._group_names_for_display(),
+            self.group_names_for_display(),
             self.candidate_name,
             title,
             ax=ax,
@@ -684,14 +684,14 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             precinct_credible_intervals_gp1,
             self.candidate_name,
             self.precinct_names,
-            self._group_names_for_display()[0],
+            self.group_names_for_display()[0],
         )
         plot_gp2 = plot_intervals_all_precincts(
             precinct_posterior_means_gp2,
             precinct_credible_intervals_gp2,
             self.candidate_name,
             self.precinct_names,
-            self._group_names_for_display()[1],
+            self.group_names_for_display()[1],
         )
 
         return plot_gp1, plot_gp2
@@ -700,8 +700,8 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         """kde, boxplot, and credible intervals"""
         return plot_summary(
             self._voting_prefs_array(),
-            self._group_names_for_display()[0],
-            self._group_names_for_display()[1],
+            self.group_names_for_display()[0],
+            self.group_names_for_display()[1],
             self.candidate_name,
             axes=axes,
         )
@@ -718,7 +718,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         """
         voting_prefs_group1 = self.sim_trace.get_values("b_1")
         voting_prefs_group2 = self.sim_trace.get_values("b_2")
-        group_names = self._group_names_for_display()
+        group_names = self.group_names_for_display()
         if precinct_names is not None:
             precinct_idxs = [self.precinct_names.index(name) for name in precinct_names]
             voting_prefs_group1 = voting_prefs_group1[:, precinct_idxs]

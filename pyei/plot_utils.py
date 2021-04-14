@@ -356,13 +356,13 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="
 
     # Set group names and candidates in case runs are TwoByTwoEI
     if not hasattr(ei_runs[0], "demographic_group_names"):  # then is TwoByTwoEI
-        demographic_group_names1 = list(ei_runs[0]._group_names_for_display())
+        demographic_group_names1 = list(ei_runs[0].group_names_for_display())
         candidate_names1 = [ei_runs[0].candidate_name, "not " + ei_runs[0].candidate_name]
     else:
         demographic_group_names1 = ei_runs[0].demographic_group_names
         candidate_names1 = ei_runs[0].candidate_names
     if not hasattr(ei_runs[1], "demographic_group_names"):  # then it is TwoByTwoEI
-        demographic_group_names2 = list(ei_runs[1]._group_names_for_display())
+        demographic_group_names2 = list(ei_runs[1].group_names_for_display())
         candidate_names2 = [ei_runs[1].candidate_name, "not " + ei_runs[1].candidate_name]
     else:
         demographic_group_names2 = ei_runs[1].demographic_group_names

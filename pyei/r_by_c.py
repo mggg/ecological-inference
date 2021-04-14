@@ -205,8 +205,8 @@ class RowByColumnEI:
 
         # Set precinct names
         if precinct_names is not None:  # pylint: disable=duplicate-code
-            assert len(precinct_names) == len(precinct_pops)
-            if len(set(precinct_names)) != len(precinct_names):
+            assert len(precinct_names) == len(precinct_pops)  # pylint: disable=duplicate-code
+            if len(set(precinct_names)) != len(precinct_names):  # pylint: disable=duplicate-code
                 warnings.warn(
                     "Precinct names are not unique. This may interfere with "
                     "passing precinct names to precinct_level_plot()."
@@ -351,12 +351,15 @@ class RowByColumnEI:
 
         if not all(group in self.demographic_group_names for group in groups):
             raise ValueError(
-                f"All elements of group_names must be in the list of demographic_group_names provided to fit(): {self.demographic_group_names}"
+                f"""Elements of group_names must be in the list of demographic_group_names
+                provided to fit():
+                {self.demographic_group_names}"""
             )
 
         if candidate not in self.candidate_names:
             raise ValueError(
-                f"candidate_name must be in the list of candidate_names provided to fit(): {self.candidate_names}"
+                f"""candidate_name must be in the list of candidate_names provided to fit():
+                {self.candidate_names}"""
             )
 
         if return_interval:
@@ -553,12 +556,14 @@ class RowByColumnEI:
         """ Plot of credible intervals for all precincts, for specified group and candidate"""
         if group_name not in self.demographic_group_names:
             raise ValueError(
-                f"group_name must be in the list of demographic_group_names provided to fit(): {self.demographic_group_names}"
+                f"""group_name must be in the list of demographic_group_names provided to fit():
+                {self.demographic_group_names}"""
             )
 
         if candidate_name not in self.candidate_names:
             raise ValueError(
-                f"candidate_name must be in the list of candidate_names provided to fit(): {self.candidate_names}"
+                f"""candidate_name must be in the list of candidate_names provided to fit():
+                {self.candidate_names}"""
             )
 
         group_index = self.demographic_group_names.index(group_name)
