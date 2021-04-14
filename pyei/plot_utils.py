@@ -25,9 +25,30 @@ __all__ = [
     "tomography_plot",
 ]
 
+PALETTE = "Dark2"  # set library-wide color palette
+colors = sns.color_palette(PALETTE)
+FONTSIZE = 20
+TICKSIZE = 15
+
+
+def get_ticks(ax):
+    """
+    Return the x and y ticks for a given matplotlib axis.
+    """
+    xticks = [round(xtick, 1) for xtick in ax.get_xticks()]
+    yticks = [round(ytick, 1) for ytick in ax.get_yticks()]
+    return xticks, yticks
+
 
 def plot_single_ridgeplot(
-    ax, group1_pref, group2_pref, colors, z_init, trans, overlap=1.3, num_points=500
+    ax,
+    group1_pref,
+    group2_pref,
+    colors,  # pylint: disable=redefined-outer-name
+    z_init,
+    trans,
+    overlap=1.3,
+    num_points=500,
 ):
     """Helper function for plot_precincts that plots a single ridgeplot (e.g.,
     for a single precinct for a given candidate.)
@@ -138,7 +159,6 @@ def plot_precincts(
 
     iterator = zip(voting_prefs_group1.T, voting_prefs_group2.T)
 
-    colors = ["steelblue", "orange"]
     for idx, (group1, group2) in enumerate(iterator, 0):
         ax.plot([0], [idx])
         trans = ax.convert_yunits(idx)
@@ -243,7 +263,7 @@ def plot_boxplots(
         else:
             ax = axes
         sns.despine(ax=ax, left=True)
-        sns.boxplot(data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax)
+        sns.boxplot(data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax, palette=colors)
         ax.set_xlim((0, 1))
         ax.set_title(titles[plot_idx])
         ax.tick_params(axis="y", left=False)  # remove y axis ticks
@@ -280,7 +300,6 @@ def plot_summary(
     ax_box : Matplotlib axis object
     ax_hist : Matplotlib axis object
     """
-
     if axes is None:
         _, (ax_box, ax_hist) = plt.subplots(
             2,
@@ -290,10 +309,10 @@ def plot_summary(
         )
     else:
         ax_box, ax_hist = axes
+    ax_box.set_title("EI Summary", fontsize=FONTSIZE)
     sns.despine(ax=ax_hist)
     sns.despine(ax=ax_box, left=True)
     # plot custom boxplot, with two boxplots in the same row
-    colors = sns.color_palette()  # fetch seaborn default color palette
     plot_props = dict(fliersize=5, linewidth=2, whis=[2.5, 97.5])
     flier1_props = dict(marker="o", markerfacecolor=colors[0], alpha=0.5)
     flier2_props = dict(marker="d", markerfacecolor=colors[1], alpha=0.5)
@@ -318,7 +337,7 @@ def plot_summary(
     # plot distribution
     plot_kdes(sampled_voting_prefs, [group1_name, group2_name], [candidate_name], axes=ax_hist)
     ax_hist.set_title("")
-    ax_hist.set_xlabel(f"Support for {candidate_name}")
+    ax_hist.set_xlabel(f"Support for {candidate_name}", fontsize=FONTSIZE)
     return (ax_box, ax_hist)
 
 
@@ -423,7 +442,7 @@ def plot_polarization_kde(
         element="step",
         stat="density",
         label=groups[0] + " - " + groups[1],
-        color=f"C{2}",
+        color="steelblue",
         linewidth=0,
     )
     if len(thresholds) == 1:
@@ -509,6 +528,14 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
             ax = axes
         ax.set_title(f"Support {support} " + titles[plot_idx])
         ax.set_xlim((0, 1))
+        print(ax.get_yticks())
+        xticks, yticks = get_ticks(ax)
+        print(yticks)
+        ax.set_xticks(xticks)
+        # ax.set_yticks(yticks)
+        ax.set_xticklabels(xticks, size=TICKSIZE)
+        # ax.set_yticklabels(yticks, size=TICKSIZE)
+        ax.set_ylabel("Probability Density", fontsize=FONTSIZE)
         for kde_idx in range(num_kdes_per_plot):
             sns.histplot(
                 sampled_voting_prefs[:, kde_idx, plot_idx],
@@ -517,7 +544,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
                 stat="density",
                 element="step",
                 label=legend[kde_idx],
-                color=f"C{kde_idx}",
+                color=colors[kde_idx],
                 linewidth=0,
             )
 
@@ -571,7 +598,13 @@ def plot_conf_or_credible_interval(intervals, group_names, candidate_name, title
     ax.axes.get_yaxis().set_visible(False)
     for idx, group_name in enumerate(group_names):
         ax.text(1, int_heights[idx], group_name)
-        ax.plot(intervals[idx], [int_heights[idx], int_heights[idx]], linewidth=4, alpha=0.8)
+        ax.plot(
+            intervals[idx],
+            [int_heights[idx], int_heights[idx]],
+            linewidth=4,
+            alpha=0.8,
+            color=colors[idx],
+        )
 
     return ax
 
