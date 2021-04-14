@@ -158,8 +158,8 @@ class RowByColumnEI:
         target_accept=0.99,
         tune=1500,
         draw_samples=True,
-        **other_sampling_args
-        # precinct_names=None,
+        precinct_names=None,
+        **other_sampling_args,
     ):
         """Fit the specified model using MCMC sampling
         Required arguments:
@@ -203,16 +203,16 @@ class RowByColumnEI:
         self.demographic_group_names = demographic_group_names
         self.candidate_names = candidate_names
 
-        # pylint: disable=duplicate-code
-        # if precinct_names is not None:
-        #     assert len(precinct_names) == len(precinct_pops)
-        #     if len(set(precinct_names)) != len(precinct_names):
-        #         warnings.warn(
-        #             "Precinct names are not unique. This may interfere with "
-        #             "passing precinct names to precinct_level_plot()."
-        #         )
-        #     self.precinct_names = precinct_names #TODO: set this
-        # # pylint: enable=duplicate-code
+        # Set precinct names
+        if precinct_names is not None:  # pylint: disable=duplicate-code
+            assert len(precinct_names) == len(precinct_pops)
+            if len(set(precinct_names)) != len(precinct_names):
+                warnings.warn(
+                    "Precinct names are not unique. This may interfere with "
+                    "passing precinct names to precinct_level_plot()."
+                )
+            self.precinct_names = precinct_names
+
         self.num_groups_and_num_candidates = [
             group_fractions.shape[0],
             votes_fractions.shape[0],
@@ -349,6 +349,16 @@ class RowByColumnEI:
         """
         return_interval = threshold is None
 
+        if not all(group in self.demographic_group_names for group in groups):
+            raise ValueError(
+                f"All elements of group_names must be in the list of demographic_group_names provided to fit(): {self.demographic_group_names}"
+            )
+
+        if candidate not in self.candidate_names:
+            raise ValueError(
+                f"candidate_name must be in the list of candidate_names provided to fit(): {self.candidate_names}"
+            )
+
         if return_interval:
             lower_percentile = (100 - percentile) / 2
             upper_percentile = lower_percentile + percentile
@@ -451,7 +461,15 @@ class RowByColumnEI:
 
     def candidate_of_choice_polarization_report(self, verbose=True):
         """For each pair of groups, look at differences in preferences
-        between those groups"""
+        between those groups
+
+        Notes:
+        ------
+        For each pair of groups, this function reports the fraction samples for which
+        the `preferred candidate` of one group (as measured by: who is the candidate supported
+        by the plurality within that group according to the sampled distric-level support value)
+        is different from the `preferred candidate` of the others group
+        """
         candidate_differ_rate_dict = {}
         for dem1 in range(self.num_groups_and_num_candidates[0]):
             for dem2 in range(dem1):
@@ -535,12 +553,12 @@ class RowByColumnEI:
         """ Plot of credible intervals for all precincts, for specified group and candidate"""
         if group_name not in self.demographic_group_names:
             raise ValueError(
-                "group_name must be in the list of demographic_group_names provided to fit()"
+                f"group_name must be in the list of demographic_group_names provided to fit(): {self.demographic_group_names}"
             )
 
         if candidate_name not in self.candidate_names:
             raise ValueError(
-                "candidate_name must be in the list of candidate_names provided to fit()"
+                f"candidate_name must be in the list of candidate_names provided to fit(): {self.candidate_names}"
             )
 
         group_index = self.demographic_group_names.index(group_name)
