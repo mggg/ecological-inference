@@ -449,7 +449,7 @@ class RowByColumnEI:
                 ] = frac
         return candidate_preference_rate_dict
 
-    def candidate_of_choice_polaization_report(self, verbose=True):
+    def candidate_of_choice_polarization_report(self, verbose=True):
         """For each pair of groups, look at differences in preferences
         between those groups"""
         candidate_differ_rate_dict = {}
