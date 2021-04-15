@@ -304,7 +304,7 @@ class TwoByTwoEIBaseBayes:
         self.credible_interval_95_mean_voting_prefs = [None, None]
         self.sampled_voting_prefs = [None, None]
 
-    def _group_names_for_display(self):
+    def group_names_for_display(self):
         """Sets the group names to be displayed in plots"""
         return self.demographic_group_name, "non-" + self.demographic_group_name
 
@@ -422,7 +422,7 @@ class TwoByTwoEIBaseBayes:
         """kernel density estimate/ histogram plot"""
         return plot_kdes(
             self._voting_prefs_array(),
-            self._group_names_for_display(),
+            self.group_names_for_display(),
             [self.candidate_name],
             plot_by="candidate",
             axes=ax,
@@ -432,7 +432,7 @@ class TwoByTwoEIBaseBayes:
         """ Boxplot of voting prefs for each group"""
         return plot_boxplots(
             self._voting_prefs_array(),
-            self._group_names_for_display(),
+            self.group_names_for_display(),
             [self.candidate_name],
             plot_by="candidate",
             axes=ax,
@@ -446,7 +446,7 @@ class TwoByTwoEIBaseBayes:
                 self.credible_interval_95_mean_voting_prefs[0],
                 self.credible_interval_95_mean_voting_prefs[1],
             ],
-            self._group_names_for_display(),
+            self.group_names_for_display(),
             self.candidate_name,
             title,
             ax=ax,
@@ -560,35 +560,15 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         if self.model_name == "king99":
             model_function = ei_beta_binom_model
-            # self.sim_model = ei_beta_binom_model(
-            #     group_fraction,
-            #     votes_fraction,
-            #     precinct_pops,
-            #     **self.additional_model_params,
+
         elif self.model_name == "king99_pareto_modification":
             model_function = ei_beta_binom_model_modified
-            # self.sim_model = ei_beta_binom_model_modified(
-            #     group_fraction,
-            #     votes_fraction,
-            #     precinct_pops,
-            #     **self.additional_model_params,
-            # )
+
         elif self.model_name == "wakefield_beta":
             model_function = wakefield_model_beta
-            # self.sim_model = wakefield_model_beta(
-            #     group_fraction,
-            #     votes_fraction,
-            #     precinct_pops,
-            #     **self.additional_model_params,
-            # )
+
         elif self.model_name == "wakefield_normal":
             model_function = wakefield_normal
-            # self.sim_model = wakefield_normal(
-            #     group_fraction,
-            #     votes_fraction,
-            #     precinct_pops,
-            #     **self.additional_model_params,
-            # )
 
         self.sim_model = model_function(
             group_fraction,
@@ -642,9 +622,15 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         )  # sampled voted prefs across precincts
 
     def precinct_level_estimates(self):
-        """If desired, we can return precinct-level estimates"""
-        # TODO: make this output match r_by_c version in shape,
+        """If desired, we can return precinct-level estimates
+        Returns:
+            precinct_posterior_means: num_precincts x 2 (groups) x 2 (candidates)
+            precinct_credible_intervals: num_precincts x 2 (groups) x 2 (candidates) x 2 (endpoints)
+        """
+        # TODO: make this output match r_by_c version in shape, num_precincts x 2 x 2
         percentiles = [2.5, 97.5]
+        num_precincts = len(self.precinct_pops)
+
         precinct_level_samples_gp1 = self.sim_trace.get_values("b_1")
         precinct_posterior_means_gp1 = precinct_level_samples_gp1.mean(axis=0)
         precinct_credible_intervals_gp1 = np.percentile(
@@ -655,38 +641,57 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         precinct_posterior_means_gp2 = precinct_level_samples_gp2.mean(axis=0)
         precinct_credible_intervals_gp2 = np.percentile(
             precinct_level_samples_gp2, percentiles, axis=0
-        ).T
+        ).T  # num_precincts x 2
+
+        precinct_posterior_means = np.empty((num_precincts, 2, 2))
+        precinct_posterior_means[:, 0, 0] = precinct_posterior_means_gp1
+        precinct_posterior_means[:, 0, 1] = 1 - precinct_posterior_means_gp1
+        precinct_posterior_means[:, 1, 0] = precinct_posterior_means_gp2
+        precinct_posterior_means[:, 1, 1] = 1 - precinct_posterior_means_gp2
+
+        precinct_credible_intervals = np.empty((num_precincts, 2, 2, 2))
+        precinct_credible_intervals[:, 0, 0, :] = precinct_credible_intervals_gp1
+        precinct_credible_intervals[:, 0, 1, :] = 1 - precinct_credible_intervals_gp1
+        precinct_credible_intervals[:, 1, 0, :] = precinct_credible_intervals_gp2
+        precinct_credible_intervals[:, 1, 1, :] = 1 - precinct_credible_intervals_gp2
 
         return (
-            precinct_posterior_means_gp1,
-            precinct_posterior_means_gp2,
-            precinct_credible_intervals_gp1,
-            precinct_credible_intervals_gp2,
+            precinct_posterior_means,
+            precinct_credible_intervals
+            # precinct_posterior_means_gp1,
+            # precinct_posterior_means_gp2,
+            # precinct_credible_intervals_gp1,
+            # precinct_credible_intervals_gp2,
         )
 
     def plot_intervals_by_precinct(self):
-        """ Plot of pointe estimates and credible intervals for each precinct"""
+        """ Plot of point estimates and credible intervals for each precinct"""
         # TODO: Fix use of axes
-        (
-            precinct_posterior_means_gp1,
-            precinct_posterior_means_gp2,
-            precinct_credible_intervals_gp1,
-            precinct_credible_intervals_gp2,
-        ) = self.precinct_level_estimates()
+        # (
+        #     precinct_posterior_means_gp1,
+        #     precinct_posterior_means_gp2,
+        #     precinct_credible_intervals_gp1,
+        #     precinct_credible_intervals_gp2,
+        # ) = self.precinct_level_estimates()
+        precinct_posterior_means, precinct_credible_intervals = self.precinct_level_estimates()
+        precinct_posterior_means_gp1 = precinct_posterior_means[:, 0, 0]
+        precinct_posterior_means_gp2 = precinct_posterior_means[:, 1, 0]
+        precinct_credible_intervals_gp1 = precinct_credible_intervals[:, 0, 0, :]
+        precinct_credible_intervals_gp2 = precinct_credible_intervals[:, 1, 0, :]
 
         plot_gp1 = plot_intervals_all_precincts(
             precinct_posterior_means_gp1,
             precinct_credible_intervals_gp1,
             self.candidate_name,
             self.precinct_names,
-            self._group_names_for_display()[0],
+            self.group_names_for_display()[0],
         )
         plot_gp2 = plot_intervals_all_precincts(
             precinct_posterior_means_gp2,
             precinct_credible_intervals_gp2,
             self.candidate_name,
             self.precinct_names,
-            self._group_names_for_display()[1],
+            self.group_names_for_display()[1],
         )
 
         return plot_gp1, plot_gp2
@@ -695,8 +700,8 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         """kde, boxplot, and credible intervals"""
         return plot_summary(
             self._voting_prefs_array(),
-            self._group_names_for_display()[0],
-            self._group_names_for_display()[1],
+            self.group_names_for_display()[0],
+            self.group_names_for_display()[1],
             self.candidate_name,
             axes=axes,
         )
@@ -713,7 +718,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         """
         voting_prefs_group1 = self.sim_trace.get_values("b_1")
         voting_prefs_group2 = self.sim_trace.get_values("b_2")
-        group_names = self._group_names_for_display()
+        group_names = self.group_names_for_display()
         if precinct_names is not None:
             precinct_idxs = [self.precinct_names.index(name) for name in precinct_names]
             voting_prefs_group1 = voting_prefs_group1[:, precinct_idxs]
