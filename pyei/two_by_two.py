@@ -23,6 +23,128 @@ from .plot_utils import (
 
 __all__ = ["TwoByTwoEI", "ei_beta_binom_model_modified"]
 
+def truncated_normal_asym(group_fraction, votes_fraction, precinct_pops):
+    """
+    A modification of king97's truncated normal that puts some broad priors
+    over the parameters of the truncated normal dist
+    """
+    num_precincts = len(precinct_pops)
+    b_1_l_bound = np.maximum(0, (votes_fraction - 1 + group_fraction) / group_fraction)
+    b_1_u_bound = np.minimum(1, votes_fraction / group_fraction)
+    b_2_l_bound = np.maximum(0, (votes_fraction - group_fraction) / (1 - group_fraction))
+    b_2_u_bound = np.minimum(1, (votes_fraction) / (1 - group_fraction))
+
+    # For stability, use whichever of b_1 and b_2 has the broader width between bounds as
+    # the parameter that we include in the model (then the other of b_1 or b_2 will
+    # be calculated deterministically from that and votes_fraction)
+    swap_b1_b2 = False
+    if (b_2_u_bound - b_2_l_bound).mean() > (b_1_u_bound - b_1_l_bound).mean():
+        swap_b1_b2 = True
+        group_fraction = 1 - group_fraction
+
+    if not swap_b1_b2:  # TODO - cleanup and just do this with renaming
+        with pm.Model() as model:
+            sigma_11 = pm.HalfNormal("sigma_11", sd=0.707)  # chosen to match King 97
+            sigma_22 = pm.HalfNormal("sigma_22", sd=0.707)  # chosen to match king 97
+            # rho = pm.Normal('rho', 0, .5)
+            rho = pm.Uniform("rho", -0.5, 0.5)
+            # rho = pm.Normal('rho', 0, .25)
+            sigma_12 = sigma_11 * sigma_22 * rho
+
+            tn_mean_1 = pm.Uniform("tn_mean_1")
+            tn_mean_2 = pm.Uniform("tn_mean_2")
+
+            b_1 = pm.TruncatedNormal(
+                "b_1",
+                mu=tn_mean_1,
+                sigma=sigma_11,
+                shape=num_precincts,
+                # lower = 0,
+                # upper = 1
+                lower=b_1_l_bound,
+                upper=b_1_u_bound,
+            )
+
+            mu_i = tn_mean_1 * group_fraction + tn_mean_2 * (1 - group_fraction)
+            w_i = pm.Deterministic(
+                "w_i", sigma_11 ** 2 * group_fraction + sigma_12 * (1 - group_fraction)
+            )
+            sigma_i_sq = pm.Deterministic(
+                "sigma_i_sq",
+                sigma_22 ** 2
+                + 2 * (sigma_12 - sigma_22 ** 2) * group_fraction
+                + (sigma_11 * 2 + sigma_22 ** 2 - 2 * sigma_12) * group_fraction ** 2,
+            )
+
+            votes_frac_mean = mu_i + w_i * (b_1 - tn_mean_1) / (sigma_11 ** 2)
+            votes_frac_var = pm.Deterministic(
+                "votes_frac_var", sigma_i_sq - w_i ** 2 / (sigma_11 ** 2)
+            )
+
+            votes_frac_l_bound = group_fraction * b_1
+            votes_frac_u_bound = (1 - group_fraction) + group_fraction * b_1
+
+            votes_frac_stdev = pm.math.sqrt(votes_frac_var)
+            pm.TruncatedNormal(
+                "votes_fraction",
+                mu=votes_frac_mean,
+                sigma=votes_frac_stdev,
+                lower=votes_frac_l_bound,
+                upper=votes_frac_u_bound,
+                observed=votes_fraction,
+            )
+            pm.Deterministic("b_2", (votes_fraction - b_1 * group_fraction) / (1 - group_fraction))
+    else:
+        with pm.Model() as model:
+            # SWAPPED
+            sigma_11 = pm.HalfNormal("sigma_11", sd=0.707)  # chosen to match King 97
+            sigma_22 = pm.HalfNormal("sigma_22", sd=0.707)  # chosen to match king 97
+            rho = pm.Uniform("rho", -0.5, 0.5)
+            sigma_12 = sigma_11 * sigma_22 * rho
+            tn_mean_1 = pm.Uniform("tn_mean_1")
+            tn_mean_2 = pm.Uniform("tn_mean_2")
+
+            b_2 = pm.TruncatedNormal(
+                "b_2",
+                mu=tn_mean_2,
+                sigma=sigma_22,
+                shape=num_precincts,
+                lower=b_2_l_bound,
+                upper=b_2_u_bound,
+            )
+
+            mu_i = tn_mean_2 * group_fraction + tn_mean_1 * (1 - group_fraction)
+            w_i = pm.Deterministic(
+                "w_i", sigma_22 ** 2 * group_fraction + sigma_12 * (1 - group_fraction)
+            )
+            sigma_i_sq = pm.Deterministic(
+                "sigma_i_sq",
+                sigma_11 ** 2
+                + 2 * (sigma_12 - sigma_11 ** 2) * group_fraction
+                + (sigma_11 * 2 + sigma_22 ** 2 - 2 * sigma_12) * group_fraction ** 2,
+            )
+
+            votes_frac_mean = mu_i + w_i * (b_2 - tn_mean_2) / (sigma_22 ** 2)
+            votes_frac_var = pm.Deterministic(
+                "votes_frac_var", sigma_i_sq - w_i ** 2 / (sigma_22 ** 2)
+            )
+
+            votes_frac_l_bound = group_fraction * b_2
+            votes_frac_u_bound = (1 - group_fraction) + group_fraction * b_2
+
+            votes_frac_stdev = pm.math.sqrt(votes_frac_var)
+            pm.TruncatedNormal(
+                "votes_fraction",
+                mu=votes_frac_mean,
+                sigma=votes_frac_stdev,
+                lower=votes_frac_l_bound,
+                upper=votes_frac_u_bound,
+                observed=votes_fraction,
+            )
+            pm.Deterministic("b_1", (votes_fraction - b_2 * group_fraction) / (1 - group_fraction))
+
+    return model
+
 
 def ei_beta_binom_model_modified(
     group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
@@ -569,6 +691,9 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         elif self.model_name == "wakefield_normal":
             model_function = wakefield_normal
+        
+        elif self.model_name == "truncated_normal":
+            model_function = truncated_normal_asym
 
         self.sim_model = model_function(
             group_fraction,
