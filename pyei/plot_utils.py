@@ -387,21 +387,34 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="
     prec_means1, _ = ei_runs[0].precinct_level_estimates()
     prec_means2, _ = ei_runs[1].precinct_level_estimates()
 
-    common_groups = [
-        g for g in ei_runs[0].demographic_group_names if g in ei_runs[1].demographic_group_names
-    ]
+    # Set group names and candidates in case runs are TwoByTwoEI
+    if not hasattr(ei_runs[0], "demographic_group_names"):  # then is TwoByTwoEI
+        demographic_group_names1 = list(ei_runs[0].group_names_for_display())
+        candidate_names1 = [ei_runs[0].candidate_name, "not " + ei_runs[0].candidate_name]
+    else:
+        demographic_group_names1 = ei_runs[0].demographic_group_names
+        candidate_names1 = ei_runs[0].candidate_names
+    if not hasattr(ei_runs[1], "demographic_group_names"):  # then it is TwoByTwoEI
+        demographic_group_names2 = list(ei_runs[1].group_names_for_display())
+        candidate_names2 = [ei_runs[1].candidate_name, "not " + ei_runs[1].candidate_name]
+    else:
+        demographic_group_names2 = ei_runs[1].demographic_group_names
+        candidate_names2 = ei_runs[1].candidate_names
+
+    common_groups = [g for g in demographic_group_names1 if g in demographic_group_names2]
+
     group_dict = {}
     for group in common_groups:
         group_dict[group] = (
             prec_means1[
                 :,
-                ei_runs[0].demographic_group_names.index(group),
-                ei_runs[0].candidate_names.index(candidate),
+                demographic_group_names1.index(group),
+                candidate_names1.index(candidate),
             ],
             prec_means2[
                 :,
-                ei_runs[1].demographic_group_names.index(group),
-                ei_runs[1].candidate_names.index(candidate),
+                demographic_group_names2.index(group),
+                candidate_names2.index(candidate),
             ],
         )
 
