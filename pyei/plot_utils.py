@@ -26,16 +26,16 @@ __all__ = [
 ]
 
 PALETTE = "Dark2"  # set library-wide color palette
-colors = sns.color_palette(PALETTE)
 FONTSIZE = 20
 TITLESIZE = 24
 TICKSIZE = 15
 FIGSIZE = (10, 5)
+colors = sns.color_palette(PALETTE)
 
 
 def size_ticks(ax, axis="x"):
     """
-    Helper function to size the xtick (numbers) of a matplotlib Axis
+    Helper function to size the x- or ytick (numbers) of a matplotlib Axis
     """
     if axis == "x":
         ax.set_xlim(0, 1)
@@ -204,10 +204,8 @@ def plot_precincts(
         mpatches.Patch(color=colors[i], ec="black", label=group_names[i]) for i in range(2)
     ]
     ax.legend(handles=proxy_handles, loc="upper center")
-
     ax.set_ylim(-1, ax.get_ylim()[1])
     size_ticks(ax, "x")
-
     return ax
 
 
