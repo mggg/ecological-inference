@@ -24,6 +24,99 @@ from .plot_utils import (
 __all__ = ["TwoByTwoEI", "ei_beta_binom_model_modified"]
 
 
+def truncated_normal_asym(
+    group_fraction, votes_fraction, precinct_pops
+):  # pylint: disable=too-many-locals
+    """
+    A modification of king97's truncated normal that puts some broad priors
+    over the parameters of the truncated normal dist
+    """
+    num_precincts = len(precinct_pops)
+    b_1_l_bound = np.maximum(0, (votes_fraction - 1 + group_fraction) / group_fraction)
+    b_1_u_bound = np.minimum(1, votes_fraction / group_fraction)
+    b_2_l_bound = np.maximum(0, (votes_fraction - group_fraction) / (1 - group_fraction))
+    b_2_u_bound = np.minimum(1, (votes_fraction) / (1 - group_fraction))
+
+    # For stability, use whichever of b_1 and b_2 has the broader width between bounds as
+    # the parameter that we include in the model (then the other of b_1 or b_2 will
+    # be calculated deterministically from that and votes_fraction) -- the deterministically
+    # calculated one is here marked as "lower-level" one
+    if (b_2_u_bound - b_2_l_bound).mean() > (b_1_u_bound - b_1_l_bound).mean():  # swap
+        group_fraction = 1 - group_fraction
+        upper_level_b_name = "b_2"
+        lower_level_b_name = "b_1"
+        upper_level_tn_mean_name = "tn_mean_2"
+        lower_level_tn_mean_name = "tn_mean_1"
+        upper_level_sigma_name = "sigma_22"
+        lower_level_sigma_name = "sigma_11"
+        upper_level_l_bound = b_2_l_bound
+        upper_level_u_bound = b_2_u_bound
+    else:  # not swapping
+        upper_level_b_name = "b_1"
+        lower_level_b_name = "b_2"
+        upper_level_tn_mean_name = "tn_mean_1"
+        lower_level_tn_mean_name = "tn_mean_2"
+        upper_level_sigma_name = "sigma_11"
+        lower_level_sigma_name = "sigma_22"
+        upper_level_l_bound = b_1_l_bound
+        upper_level_u_bound = b_1_u_bound
+
+    with pm.Model() as model:
+        sigma_upper = pm.HalfNormal(
+            upper_level_sigma_name, sd=0.707
+        )  # chosen to match King 97 #sigma11
+        sigma_lower = pm.HalfNormal(
+            lower_level_sigma_name, sd=0.707
+        )  # chosen to match king 97 #sigma22
+        rho = pm.Uniform("rho", -0.5, 0.5)  # TODO: revisit
+        sigma_12 = sigma_upper * sigma_lower * rho
+
+        tn_mean_upper = pm.Uniform(upper_level_tn_mean_name)
+        tn_mean_lower = pm.Uniform(lower_level_tn_mean_name)
+
+        upper_b = pm.TruncatedNormal(
+            upper_level_b_name,
+            mu=tn_mean_upper,
+            sigma=sigma_upper,
+            shape=num_precincts,
+            lower=upper_level_l_bound,
+            upper=upper_level_u_bound,
+        )
+
+        mu_i = tn_mean_upper * group_fraction + tn_mean_lower * (1 - group_fraction)
+        w_i = pm.Deterministic(
+            "w_i", sigma_upper ** 2 * group_fraction + sigma_12 * (1 - group_fraction)
+        )
+        sigma_i_sq = pm.Deterministic(
+            "sigma_i_sq",
+            sigma_lower ** 2
+            + 2 * (sigma_12 - sigma_lower ** 2) * group_fraction
+            + (sigma_upper * 2 + sigma_lower ** 2 - 2 * sigma_12) * group_fraction ** 2,
+        )
+
+        votes_frac_mean = mu_i + w_i * (upper_b - tn_mean_upper) / (sigma_upper ** 2)
+        votes_frac_var = pm.Deterministic(
+            "votes_frac_var", sigma_i_sq - w_i ** 2 / (sigma_upper ** 2)
+        )
+
+        votes_frac_l_bound = group_fraction * upper_b
+        votes_frac_u_bound = (1 - group_fraction) + group_fraction * upper_b
+
+        votes_frac_stdev = pm.math.sqrt(votes_frac_var)
+        pm.TruncatedNormal(
+            "votes_fraction",
+            mu=votes_frac_mean,
+            sigma=votes_frac_stdev,
+            lower=votes_frac_l_bound,
+            upper=votes_frac_u_bound,
+            observed=votes_fraction,
+        )
+        pm.Deterministic(
+            lower_level_b_name, (votes_fraction - upper_b * group_fraction) / (1 - group_fraction)
+        )
+    return model
+
+
 def ei_beta_binom_model_modified(
     group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
 ):
@@ -569,6 +662,9 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         elif self.model_name == "wakefield_normal":
             model_function = wakefield_normal
+
+        elif self.model_name == "truncated_normal":
+            model_function = truncated_normal_asym
 
         self.sim_model = model_function(
             group_fraction,
