@@ -168,7 +168,7 @@ class RowByColumnEI:
             of p precincts and r demographic groups (sometimes denoted X)
         votes_fractions  :  c x p giving the fraction of each precinct_pop that votes
             for each of c candidates (sometimes denoted T)
-        precinct_pops   :   Length-p vector giving size of each precinct population
+        precinct_pops   :   Length-p array of ints giving size of each precinct population
                             of interest (e.g. voting population) (someteimes denoted N)
         Optional arguments:
         demographic_group_names  :  Names of the r demographic group of interest,
@@ -194,7 +194,12 @@ class RowByColumnEI:
         # TODO: describe hyperparameters
         self.demographic_group_fractions = group_fractions
         self.votes_fractions = votes_fractions
+
+        # check that precinct_pops are integers
+        if not all([isinstance(p, (int, np.integer)) for p in precinct_pops]):
+            raise ValueError("all elements of precinct_pops must be integer-valued")
         self.precinct_pops = precinct_pops
+        
         # give demographic groups, candidates 1-indexed numbers as names if names are not specified
         if demographic_group_names is None:
             demographic_group_names = [str(i) for i in range(1, group_fractions.shape[0] + 1)]
