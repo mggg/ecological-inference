@@ -196,7 +196,7 @@ class RowByColumnEI:
         self.votes_fractions = votes_fractions
 
         # check that precinct_pops are integers
-        if not all([isinstance(p, (int, np.integer)) for p in precinct_pops]):
+        if not all(isinstance(p, (int, np.integer)) for p in precinct_pops):
             raise ValueError("all elements of precinct_pops must be integer-valued")
         self.precinct_pops = precinct_pops
 
