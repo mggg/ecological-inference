@@ -199,7 +199,7 @@ class RowByColumnEI:
         if not all([isinstance(p, (int, np.integer)) for p in precinct_pops]):
             raise ValueError("all elements of precinct_pops must be integer-valued")
         self.precinct_pops = precinct_pops
-        
+
         # give demographic groups, candidates 1-indexed numbers as names if names are not specified
         if demographic_group_names is None:
             demographic_group_names = [str(i) for i in range(1, group_fractions.shape[0] + 1)]
