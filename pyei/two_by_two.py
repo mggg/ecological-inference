@@ -637,6 +637,16 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         # parameter passed to the exponential hyperpriors,
         # and the paretoo_scale and pareto_shape parameters for the pareto
         # dist in the king99_pareto_modification model hyperprior
+
+        # check that lengths of group_fraction, votes_fraction, precinct_pops match
+        if not (
+            len(group_fraction) == len(votes_fraction) and len(votes_fraction) == len(precinct_pops)
+        ):
+            raise ValueError(
+                """Mismatching num_precincts in inputs. \n
+            votes_fraction, group_fraction, precinct_pops should all have same length
+            """
+            )
         self.demographic_group_fraction = group_fraction
         self.votes_fraction = votes_fraction
         self.precinct_pops = precinct_pops

@@ -192,6 +192,18 @@ class RowByColumnEI:
         """
         # Additional params for hyperparameters
         # TODO: describe hyperparameters
+        # check shapes of group_fractions and votes_fractions
+        if not (
+            len(votes_fractions[0]) == len(group_fractions[0])
+            and len(group_fractions[0]) == len(precinct_pops)
+        ):
+            raise ValueError(
+                """Mismatching num_precincts in input shapes. Inputs should have shape: \n
+            votes_fraction shape: r x num_precincts \n
+            group_fractions shape: c x num_precincts \n
+            precinct_pops length: num_precincts
+            """
+            )
         self.demographic_group_fractions = group_fractions
         self.votes_fractions = votes_fractions
 
