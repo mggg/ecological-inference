@@ -506,7 +506,7 @@ class RowByColumnEI:
     def candidate_of_choice_polarization_report(self, verbose=True, non_candidate_names=None):
         """For each pair of groups, look at differences in preferences
         between those groups
-        
+
         Parameters:
         -----------
         verbose: boolean (optional)
