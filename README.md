@@ -12,7 +12,7 @@ pip install git+git://github.com/mggg/ecological-inference.git
 ```
 ### Example notebooks
 
-Check out the [intro notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/intro_notebooks) [example notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/examples) for sample code
+Check out the [intro notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/intro_notebooks) and [example notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/examples) for sample code
 that shows how to run and adjust the various models in PyEI on datesets.  
 
 If you are new to ecological inference generally, start with `intro_notebooks/Introduction_toEI.ipynb`.
