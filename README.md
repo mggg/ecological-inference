@@ -23,7 +23,7 @@ To explore EI's plotting functionality, check out `intro_notebooks/Plotting_with
 
 For a quickstart with two-by-two examples, check out the examples in `examples/santa_clara_demo.ipynb`.
 
-For a quickstart with r-by-c examples, check out the examples in `examplessanta_clara_demo_r_by_c.ipynb`.
+For a quickstart with r-by-c examples, check out the examples in `examples/santa_clara_demo_r_by_c.ipynb`.
 
 For examples of more in depth model comparison and checking steps with PyEI, see `examples/model_eval_and_comparison_demo.ipynb`.
 
