@@ -458,11 +458,11 @@ class RowByColumnEI:
 
     def candidate_of_choice_report(self, verbose=True, non_candidate_names=None):
         """For each group, look at differences in preference within that group
-        Parameters
-        ----------
+        Parameters:
+        -----------
         verbose: boolean (optional)
             If true, print a report putting the candidate preference rate in context
-            If false, do not pritn report.
+            If false, do not print report.
             In either case, return the candidate preference dictionary
         non_candidate_names: list of str (optional)
             A list of strings giving the names of voting outcomes that should not be
@@ -471,7 +471,7 @@ class RowByColumnEI:
             'Abstain' in our list of non_candidate_names so that we only consider candidates
             of choice to be actual candidates.
 
-        Returns
+        Returns:
         -------
         candidate_preference_rate_dict: dict
             keys are of the form (demographic group name, candidate name)
@@ -506,6 +506,25 @@ class RowByColumnEI:
     def candidate_of_choice_polarization_report(self, verbose=True, non_candidate_names=None):
         """For each pair of groups, look at differences in preferences
         between those groups
+        
+        Parameters:
+        -----------
+        verbose: boolean (optional)
+            If true, print a report putting the candidate of choice polarization rate context
+            If false, do not pritn report.
+            In either case, return the candidate difference rate dictionary
+        non_candidate_names: list of str (optional)
+            A list of strings giving the names of voting outcomes that should not be
+            considered candidates for the purposes of calculating the candidate of choice.
+            For example, if there is an 'Abstain' column, we want may want to to include
+            'Abstain' in our list of non_candidate_names so that we only consider candidates
+            of choice to be actual candidates.
+
+        Returns:
+        --------
+        candidate_differ_rate_dict: dict
+            Keys are of the form (group1, group2), values are the fraction of samples
+            for which those two groups had a different candidate of choice
 
         Notes:
         ------
