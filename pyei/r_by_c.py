@@ -456,11 +456,33 @@ class RowByColumnEI:
 
         return (precinct_posterior_means, precinct_credible_intervals)
 
-    def candidate_of_choice_report(self, verbose=True, non_candidate_names=[]):
-        """For each group, look at differences in preference within that group"""
+    def candidate_of_choice_report(self, verbose=True, non_candidate_names=None):
+        """For each group, look at differences in preference within that group
+        Parameters
+        ----------
+        verbose: boolean (optional)
+            If true, print a report putting the candidate preference rate in context
+            If false, do not pritn report.
+            In either case, return the candidate preference dictionary
+        non_candidate_names: list of str (optional)
+            A list of strings giving the names of voting outcomes that should not be
+            considered candidates for the purposes of calculating the candidate of choice.
+            For example, if there is an 'Abstain' column, we want may want to to include
+            'Abstain' in our list of non_candidate_names so that we only consider candidates
+            of choice to be actual candidates.
+
+        Returns
+        -------
+        candidate_preference_rate_dict: dict
+            keys are of the form (demographic group name, candidate name)
+            Values are fraction of the samples in which the support of that group for that
+            candidate was higher than for any other candidate
+        """
         candidate_preference_rate_dict = {}
-        non_cand_idxs = list(map(lambda n: self.candidate_names.index(n), non_candidate_names))
-        cand_names = list(filter(lambda n: n not in non_candidate_names, self.candidate_names))
+        if non_candidate_names is None:
+            non_candidate_names = []
+        non_cand_idxs = [self.candidate_names.index(n) for n in non_candidate_names]
+        cand_names = list(set(self.candidate_names) - set(non_candidate_names))
         sampled_voting_prefs = np.delete(self.sampled_voting_prefs, non_cand_idxs, axis=2)
 
         for row in range(self.num_groups_and_num_candidates[0]):
@@ -481,7 +503,7 @@ class RowByColumnEI:
                 candidate_preference_rate_dict[(self.demographic_group_names[row], name)] = frac
         return candidate_preference_rate_dict
 
-    def candidate_of_choice_polarization_report(self, verbose=True, non_candidate_names=[]):
+    def candidate_of_choice_polarization_report(self, verbose=True, non_candidate_names=None):
         """For each pair of groups, look at differences in preferences
         between those groups
 
@@ -493,7 +515,9 @@ class RowByColumnEI:
         is different from the `preferred candidate` of the others group
         """
         candidate_differ_rate_dict = {}
-        non_cand_idxs = list(map(lambda n: self.candidate_names.index(n), non_candidate_names))
+        if non_candidate_names is None:
+            non_candidate_names = []
+        non_cand_idxs = [self.candidate_names.index(n) for n in non_candidate_names]
         sampled_voting_prefs = np.delete(self.sampled_voting_prefs, non_cand_idxs, axis=2)
 
         for dem1 in range(self.num_groups_and_num_candidates[0]):
