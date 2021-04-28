@@ -457,12 +457,12 @@ class RowByColumnEI:
         return (precinct_posterior_means, precinct_credible_intervals)
 
     def candidate_of_choice_report(self, verbose=True, non_candidate_names=[]):
-        """ For each group, look at differences in preference within that group"""
+        """For each group, look at differences in preference within that group"""
         candidate_preference_rate_dict = {}
         non_cand_idxs = list(map(lambda n: self.candidate_names.index(n), non_candidate_names))
         cand_names = list(filter(lambda n: n not in non_candidate_names, self.candidate_names))
         sampled_voting_prefs = np.delete(self.sampled_voting_prefs, non_cand_idxs, axis=2)
-        
+
         for row in range(self.num_groups_and_num_candidates[0]):
             if verbose:
                 print(self.demographic_group_names[row])
@@ -478,9 +478,7 @@ class RowByColumnEI:
                         f"{name} "
                         f"was higher than for any other candidate."
                     )
-                candidate_preference_rate_dict[
-                    (self.demographic_group_names[row], name)
-                ] = frac
+                candidate_preference_rate_dict[(self.demographic_group_names[row], name)] = frac
         return candidate_preference_rate_dict
 
     def candidate_of_choice_polarization_report(self, verbose=True, non_candidate_names=[]):
@@ -541,7 +539,7 @@ class RowByColumnEI:
         )
 
     def plot_kdes(self, plot_by="candidate", axes=None):
-        """ Kernel density plots of voting preference, plots grouped by candidate or group"""
+        """Kernel density plots of voting preference, plots grouped by candidate or group"""
         return plot_kdes(
             self.sampled_voting_prefs,
             self.demographic_group_names,
@@ -577,7 +575,7 @@ class RowByColumnEI:
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):
-        """ Plot of credible intervals for all precincts, for specified group and candidate"""
+        """Plot of credible intervals for all precincts, for specified group and candidate"""
         if group_name not in self.demographic_group_names:
             raise ValueError(
                 f"""group_name must be in the list of demographic_group_names provided to fit():
