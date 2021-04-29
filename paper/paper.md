@@ -66,7 +66,7 @@ ecological inference methods in different settings and/or develop new statistica
 Several R libraries implementing different ecological inference exist, such as `ei` [@ei], `eiCompare` [@eiCompare], `eiPack` [@eiPack], and `RxCEcolInf` [@RxCEcolInf]. `PyEI` presents a Python-based option that researchers who primarily use Python may appreciate. `PyEI` also 
 incorporates the following key features and characteristics. First, the Bayesian hierarchical methods implemented in `PyEI` rest on modern probabilistic programming tooling [@salvatier2016probabilistic] and MCMC methods such as the No U-Turn Sampler (NUTS) [@hoffman2014no]. Using NUTS where possible should allow for faster convergence than existing implementations that we are aware of that rest primarily on Metropolis-Hastings and Gibbs sampling steps. Effective sample size is a measure of how the variance of the mean of drawn samples compare to the variance of i.i.d. samples from the posterior distribution [@BDA3].
 In Metropolis-Hastings, the number of evaluations of the log-posterior required scales linearly with the effective sample size (after burn-in), while in Hamiltonian Monte Carlo approaches (e.g. NUTS), the scaling goes as only the fourth root of the number of evaluations of the gradient of the the log-posterior [@neal2011mcmc].
- Second, integration with existing tools `PyMC` [@salvatier2016probabilistic] and ArViZ [@arviz_2019] makes the results amenable to state of the art diagnostics (e.g. convergence diagostics) and some reasonable checks are automatically performed. Third, summary and plotting utilities for reporting, visualizing, and comparing results are included (see example plots below), with an emphasis on visualizations and reports that make clear the uncertainty of estimates under a model. Lastly, clear documentation is provided, including a set of introductory and example notebooks.
+ Second, integration with existing tools `PyMC3` [@salvatier2016probabilistic] and ArviZ [@arviz_2019] makes the results amenable to state of the art diagnostics (e.g. convergence diagostics) and some reasonable checks are automatically performed. Third, summary and plotting utilities for reporting, visualizing, and comparing results are included (see example plots below), with an emphasis on visualizations and reports that make clear the uncertainty of estimates under a model. Lastly, clear documentation is provided, including a set of introductory and example notebooks.
 
 # Acknowledgements
 
@@ -76,13 +76,15 @@ We acknowledge contributions from ...
 
 ![KDE plots for visualing uncertainty of support for candidates within each group.\label{fig:kdes}](figs/kdes.png){ width=60% } 
 
-![Bayesian credible intervals for support of candidates within groups.\label{fig:credible_interval}](figs/credible_interval.png){ width=70% }
+![Bayesian credible intervals for support of candidates within groups.\label{fig:credible_interval}](figs/credible_interval.png){ width=60% }
 
 ![Visualizing and quantifying degree of polarization.\label{fig:polarization}](figs/polarization.png){ width=70% }
 
-![Visualizing estimates and uncertainty for precinct-level estimates.\label{fig:precinct_level}](figs/precinct_level.png){ width=60% }
+![Visualizing estimates and uncertainty for precinct-level estimates.\label{fig:precinct_level}](figs/precinct_level.png){ width=50% }
 
 !["Tomography" plots for two-by-two ecological inference.\label{fig:tomography}](figs/tomography.png){ width=40% }
+
+\newpage
 
 # References
 
