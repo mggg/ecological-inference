@@ -6,9 +6,9 @@ tags:
   - ecological inference
   - Bayesian inference
 authors:
-  - name: Karin Knudson
+  - name: Karin C. Knudson
     orcid: 0000-0003-1312-6473
-    affiliation: 
+    affiliation: 1
 affiliations:
  - name: Data Intensive Studies Center, Tufts University
    index: 1
