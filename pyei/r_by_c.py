@@ -456,7 +456,6 @@ class RowByColumnEI:
 
         return (precinct_posterior_means, precinct_credible_intervals)
 
-
     def candidate_of_choice_report(self, verbose=True, non_candidate_names=None):
         """For each group, look at differences in preference within that group
         Parameters:
@@ -505,7 +504,6 @@ class RowByColumnEI:
                 candidate_preference_rate_dict[(self.demographic_group_names[row], name)] = frac
         return candidate_preference_rate_dict
 
-      
     def candidate_of_choice_polarization_report(self, verbose=True, non_candidate_names=None):
         """For each pair of groups, look at differences in preferences
         between those groups
