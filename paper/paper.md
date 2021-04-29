@@ -45,10 +45,10 @@ ecological inference methods in different settings and/or develop new statistica
 
 `PyEI` brings together the following ecological inference methods in a common framework alongside plotting, reporting, and diagnostic tools:
 
-- Goodman's ecological regression [@goodman1953ecological] and a Bayesian linear regression variant [is there a citation? I'm sure people have done this before...]
-- The truncated-normal based approach of @king1997solution
-- Binomial-Beta hierarchical models following the approach of @king1999binomial
-- Dirichlet-Multinomial hierarchical models following the approach of @rosen2001bayesian
+- Goodman's ecological regression [@goodman1953ecological] and a Bayesian linear regression variant
+- A truncated-normal based approach [@king1997solution]
+- Binomial-Beta hierarchical models [@king1999binomial]
+- Dirichlet-Multinomial hierarchical models [@rosen2001bayesian]
 - A Bayesian hierarchical method for 2x2 EI following the approach of @wakefield2004ecological
 
 (Note in several of these cases, `PyEI` includes modifications to the models as originally proposed in the cited literature, such as reparametrizations or other changes to upper levels of the hierarchical models in order to ease sampling difficulties.)
