@@ -9,9 +9,14 @@ authors:
   - name: Karin C. Knudson
     orcid: 0000-0003-1312-6473
     affiliation: 1
+  - name: Gabe Schoenbach
+    orcid: 0000-0002-4300-0356
+    affiliation: 2
 affiliations:
  - name: Data Intensive Studies Center, Tufts University
    index: 1
+ - name: MGGG Redistricting Lab, Tufts University
+   index: 2
 date: 29 April 2021
 bibliography: paper.bib
 ---
