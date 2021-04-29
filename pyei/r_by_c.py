@@ -457,7 +457,7 @@ class RowByColumnEI:
         return (precinct_posterior_means, precinct_credible_intervals)
 
     def candidate_of_choice_report(self, verbose=True):
-        """ For each group, look at differences in preference within that group"""
+        """For each group, look at differences in preference within that group"""
         candidate_preference_rate_dict = {}
         for row in range(self.num_groups_and_num_candidates[0]):
             if verbose:
@@ -534,7 +534,7 @@ class RowByColumnEI:
         )
 
     def plot_kdes(self, plot_by="candidate", axes=None):
-        """ Kernel density plots of voting preference, plots grouped by candidate or group"""
+        """Kernel density plots of voting preference, plots grouped by candidate or group"""
         return plot_kdes(
             self.sampled_voting_prefs,
             self.demographic_group_names,
@@ -570,7 +570,7 @@ class RowByColumnEI:
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):
-        """ Plot of credible intervals for all precincts, for specified group and candidate"""
+        """Plot of credible intervals for all precincts, for specified group and candidate"""
         if group_name not in self.demographic_group_names:
             raise ValueError(
                 f"""group_name must be in the list of demographic_group_names provided to fit():
