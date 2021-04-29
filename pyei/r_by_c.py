@@ -456,32 +456,78 @@ class RowByColumnEI:
 
         return (precinct_posterior_means, precinct_credible_intervals)
 
-    def candidate_of_choice_report(self, verbose=True):
-        """For each group, look at differences in preference within that group"""
+
+    def candidate_of_choice_report(self, verbose=True, non_candidate_names=None):
+        """For each group, look at differences in preference within that group
+        Parameters:
+        -----------
+        verbose: boolean (optional)
+            If true, print a report putting the candidate preference rate in context
+            If false, do not print report.
+            In either case, return the candidate preference dictionary
+        non_candidate_names: list of str (optional)
+            A list of strings giving the names of voting outcomes that should not be
+            considered candidates for the purposes of calculating the candidate of choice.
+            For example, if there is an 'Abstain' column, we want may want to to include
+            'Abstain' in our list of non_candidate_names so that we only consider candidates
+            of choice to be actual candidates.
+
+        Returns:
+        -------
+        candidate_preference_rate_dict: dict
+            keys are of the form (demographic group name, candidate name)
+            Values are fraction of the samples in which the support of that group for that
+            candidate was higher than for any other candidate
+        """
+
         candidate_preference_rate_dict = {}
+        if non_candidate_names is None:
+            non_candidate_names = []
+        non_cand_idxs = [self.candidate_names.index(n) for n in non_candidate_names]
+        cand_names = list(set(self.candidate_names) - set(non_candidate_names))
+        sampled_voting_prefs = np.delete(self.sampled_voting_prefs, non_cand_idxs, axis=2)
+
         for row in range(self.num_groups_and_num_candidates[0]):
             if verbose:
                 print(self.demographic_group_names[row])
-            for candidate_idx in range(self.num_groups_and_num_candidates[1]):
+            for candidate_idx, name in enumerate(cand_names):
                 frac = (
-                    np.argmax(self.sampled_voting_prefs[:, row, :], axis=1) == candidate_idx
-                ).sum() / self.sampled_voting_prefs.shape[0]
+                    np.argmax(sampled_voting_prefs[:, row, :], axis=1) == candidate_idx
+                ).sum() / sampled_voting_prefs.shape[0]
                 if verbose:
                     print(
                         f"     - In {round(frac*100,3)} percent of samples, the district-level "
                         f"vote preference of \n"
                         f"       {self.demographic_group_names[row]} for "
-                        f"{self.candidate_names[candidate_idx]} "
+                        f"{name} "
                         f"was higher than for any other candidate."
                     )
-                candidate_preference_rate_dict[
-                    (self.demographic_group_names[row], self.candidate_names[candidate_idx])
-                ] = frac
+                candidate_preference_rate_dict[(self.demographic_group_names[row], name)] = frac
         return candidate_preference_rate_dict
 
-    def candidate_of_choice_polarization_report(self, verbose=True):
+      
+    def candidate_of_choice_polarization_report(self, verbose=True, non_candidate_names=None):
         """For each pair of groups, look at differences in preferences
         between those groups
+
+        Parameters:
+        -----------
+        verbose: boolean (optional)
+            If true, print a report putting the candidate of choice polarization rate context
+            If false, do not pritn report.
+            In either case, return the candidate difference rate dictionary
+        non_candidate_names: list of str (optional)
+            A list of strings giving the names of voting outcomes that should not be
+            considered candidates for the purposes of calculating the candidate of choice.
+            For example, if there is an 'Abstain' column, we want may want to to include
+            'Abstain' in our list of non_candidate_names so that we only consider candidates
+            of choice to be actual candidates.
+
+        Returns:
+        --------
+        candidate_differ_rate_dict: dict
+            Keys are of the form (group1, group2), values are the fraction of samples
+            for which those two groups had a different candidate of choice
 
         Notes:
         ------
@@ -491,12 +537,17 @@ class RowByColumnEI:
         is different from the `preferred candidate` of the others group
         """
         candidate_differ_rate_dict = {}
+        if non_candidate_names is None:
+            non_candidate_names = []
+        non_cand_idxs = [self.candidate_names.index(n) for n in non_candidate_names]
+        sampled_voting_prefs = np.delete(self.sampled_voting_prefs, non_cand_idxs, axis=2)
+
         for dem1 in range(self.num_groups_and_num_candidates[0]):
             for dem2 in range(dem1):
                 differ_frac = (
-                    np.argmax(self.sampled_voting_prefs[:, dem1, :], axis=1)
-                    != np.argmax(self.sampled_voting_prefs[:, dem2, :], axis=1)
-                ).sum() / self.sampled_voting_prefs.shape[0]
+                    np.argmax(sampled_voting_prefs[:, dem1, :], axis=1)
+                    != np.argmax(sampled_voting_prefs[:, dem2, :], axis=1)
+                ).sum() / sampled_voting_prefs.shape[0]
                 if verbose:
                     print(
                         f"In {round(differ_frac*100,3)} percent of samples, the district-level "
