@@ -70,7 +70,7 @@ In Metropolis-Hastings, the number of evaluations of the log-posterior required 
 
 # Acknowledgements
 
-We acknowledge contributions from ...
+We thank Colin Carroll, Moon Duchin, JN Matthews, and Thomas Weighill for their helpful contributions.
 
 # Examples of plotting functionality
 
