@@ -12,6 +12,9 @@ authors:
   - name: Gabe Schoenbach
     orcid: 0000-0002-4300-0356
     affiliation: 2
+  - name: Amariah Becker
+    orcid: 0000-0002-7392-8307
+    affiliation: 2
 affiliations:
  - name: Data Intensive Studies Center, Tufts University
    index: 1
