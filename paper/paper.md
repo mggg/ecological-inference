@@ -12,7 +12,7 @@ authors:
 affiliations:
  - name: Data Intensive Studies Center, Tufts University
    index: 1
-date: 8 March 2021
+date: 29 April 2021
 bibliography: paper.bib
 ---
 
@@ -46,13 +46,32 @@ ecological inference methods in different settings and/or develop new statistica
 `PyEI` brings together the following ecological inference methods in a common framework alongside plotting, reporting, and diagnostic tools:
 
 - Goodman's ecological regression [@goodman1953ecological] and a Bayesian linear regression variant [is there a citation? I'm sure people have done this before...]
-- The truncated-normal based method of [@king1997solution] NOT YET IMPLEMENTED
-- Binomial-Beta hierarchical models [@king1999binomial]
-- Dirichlet-Multinomial hierarchical models [@rosen2001bayesian]
+- The truncated-normal based approach of @king1997solution
+- Binomial-Beta hierarchical models following the approach of @king1999binomial
+- Dirichlet-Multinomial hierarchical models following the approach of @rosen2001bayesian
 - A Bayesian hierarchical method for 2x2 EI following the approach of @wakefield2004ecological
-- A Bayesian hierarchical method for RxC EI following the approach of @greiner2009r NOT YET IMPLEMENTED
 
-Several R libraries for ecological inference exist, such as `ei` [@ei], `eiCompare` [@eiCompare], `eiPack` [@eiPack], and `RxCEcolInf` [@RxCEcolInf]. `PyEI` presents a Python-based option that researchers who primarily use Python may appreciate. It also seeks to address some limitations of the existing R libraries, namely that:
+(Note in several of these cases, `PyEI` includes modifications to the models as originally proposed in the cited literature, such as reparametrizations or other changes to upper levels of the hierarchical models in order to ease sampling difficulties.)
+
+`PyEI` is intended to be easily extensible, so that additional methods from the literature can continue to be incorporated (see e.g. @greiner2009r, currently implemented in the R package `RxCEcolInf` [@RxCEcolInf]), and newly developed statistical methods for ecological inference can be included and conveniently compared with existing methods.
+
+Several R libraries implementing different ecological inference exist, such as `ei` [@ei], `eiCompare` [@eiCompare], `eiPack` [@eiPack], and `RxCEcolInf` [@RxCEcolInf]. `PyEI` presents a Python-based option that researchers who primarily use Python may appreciate. `PyEI` also 
+incorporates the following key features and characteristics. First, the Bayesian hierarchical methods implemented in `PyEI` rest on modern probabilistic programming tooling [@salvatier2016probabilistic] and MCMC methods such as the No U-Turn Sampler (NUTS) [@hoffman2014no]. *This should allow for faster convergence than existing implementations that we are aware of that rest primarily on Metropolis-Hastings and Gibbs sampling steps.* Second, integration with existing tools `PyMC` [@salvatier2016probabilistic] and ArViZ [@arviz_2019] makes the results amenable to state of the art diagnostics (e.g. convergence diagostics) and some reasonable checks are automatically performed. Third, summary and plotting utilities for reporting, visualizing, and comparing results are included (see example plots below), with an emphasis on visualizations and reports that make clear the uncertainty of estimates under a model. Lastly, clear documentation is provided, including a set of introductory and example notebooks.
+
+# Examples of plotting functionality
+
+![KDE plots for visualing uncertainty of support for candidates within each group.\label{fig:kdes}](figs/kdes.png){ width=60% } 
+
+![Bayesian credible intervals for support of candidates within groups.\label{fig:credible_interval}](figs/credible_interval.png){ width=70% }
+
+![Visualizing and quantifying degree of polarization.\label{fig:polarization}](figs/polarization.png){ width=70% }
+
+![Visualizing estimates and uncertainty for precinct-level estimates.\label{fig:precinct_level}](figs/precinct_level.png){ width=60% }
+
+!["Tomography" plots for two-by-two ecological inference.\label{fig:tomography}](figs/tomography.png){ width=40% }
+
+# Notes for draft
+seeks to address some limitations of the existing R libraries, namely that:
 
 - different ecological inference methods are spread out across different libraries
 - existing implementations may use slower-to-converge MCMC approaches (BENCHMARK)
@@ -78,21 +97,6 @@ Several R libraries for ecological inference exist, such as `ei` [@ei], `eiCompa
     - outputs draws for: internal cell counts, thetas, mu, and the standard deviations and correlations in sigma.
     - convergence tests not directly incorporated, but returns mcmc object with intention of using functionality of R's coda package.  Documentation examples show using coda's Geweke's as well as Heidelberger and Welch's convergence diagnostics, but ackwledges that chains created by `RxCEcolInf` will cause error in coda's Gelman-Rubin diagnostic.
     - the `RxCEcolInf` package itself does not include careful uncertainty quantification functionality, but digging through some of their replication code from their paper does show some examples of uncertainty calculations and credible intervals, though not particularly well documented/clear how to apply
-
-
-To meet the needs described here, `PyEI` incorporates the following key features and characteristics. First, the Bayesian hierarchical methods implemented in `PyEI` rest on modern probabilistic programming tooling [@salvatier2016probabilistic] and MCMC methods [@hoffman2014no]. Integration with existing tools `PyMC` [@salvatier2016probabilistic] and ArViZ [@arviz_2019] makes the results amenable to state of the art diagnostics (e.g. convergence diagostics) and some reasonable checks are automatically performed. Second, summary and plotting utilities for reporting, visualizing, and comparing results are included (see example plots below), with an emphasis on visualizations and reports that make clear the uncertainty of estimates under a model. Lastly, clear documentation and examples are provided.
-
-# Examples of plotting functionality
-
-![KDE plots for visualing uncertainty of support for candidates within each group.\label{fig:kdes}](figs/kdes.png){ width=60% } 
-
-![Bayesian credible intervals for support of candidates within groups.\label{fig:credible_interval}](figs/credible_interval.png){ width=70% }
-
-![Visualizing and quantifying degree of polarization.\label{fig:polarization}](figs/polarization.png){ width=70% }
-
-![Visualizing estimates and uncertainty for precinct-level estimates.\label{fig:precinct_level}](figs/precinct_level.png){ width=60% }
-
-!["Tomography" plots for two-by-two ecological inference.\label{fig:tomography}](figs/tomography.png){ width=40% }
 
 
 # Acknowledgements
