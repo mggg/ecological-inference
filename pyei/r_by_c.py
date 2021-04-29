@@ -478,6 +478,7 @@ class RowByColumnEI:
             Values are fraction of the samples in which the support of that group for that
             candidate was higher than for any other candidate
         """
+
         candidate_preference_rate_dict = {}
         if non_candidate_names is None:
             non_candidate_names = []
