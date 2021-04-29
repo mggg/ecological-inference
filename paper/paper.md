@@ -22,7 +22,7 @@ An important question in some US voting rights cases and
 redistricting litigation is whether and to what degree voting is racially polarized.
 In the setting of voting rights cases, ecological inference involves using
 observed data about voting outcomes in each of a number of precincts and demographic information
-about each precint to infer voting patterns within each demographic group.
+about each precinct to infer voting patterns within each demographic group.
 
 More generally, we can think of ecological inference as seeking to use knowledge about the margins of a set of tables (\autoref{fig:table_ex}) to infer associations between the row and column variables, by making (typically probablistic) assumptions about the underlying associations. In the setting of assessing racially polarized voting, each column in a table like the one in \autoref{fig:table_ex} corresponds to a candidate or voting outcome, each row to a racial group, and each table to a precinct. Ecological inference methods then use the known counts of voting outcomes in each precinct and the known counts of people in demographic groups in each precinct to make inferences about the distribution of voting outcomes within each demographic group, thus addressing questions like: "What percentage of voters in Group 1 voted for candidate A?"). The "two by two" ecological inference problem in this example, where we have two groups and two voting outcomes, is a special case of the more general "R by C" ecological inference, in which we may have more than two groups or voting outcomes.
 Ecological inference is also applicable in other fields, such as epidemiology and sociology.
