@@ -28,9 +28,9 @@ bibliography: paper.bib
 
 An important question in some US voting rights cases and
 redistricting litigation is whether and to what degree voting is racially polarized.
-In the setting of voting rights cases, ecological inference involves using
-observed data about voting outcomes in a number of precincts and demographic information
-about each precinct to infer voting patterns within each demographic group.
+In the setting of voting rights cases, ecological inference methods use
+observed data about voting outcomes and demographic information
+for each precinct in a given polity to infer voting patterns within each demographic group.
 
 More generally, we can think of ecological inference as seeking to use knowledge about the margins of a set of tables (\autoref{fig:table_ex}) to infer associations between the row and column variables, by making (typically probablistic) assumptions about the underlying associations. In the context of assessing racially polarized voting, each column in a table like the one in \autoref{fig:table_ex} corresponds to a candidate or voting outcome, each row to a racial group, and each table to a precinct. Ecological inference methods then use the known counts of voting outcomes in each precinct and the known counts of people in demographic groups in each precinct to make inferences about the distribution of voting outcomes within each demographic group, thus addressing questions like: "What percentage of voters in Group 1 voted for Candidate A?"). The "two by two" ecological inference problem in this example, where we have two groups and two voting outcomes, is a special case of the more general "R by C" ecological inference, in which we may have more than two groups or voting outcomes.
 Ecological inference is also applicable in other fields, such as epidemiology and sociology.
@@ -47,7 +47,7 @@ results under a given model; making comparisons between methods; and bringing re
 diagnostic tools to bear on ecological inference methods. To address this need, 
 we introduce `PyEI`, a Python package for ecological inference. 
 
-`PyEI` is meant to be useful to two main groups of researchers. First, it serves application-oriented researchers and practitioners who seek to run ecological inference on domain data (e.g. voting data), report results, and understand the uncertainty related to those results.
+`PyEI` is meant to be useful to two main groups of researchers. First, it serves application-oriented researchers and practitioners who seek to run ecological inference on domain data (e.g. voting data), report the results, and understand the uncertainty related to those results.
 Second, it facilitates exploration and benchmarking for researchers who are seeking to understand properties of existing
 ecological inference methods in different settings and/or develop new statistical methods for ecological inference.
 
@@ -66,7 +66,7 @@ ecological inference methods in different settings and/or develop new statistica
 Several R libraries implementing different ecological inference methods exist, such as `ei` [@ei], `eiCompare` [@eiCompare], `eiPack` [@eiPack], and `RxCEcolInf` [@RxCEcolInf]. In addition to presenting a Python-based option that researchers who primarily use Python may appreciate, `PyEI` 
 incorporates the following key features and characteristics.
 
-First, the Bayesian hierarchical methods implemented in `PyEI` rest on modern probabilistic programming tooling [@salvatier2016probabilistic] and gradient-based MCMC methods such as the No U-Turn Sampler (NUTS) [@hoffman2014no]. Using NUTS where possible should allow for faster convergence than existing implementations that rest primarily on Metropolis-Hastings and Gibbs sampling steps. Effective sample size is a measure of how the variance of the mean of drawn samples compare to the variance of i.i.d. samples from the posterior distribution [@BDA3]. In Metropolis-Hastings, the number of evaluations of the log-posterior required for a given effective sample size scales linearly with the dimensionality of the parameter space, while in Hamiltonian Monte Carlo approaches such as NUTS, the the number of required evaluations of the gradient of the the log-posterior scales only as the fourth root of the dimension [@neal2011mcmc].
+First, the Bayesian hierarchical methods implemented in `PyEI` rest on modern probabilistic programming tooling [@salvatier2016probabilistic] and gradient-based MCMC methods such as the No U-Turn Sampler (NUTS) [@hoffman2014no]. Using NUTS where possible should allow for faster convergence than existing implementations that rest primarily on Metropolis-Hastings and Gibbs sampling steps. Effective sample size is a measure of how the variance of the mean of drawn samples compare to the variance of i.i.d. samples from the posterior distribution [@BDA3]. In Metropolis-Hastings, the number of evaluations of the log-posterior required for a given effective sample size scales linearly with the dimensionality of the parameter space, while in Hamiltonian Monte Carlo approaches such as NUTS, the number of required evaluations of the gradient of the the log-posterior scales only as the fourth root of the dimension [@neal2011mcmc].
 
  Second, integration with the existing tools `PyMC3` [@salvatier2016probabilistic] and ArviZ [@arviz_2019] makes the results amenable to state of the art diagnostics (e.g. convergence diagostics) and some reasonable checks are automatically performed. 
  
