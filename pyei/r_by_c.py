@@ -3,7 +3,7 @@ Models and fitting for rxc methods
 where r and c are greater than or
 equal to 2
 
-TODO: Better or reparametrized priors for multinomial-dir
+TODO: Investigate better or reparametrized priors for multinomial-dir
 TODO: Greiner-Quinn Model
 TODO: Refactor to integrate with two_by_two
 """
@@ -126,7 +126,7 @@ def ei_multinom_dirichlet_modified(
 
 class RowByColumnEI:
     """
-    Fitting and plotting for multinomial-dirichlet and Greiner-Quinn EI models
+    Fitting and plotting for RxC models, fit via sampling
     """
 
     def __init__(self, model_name, **additional_model_params):
@@ -192,18 +192,7 @@ class RowByColumnEI:
         """
         # Additional params for hyperparameters
         # TODO: describe hyperparameters
-        # check shapes of group_fractions and votes_fractions
-        if not (
-            len(votes_fractions[0]) == len(group_fractions[0])
-            and len(group_fractions[0]) == len(precinct_pops)
-        ):
-            raise ValueError(
-                """Mismatching num_precincts in input shapes. Inputs should have shape: \n
-            votes_fraction shape: r x num_precincts \n
-            group_fractions shape: c x num_precincts \n
-            precinct_pops length: num_precincts
-            """
-            )
+
         self.demographic_group_fractions = group_fractions
         self.votes_fractions = votes_fractions
 
@@ -325,6 +314,7 @@ class RowByColumnEI:
         groups: Length 2 vector of demographic groups from which to calculate polarization
         candidate: String that matches a candidate on which to calculate polarization
         threshold OR percentile: Float used to calculate the other variable that is None
+        (percentile should be between 0 and 100)
         """
 
         candidate_index = self.candidate_names.index(candidate)
@@ -363,6 +353,7 @@ class RowByColumnEI:
         groups: Length 2 vector of demographic groups from which to calculate polarization
         candidate: String that matches a candidate on which to calculate polarization
         threshold OR percentile: Float used to calculate the other variable that is None
+        percentile should be between 0 and 100
         """
         return_interval = threshold is None
 
@@ -409,7 +400,7 @@ class RowByColumnEI:
             return percentile
 
     def summary(self):
-        """Return a summary string"""
+        """Return a summary string for the ei results"""
         # TODO: probably format this as a table
         summary_str = """
             Computed from the raw b_ samples by multiplying by population and then 
@@ -427,9 +418,10 @@ class RowByColumnEI:
         return summary_str
 
     def precinct_level_estimates(self):
-        """If desired, we can return precinct-level estimates
+        """Returns precinct-level posterior means and credible intervals
 
         Returns:
+        --------
             precinct_posterior_means: num_precincts x r x c
             precinct_credible_intervals: num_precincts x r x c x 2
         """
@@ -567,10 +559,12 @@ class RowByColumnEI:
     def plot_boxplots(self, plot_by="candidate", axes=None):
         """Plot boxplots of voting prefs (one boxplot for each candidate)
 
-        plot_by: {'candidate', 'group'}
+        Parameters:
+        -----------
+        plot_by: {'candidate', 'group'}, optional
             If candidate, make one plot for each candidate. If group, make
-            one subplot for each gropu
-        axes: list of Matplotlib axis objects
+            one subplot for each group. (Default: 'candidate')
+        axes: list of Matplotlib axis objects, optional
             Typically subplots within the same figure. Length c if plot_by = 'candidate',
             length r if plot_by = 'group'
         """
@@ -583,7 +577,17 @@ class RowByColumnEI:
         )
 
     def plot_kdes(self, plot_by="candidate", axes=None):
-        """Kernel density plots of voting preference, plots grouped by candidate or group"""
+        """Kernel density plots of voting preference, plots grouped by candidate or group
+
+        Parameters:
+        -----------
+        plot_by: {'candidate', 'group'}, optional
+            If candidate, make one plot for each candidate. If group, make
+            one subplot for each group (Default: 'candidate')
+        axes: list of Matplotlib axis objects, optional
+            Typically subplots within the same figure. Length c if plot_by = 'candidate',
+            length r if plot_by = 'group'
+        """
         return plot_kdes(
             self.sampled_voting_prefs,
             self.demographic_group_names,
@@ -707,5 +711,18 @@ def check_dimensions_of_input(
         raise ValueError(
             """votes_fractions should have shape: r x num_precincts.
         In particular, it is required that len(precinct_pops) = group_fractions.shape[1]
+        """
+        )
+    # check shapes of group_fractions, votes_fractions, and precinct_pops to make sure
+    # number of precincts match (the last dimension of each)
+    if not (
+        len(votes_fractions[0]) == len(group_fractions[0])
+        and len(group_fractions[0]) == len(precinct_pops)
+    ):
+        raise ValueError(
+            """Mismatching num_precincts in input shapes. Inputs should have shape: \n
+        votes_fraction shape: r x num_precincts \n
+        group_fractions shape: c x num_precincts \n
+        precinct_pops length: num_precincts
         """
         )
