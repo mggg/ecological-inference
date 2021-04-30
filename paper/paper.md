@@ -76,7 +76,7 @@ Lastly, clear documentation is provided, including a set of introductory and exa
 
 # Acknowledgements
 
-We thank Colin Carroll, Moon Duchin, JN Matthews, and Thomas Weighill for their helpful contributions.
+We thank Colin Carroll, Moon Duchin, JN Matthews, Matthew Sun, and Thomas Weighill for their helpful contributions.
 
 # Examples of plotting functionality
 
