@@ -27,10 +27,10 @@ def example_r_by_c_data():
     }
 
 
-def example_r_by_c_ei(example_r_by_c_data):  # pylint: disable=redefined-outer-name
+def example_r_by_c_ei(example_r_by_c_data, model_name):  # pylint: disable=redefined-outer-name
     """Run this to generate an EI instance"""
 
-    ei_ex = RowByColumnEI(model_name="multinomial-dirichlet")
+    ei_ex = RowByColumnEI(model_name=model_name)
     ei_ex.fit(
         example_r_by_c_data["group_fractions"],
         example_r_by_c_data["votes_fractions"],
@@ -46,9 +46,49 @@ def example_r_by_c_ei(example_r_by_c_data):  # pylint: disable=redefined-outer-n
 @pytest.fixture(scope="session")
 def two_r_by_c_ei_runs(example_r_by_c_data):  # pylint: disable=redefined-outer-name
     """use the EI Factory to fix two EI instances for our tests"""
-    example_ei_r_by_c_1 = example_r_by_c_ei(example_r_by_c_data)
-    example_ei_r_by_c_2 = example_r_by_c_ei(example_r_by_c_data)
+    example_ei_r_by_c_1 = example_r_by_c_ei(example_r_by_c_data, "multinomial-dirichlet")
+    example_ei_r_by_c_2 = example_r_by_c_ei(example_r_by_c_data, "multinomial-dirichlet-modified")
     return [example_ei_r_by_c_1, example_ei_r_by_c_2]
+
+
+def test_ei_r_by_c_summary(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    assert isinstance(example_r_by_c_ei.summary(), str)
+
+
+def test_candidate_of_choice_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    candidate_preference_rate_dict = example_r_by_c_ei.candidate_of_choice_report(
+        verbose=True, non_candidate_names=None
+    )
+    assert 0 <= candidate_preference_rate_dict["e_asian", "Kolstad"] > 0 < 0.1
+
+
+def test_candidate_of_choice_polarization_report(
+    two_r_by_c_ei_runs,
+):  # pylint: disable=redefined-outer-name)
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    candidate_differ_rate_dict = example_r_by_c_ei.candidate_of_choice_polarization_report(
+        verbose=True, non_candidate_names=None
+    )
+    assert candidate_differ_rate_dict["non_asian", "e_asian"] > 0.5
+
+
+def test_polarization_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    groups = ["e_asian", "non_asian"]
+    candidate = "Kolstad"
+    prob_20 = example_r_by_c_ei.polarization_report(groups, candidate, threshold=0.2)
+    prob_40 = example_r_by_c_ei.polarization_report(groups, candidate, threshold=0.4)
+    thresh_95_range = example_r_by_c_ei.polarization_report(groups, candidate, percentile=95)
+    thresh_90_range = example_r_by_c_ei.polarization_report(groups, candidate, percentile=90)
+
+    assert prob_20 >= prob_40
+    assert thresh_95_range[1] > thresh_95_range[0]
+    assert thresh_95_range[1] - thresh_95_range[0] >= thresh_90_range[1] - thresh_90_range[0]
+
+
+# TEST PLOTTING
 
 
 def test_ei_r_by_c_precinct_scatterplot(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
@@ -86,20 +126,6 @@ def test_ei_r_by_c_intervals_by_precinct(
     with pytest.raises(ValueError):
         example_r_by_c_ei.plot_intervals_by_precinct("e_asian", "Kolstaad")
         example_r_by_c_ei.plot_intervals_by_precinct("ibnd", "Hardy")
-
-
-def test_polarization_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
-    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
-    groups = ["e_asian", "non_asian"]
-    candidate = "Kolstad"
-    prob_20 = example_r_by_c_ei.polarization_report(groups, candidate, threshold=0.2)
-    prob_40 = example_r_by_c_ei.polarization_report(groups, candidate, threshold=0.4)
-    thresh_95_range = example_r_by_c_ei.polarization_report(groups, candidate, percentile=95)
-    thresh_90_range = example_r_by_c_ei.polarization_report(groups, candidate, percentile=90)
-
-    assert prob_20 >= prob_40
-    assert thresh_95_range[1] > thresh_95_range[0]
-    assert thresh_95_range[1] - thresh_95_range[0] >= thresh_90_range[1] - thresh_90_range[0]
 
 
 def test_plot_polarization_kde(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
