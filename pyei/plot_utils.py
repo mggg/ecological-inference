@@ -36,6 +36,12 @@ colors = sns.color_palette(PALETTE)
 def size_ticks(ax, axis="x"):
     """
     Helper function to size the x- or ytick (numbers) of a matplotlib Axis
+
+    Parameters
+    ----------
+    axis : string
+        Either 'x' or 'y', specifies which axis's ticks are being sized
+    ax: matplotlib axis object
     """
     if axis == "x":
         ax.set_xlim(0, 1)
@@ -54,6 +60,10 @@ def size_ticks(ax, axis="x"):
 def size_yticklabels(ax):
     """
     Helper function to size the ytick labels of a matplotlib Axis
+
+    Parameters
+    ----------
+    ax : matplotlib axis object
     """
     ax.set_yticklabels(ax.get_yticklabels(), size=TICKSIZE)
 
@@ -462,6 +472,8 @@ def plot_polarization_kde(
     """
     Plots a kde for the differences in voting preferences between two groups
 
+    Parameters:
+    -----------
     diff_samples: array
         samples of the differences in voting preferences (group_complement - group)
     probability: float
@@ -470,9 +482,15 @@ def plot_polarization_kde(
         a list of thresholds for the difference in voting patterns between two groups
     groups: list
         the names of the two groups being compared
+    candidate_name : string
+        the name of the candidate or voting outcome whose support is shown in the kde
     show_threshold: bool
         if true, add a vertical line at the threshold on the plot and display the associated
         tail probability
+
+    Returns
+    -------
+    ax: Matplotlib axis object
     """
 
     if ax is None:

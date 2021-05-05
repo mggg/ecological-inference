@@ -61,7 +61,7 @@ def test_candidate_of_choice_report(two_r_by_c_ei_runs):  # pylint: disable=rede
     candidate_preference_rate_dict = example_r_by_c_ei.candidate_of_choice_report(
         verbose=True, non_candidate_names=None
     )
-    assert 0 <= candidate_preference_rate_dict["e_asian", "Kolstad"] > 0 < 0.1
+    assert 0 <= candidate_preference_rate_dict["e_asian", "Kolstad"] < 1
 
 
 def test_candidate_of_choice_polarization_report(
@@ -71,7 +71,7 @@ def test_candidate_of_choice_polarization_report(
     candidate_differ_rate_dict = example_r_by_c_ei.candidate_of_choice_polarization_report(
         verbose=True, non_candidate_names=None
     )
-    assert candidate_differ_rate_dict["non_asian", "e_asian"] > 0.5
+    assert candidate_differ_rate_dict["non_asian", "e_asian"] > 0.4
 
 
 def test_polarization_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name

@@ -36,6 +36,8 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
         for each of c candidates (sometimes denoted T)
     precinct_pops: Length-num_precincts vector giving size of each precinct population of interest
         (e.g. voting population) (sometimes denoted N)
+    lmbda1: float parameter passed to the Gamma(lmbda, 1/lmbda2) distribution
+    lmbda2: float parameter passed to the Gamma(lmbda, 1/lmbda2) distribution
 
     Returns
     -------
@@ -264,7 +266,7 @@ class RowByColumnEI:
             self.calculate_summary()
 
     def calculate_summary(self):
-        """Calculate point estimates (post. means) and credible intervals"""
+        """Calculate point estimates (post. means) and 95% equal-tailed credible intervals"""
         # multiply sample proportions by precinct pops to get samples of
         # number of voters of the demographic group who voted for the candidate
         # in each precinct
@@ -311,10 +313,19 @@ class RowByColumnEI:
         Exactly one of {percentile, threshold} must be None.
         Parameters:
         -----------
-        groups: Length 2 vector of demographic groups from which to calculate polarization
-        candidate: String that matches a candidate on which to calculate polarization
-        threshold OR percentile: Float used to calculate the other variable that is None
-        (percentile should be between 0 and 100)
+        groups: array-like
+            Length 2 vector of demographic groups from which to calculate polarization
+        candidate: string
+            Candidate for which to calculate polarization
+        threshold: float (optional)
+            A specified level of difference in support for the candidate
+            between one group and the other. If specified, use the threshold
+            to calculate the percentile (exactly one of threshold and percentile
+            must be None)
+        percentile: float (optional)
+            Between 0 and 100. Used to calculate the equal-tailed interval
+            for the polarization. At least one of threshold and percentile
+            must be None
         """
 
         candidate_index = self.candidate_names.index(candidate)
@@ -350,10 +361,22 @@ class RowByColumnEI:
         Exactly one of {percentile, threshold} must be None.
         Parameters:
         -----------
-        groups: Length 2 vector of demographic groups from which to calculate polarization
-        candidate: String that matches a candidate on which to calculate polarization
-        threshold OR percentile: Float used to calculate the other variable that is None
-        percentile should be between 0 and 100
+        groups:
+            Length 2 vector of demographic groups from which to calculate polarization
+        candidate: string
+            Candidate for which to calculate polarization
+        threshold: float (optional)
+            A specified level of difference in support for the candidate
+            between one group and the other. If specified, use the threshold
+            to calculate the percentile (exactly one of threshold and percentile
+            must be None)
+        percentile: float (optional)
+            Between 0 and 100. Used to calculate the equal-tailed interval
+            for the polarization. At least one of threshold and percentile
+            must be None
+        verbose: bool
+            If true, print a report putting polarization in context
+
         """
         return_interval = threshold is None
 
@@ -412,7 +435,7 @@ class RowByColumnEI:
                 summ = f"""The posterior mean for the district-level voting preference of
                 {self.demographic_group_names[row]} for {self.candidate_names[col]} is
                 {self.posterior_mean_voting_prefs[row][col]:.3f}
-                95% credible interval:  {self.credible_interval_95_mean_voting_prefs[row][col]}
+                95% equal-tailed credible interval:  {self.credible_interval_95_mean_voting_prefs[row][col]}
                 """
                 summary_str += summ
         return summary_str
@@ -599,7 +622,30 @@ class RowByColumnEI:
     def plot_polarization_kde(
         self, groups, candidate, threshold=None, percentile=None, show_threshold=False, ax=None
     ):
-        """Plot kde of differences between voting preferences"""
+        """Plot kde of differences between voting preferences
+
+        Parameters
+        ----------
+        groups : list of strings
+            Names of the demographic groups
+        candidate: str
+            Name of the candidate for whom the polarization is calculated
+        threshold: float (optional)
+            A specified level of difference in support for the candidate
+            between one group and the other. If specified, use the threshold
+            to calculate the percentile (exactly one of threshold and percentile
+            must be None)
+        percentile: float (optional)
+            Between 0 and 100. Used to calculate the equal-tailed interval
+            for the polarization. At least one of threshold and percentile
+            must be None
+        show_threshold: bool
+        ax : matplotlib Axis object
+
+        Returns
+        -------
+        matplotlib axis object
+        """
         return_interval = threshold is None
 
         if return_interval:
@@ -623,7 +669,15 @@ class RowByColumnEI:
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):
-        """Plot of credible intervals for all precincts, for specified group and candidate"""
+        """Plot of credible intervals for all precincts, for specified group and candidate
+
+        Parameters
+        ----------
+        group_name : str
+            Group for which to plot intervals. Should be in demographic_group_names
+        candiate_name : str
+            Candidate for which to plot intervals. Should be in candidate_names
+        """
         if group_name not in self.demographic_group_names:
             raise ValueError(
                 f"""group_name must be in the list of demographic_group_names provided to fit():

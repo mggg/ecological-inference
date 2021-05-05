@@ -411,7 +411,7 @@ class TwoByTwoEIBaseBayes:
         return sampled_voting_prefs
 
     def calculate_summary(self):
-        """Calculate point estimates (post. means) and credible intervals
+        """Calculate point estimates (post. means) and 95% equal-tailed credible intervals
         Assumes sampled_voting_prefs has already been set"""
 
         # compute point estimates
@@ -503,10 +503,10 @@ class TwoByTwoEIBaseBayes:
         The posterior mean for the district-level voting preference of
         non-{self.demographic_group_name} for {self.candidate_name} is
         {self.posterior_mean_voting_prefs[1]:.3f}
-        95% Bayesian credible interval for district-level voting preference of
+        95% equal-tailed Bayesian credible interval for district-level voting preference of
         {self.demographic_group_name} for {self.candidate_name} is
         {self.credible_interval_95_mean_voting_prefs[0]}
-        95% Bayesian credible interval for district-level voting preference of
+        95% equal-tailed Bayesian credible interval for district-level voting preference of
         non-{self.demographic_group_name} for {self.candidate_name} is
         {self.credible_interval_95_mean_voting_prefs[1]}
         """
@@ -761,24 +761,12 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         precinct_credible_intervals[:, 1, 0, :] = precinct_credible_intervals_gp2
         precinct_credible_intervals[:, 1, 1, :] = 1 - precinct_credible_intervals_gp2
 
-        return (
-            precinct_posterior_means,
-            precinct_credible_intervals
-            # precinct_posterior_means_gp1,
-            # precinct_posterior_means_gp2,
-            # precinct_credible_intervals_gp1,
-            # precinct_credible_intervals_gp2,
-        )
+        return (precinct_posterior_means, precinct_credible_intervals)
 
     def plot_intervals_by_precinct(self):
         """Plot of point estimates and credible intervals for each precinct"""
         # TODO: Fix use of axes
-        # (
-        #     precinct_posterior_means_gp1,
-        #     precinct_posterior_means_gp2,
-        #     precinct_credible_intervals_gp1,
-        #     precinct_credible_intervals_gp2,
-        # ) = self.precinct_level_estimates()
+
         precinct_posterior_means, precinct_credible_intervals = self.precinct_level_estimates()
         precinct_posterior_means_gp1 = precinct_posterior_means[:, 0, 0]
         precinct_posterior_means_gp2 = precinct_posterior_means[:, 1, 0]
