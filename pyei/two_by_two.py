@@ -522,7 +522,7 @@ class TwoByTwoEIBaseBayes:
         )
 
     def plot_boxplot(self, ax=None):
-        """ Boxplot of voting prefs for each group"""
+        """Boxplot of voting prefs for each group"""
         return plot_boxplots(
             self._voting_prefs_array(),
             self.group_names_for_display(),
@@ -532,7 +532,7 @@ class TwoByTwoEIBaseBayes:
         )
 
     def plot_intervals(self, ax=None):
-        """ Plot of credible intervals for each group"""
+        """Plot of credible intervals for each group"""
         title = "95% credible intervals"
         return plot_conf_or_credible_interval(
             [
@@ -761,7 +761,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         )
 
     def plot_intervals_by_precinct(self):
-        """ Plot of point estimates and credible intervals for each precinct"""
+        """Plot of point estimates and credible intervals for each precinct"""
         # TODO: Fix use of axes
         # (
         #     precinct_posterior_means_gp1,
