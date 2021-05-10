@@ -20,7 +20,7 @@ affiliations:
    index: 1
  - name: MGGG Redistricting Lab, Tufts University
    index: 2
-date: 29 April 2021
+date: 10 May 2021
 bibliography: paper.bib
 ---
 
@@ -31,15 +31,15 @@ In the setting of voting rights cases, there is a family of methods called "ecol
 observed data pairing voting outcomes with demographic information
 for each precinct in a given polity to infer voting patterns for each demographic group.
 
-More generally, we can think of ecological inference as seeking to use knowledge about the margins of a set of tables (\autoref{fig:table_ex}) to infer associations between the row and column variables, by making (typically probablistic) assumptions. In the context of assessing racially polarized voting, a table like the one in \autoref{fig:table_ex} will correspond to a precinct, where each column corresponds to a candidate or voting outcome and each row to a racial group. Ecological inference methods then use the vote counts and demographic data for each precinct to make inferences about the distribution of voting outcomes within each demographic group, thus addressing questions like: "What percentage of voters in Group 1 voted for Candidate A?"). The "two by two" ecological inference problem in this example, where we have two groups and two voting choices, is a special case of the more general "R by C" ecological inference, in which we may have R $\geq$ 2 groups and C $\geq$ 2 voting outcomes.
-Ecological inference is also applicable in other fields, such as epidemiology and sociology.
+More generally, we can think of ecological inference as seeking to use knowledge about the margins of a set of tables (\autoref{fig:table_ex}) to infer associations between the row and column variables, by making (typically probablistic) assumptions. In the context of assessing racially polarized voting, a table like the one in \autoref{fig:table_ex} will correspond to a precinct, where each column corresponds to a candidate or voting outcome and each row to a racial group. Ecological inference methods then use the vote counts and demographic data for each precinct to make inferences about the overall voting preferences by demographic group, thus addressing questions like: "What percentage of voters in Group 1 voted for Candidate A?"). The "two by two" ecological inference problem in this example, where we have two groups and two voting choices, is a special case of the more general "R by C" ecological inference, in which we may have R $\geq$ 2 groups and C $\geq$ 2 voting outcomes.
+`PyEI` was created to support performing ecological inference with voting data; however, ecological inference methods also applicable in other fields, such as epidemiology and sociology [@elliot2000spatial, goodman1953ecological].
 
 ![In ${2 \times 2}$ ecological inference we have information about the marginal counts for a set of tables like the one above and would like to make inferences about, for example the number or proportion of members of Group 1 who were also in Group A.\label{fig:table_ex}](figs/table_ex.png){ width=70% }
 
 # Statement of need
 
 The results of ecological inference for inferring racially polarized voting are routinely used in
-US voting rights cases; therefore, easy to use and high quality tools for performing ecological inference are of practical interest. There is a need for an ecological inference library that 
+US voting rights cases [@king1997solution]; therefore, easy to use and high quality tools for performing ecological inference are of practical interest. There is a need for an ecological inference library that 
 brings together a variety of ecological inference methods in one place to facilitate
 crucial tasks such as: quantifying the uncertainty associated with ecological inference
 results under a given model; making comparisons between methods; and bringing relevant 
@@ -62,7 +62,7 @@ ecological inference methods in different settings and/or develop new statistica
 
 `PyEI` is intended to be easily extensible, so that additional methods from the literature can continue to be incorporated (for example, work is underway to add the method of @greiner2009r, currently implemented in the R package `RxCEcolInf` [@RxCEcolInf]). Newly developed statistical methods for ecological inference can be included and conveniently compared with existing methods.
 
-Several R libraries implementing different ecological inference methods exist, such as `ei` [@ei], `eiCompare` [@eiCompare], `eiPack` [@eiPack], and `RxCEcolInf` [@RxCEcolInf]. In addition to presenting a Python-based option that researchers who primarily use Python may appreciate, `PyEI` 
+Several R libraries implementing different ecological inference methods exist, such as `eiPack` [@eiPack], `RxCEcolInf` [@RxCEcolInf], `ei` [@ei], and `eiCompare` [@eiCompare]. In addition to presenting a Python-based option that researchers who primarily use Python may appreciate, `PyEI` 
 incorporates the following key features and characteristics.
 
 First, the Bayesian hierarchical methods implemented in `PyEI` rest on modern probabilistic programming tooling [@salvatier2016probabilistic] and gradient-based MCMC methods such as the No U-Turn Sampler (NUTS) [@hoffman2014no]. Using NUTS where possible should allow for faster convergence than existing implementations that rest primarily on Metropolis-Hastings and Gibbs sampling steps. Effective sample size is a measure of how the variance of the mean of drawn samples compare to the variance of i.i.d. samples from the posterior distribution [@BDA3]. In Metropolis-Hastings, the number of evaluations of the log-posterior required for a given effective sample size scales linearly with the dimensionality of the parameter space, while in Hamiltonian Monte Carlo approaches such as NUTS, the number of required evaluations of the gradient of the the log-posterior scales only as the fourth root of the dimension [@neal2011mcmc].
@@ -75,7 +75,7 @@ Lastly, clear documentation is provided, including a set of introductory and exa
 
 # Acknowledgements
 
-We thank Colin Carroll, Moon Duchin, JN Matthews, Matthew Sun, and Thomas Weighill for their helpful contributions.
+This software development is part of a research project comparing methods, joint with Moon Duchin and Thomas Weighill. We thank Colin Carroll, JN Matthews, and Matthew Sun for their helpful contributions to `PyEI`. 
 
 \newpage
 # Examples of plotting functionality
