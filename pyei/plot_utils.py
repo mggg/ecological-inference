@@ -136,6 +136,7 @@ def plot_precincts(
     voting_prefs_group1,
     voting_prefs_group2,
     group_names,
+    candidate,
     precinct_labels=None,
     show_all_precincts=False,
     ax=None,
@@ -151,6 +152,8 @@ def plot_precincts(
         Same as voting_prefs_group2, except showing support among group 2
     group_names: list of str
         The demographic group names, for display in the legend
+    candidate: str
+        The candidate name
     precinct_labels : list of str (optional)
         The names for each precinct
     show_all_precincts : bool, optional
@@ -207,13 +210,13 @@ def plot_precincts(
     ax.set_yticks(np.arange(len(precinct_labels)))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(replace_ticks_with_precinct_labels))
     ax.set_title("Precinct level estimates of voting preferences", fontsize=TITLESIZE)
-    ax.set_xlabel("Percent vote for candidate", fontsize=FONTSIZE)
+    ax.set_xlabel(f"Percent vote for {candidate}", fontsize=FONTSIZE)
     ax.set_ylabel("Precinct", fontsize=FONTSIZE)
 
     proxy_handles = [
         mpatches.Patch(color=colors[i], ec="black", label=group_names[i]) for i in range(2)
     ]
-    ax.legend(handles=proxy_handles, loc="upper center")
+    ax.legend(handles=proxy_handles, prop={"size": 14}, loc="upper center")
     ax.set_ylim(-1, ax.get_ylim()[1])
     size_ticks(ax, "x")
     return ax
@@ -506,6 +509,7 @@ def plot_polarization_kde(
         color="steelblue",
         linewidth=0,
     )
+    ax.set_ylabel("Density", fontsize=FONTSIZE)
     if len(thresholds) == 1:
         threshold_string = f"> {thresholds[0]:.2f}"
     else:
@@ -521,6 +525,7 @@ def plot_polarization_kde(
             thresholds[-1] + 0.05,
             0.5,
             f"Prob (difference {threshold_string} ) = {probability:.1f}%",
+            fontsize=FONTSIZE,
         )
 
     ax.set_title(f"Polarization KDE for {candidate_name}", fontsize=TITLESIZE)
@@ -587,13 +592,14 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
     else:
         raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
 
+    middle_plot = int(np.floor(num_plots / 2))
     for plot_idx in range(num_plots):
         if num_plots > 1:
             ax = axes[plot_idx]
-            ax.set_ylabel("Density", fontsize=FONTSIZE)
+            axes[middle_plot].set_ylabel("Probability Density", fontsize=FONTSIZE)
         else:
             ax = axes
-            ax.set_ylabel("Probability Density", fontsize=FONTSIZE)
+            axes.set_ylabel("Probability Density", fontsize=FONTSIZE)
         ax.set_title(f"Support {support} " + titles[plot_idx], fontsize=TITLESIZE)
         ax.set_xlim((0, 1))
         size_ticks(ax, "x")
@@ -609,11 +615,12 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
                 color=colors[kde_idx],
                 linewidth=0,
             )
+            ax.set_ylabel("")
 
     if num_plots > 1:
-        axes[0].legend(bbox_to_anchor=(1, 1), loc="upper left")
+        axes[middle_plot].legend(bbox_to_anchor=(1, 1), loc="upper left", prop={"size": 12})
     else:
-        ax.legend()
+        ax.legend(prop={"size": 12})
     return ax
 
 
