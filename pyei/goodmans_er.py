@@ -38,7 +38,23 @@ class GoodmansER:
         demographic_group_name="given demographic group",
         candidate_name="given candidate",
     ):
-        """Fit the linear model (use pop weights iff is_weighted_regression is true"""
+        """Fit the linear model (use pop weights iff is_weighted_regression is true
+
+        Parameters
+        ----------
+        group_fraction  :   Length-p (p=# of precincts) vector giving demographic
+                            information (X) as the fraction of precinct_pop in
+                            the demographic group of interest
+        vote_fraction  :   Length p vector giving the fraction of each precinct_pop
+                            that votes for the candidate of interest (T)
+        precinct_pops   :   Length-p vector giving size of each precinct population
+                            of interest (e.g. voting population) (N)
+        demographic_group_name  :   Name of the demographic group of interest,
+                                    where results are computed for the
+                                    demographic group and its complement
+        candidate_name          :   Name of the candidate whose support we
+                                    want to analyze
+        """
         self.demographic_group_fraction = group_fraction
         self.vote_fraction = vote_fraction
         self.demographic_group_name = demographic_group_name
@@ -113,6 +129,23 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         **other_sampling_args,
     ):
         """Fit a bayesian er modeling via sampling.
+
+        Parameters
+        ----------
+        group_fraction  :   Length-p (p=# of precincts) vector giving demographic
+                            information (X) as the fraction of precinct_pop in
+                            the demographic group of interest
+        votes_fraction  :   Length p vector giving the fraction of each precinct_pop
+                            that votes for the candidate of interest (T)
+        precinct_pops   :   Length-p vector giving size of each precinct population
+                            of interest (e.g. voting population) (N)
+        demographic_group_name  :   Name of the demographic group of interest,
+                                    where results are computed for the
+                                    demographic group and its complement
+        candidate_name          :   Name of the candidate whose support we
+                                    want to analyze
+        precinct_names          :   Length p vector giving the string names
+                                    for each precinct.
         target_accept : float, optional
             Default=.99 Strictly between zero and 1 (should be close to 1). Passed to pymc's
             sampling.sample
@@ -176,7 +209,7 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
     def plot(self):
         """Plot regression line of votes_fraction vs. group_fraction, with scatter plot and
-        95% credible interval for the line"""
+        equal-tailed 95% credible interval for the line"""
         # TODO: consider renaming these plots for goodman, to disambiguate with TwoByTwoEI.plot()
         # TODO: accept axis argument
         x_vals, means, lower_bounds, upper_bounds = self.compute_credible_int_for_line()
@@ -196,6 +229,18 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 def goodmans_er_bayes_model(group_fraction, votes_fraction, sigma=1):
     """Ecological regression with uniform priors over voting prefs b_1, b_2,
     constraining them to be between zero and 1
+
+    Parameters
+    ----------
+    group_fraction  :   Length-p (p=# of precincts) vector giving demographic
+                            information (X) as the fraction of precinct_pop in
+                            the demographic group of interest
+    votes_fraction  :   Length p vector giving the fraction of each precinct_pop
+                            that votes for the candidate of interest (T)
+
+    Returns
+    -------
+    bayes_er_model: a pymc3 model
     """
 
     with pm.Model() as bayes_er_model:
@@ -219,6 +264,20 @@ def goodmans_er_bayes_pop_weighted_model(group_fraction, votes_fraction, precinc
     precinct population.
 
     Uniform priors over voting prefs b_1, b_2 constrain them to be between 0 and 1
+
+    Parameters
+    ----------
+    group_fraction  :   Length-p (p=# of precincts) vector giving demographic
+                            information (X) as the fraction of precinct_pop in
+                            the demographic group of interest
+    votes_fraction  :   Length p vector giving the fraction of each precinct_pop
+                            that votes for the candidate of interest (T)
+    precinct_pops   :   Length-p vector giving size of each precinct population
+                            of interest (e.g. voting population) (N)
+
+    Returns
+    -------
+    bayes_er_model: a pymc3 model
     """
 
     mean_precinct_pop = precinct_pops.mean()

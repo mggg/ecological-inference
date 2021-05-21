@@ -12,14 +12,20 @@ pip install git+git://github.com/mggg/ecological-inference.git
 ```
 ### Example notebooks
 
-Check out the [example notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/examples) for sample code
+Check out the [intro notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/intro_notebooks) and [example notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/examples) for sample code
 that shows how to run and adjust the various models in PyEI on datesets.  
 
-For two-by-two cases, check out the examples in `santa_clara_demo.ipynb`.
+If you are new to ecological inference generally, start with `intro_notebooks/Introduction_toEI.ipynb`.
 
-For r-by-c cases, check out the examples in `santa_clara_demo_r_by_c.ipynb`.
+If you are familiar with ecological inference and want an overview of PyEI and how to use it, with examples start with `intro_notebooks/PyEI_overview.ipynb`.
 
-For examples of more in depth model comparison and checking steps with PyEI, see `model_eval_and_comparison_demo.ipynb`.
+To explore EI's plotting functionality, check out `intro_notebooks/Plotting_with_PyEI.ipynb`.
+
+For more work with two-by-two examples, see in `examples/santa_clara_demo.ipynb`.
+
+For more work with r-by-c examples, see `examples/santa_clara_demo_r_by_c.ipynb`.
+
+For examples of depth model comparison and checking steps with PyEI, see `examples/model_eval_and_comparison_demo.ipynb`.
 
 ### Issues
 
@@ -47,10 +53,13 @@ python -m pip install -r requirements-dev.txt  # install dev requirements
 ### Install with conda
 
 ```bash
-conda create --name pyei python=3.7  # create conda env with python 3.7
-source activate pyei                 # activate conda env
+conda create --name pyei python=3.8  # create conda env with python 3.8
+conda activate pyei                 # activate conda env
 # See requirements.txt and requirements-dev.txt
-conda install pymc3 mkl-service scikit-learn matplotlib seaborn black mypy pylint pytest pytest-cov
+conda install pip
+pip install --upgrade -r requirements.txt
+pip install --upgrade -r requirements-dev.txt
+pip install -e . 
 ```
 
 ### Testing

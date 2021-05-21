@@ -3,7 +3,7 @@ Models and fitting for rxc methods
 where r and c are greater than or
 equal to 2
 
-TODO: Better or reparametrized priors for multinomial-dir
+TODO: Investigate better or reparametrized priors for multinomial-dir
 TODO: Greiner-Quinn Model
 TODO: Refactor to integrate with two_by_two
 """
@@ -36,6 +36,8 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
         for each of c candidates (sometimes denoted T)
     precinct_pops: Length-num_precincts vector giving size of each precinct population of interest
         (e.g. voting population) (sometimes denoted N)
+    lmbda1: float parameter passed to the Gamma(lmbda, 1/lmbda2) distribution
+    lmbda2: float parameter passed to the Gamma(lmbda, 1/lmbda2) distribution
 
     Returns
     -------
@@ -126,7 +128,7 @@ def ei_multinom_dirichlet_modified(
 
 class RowByColumnEI:
     """
-    Fitting and plotting for multinomial-dirichlet and Greiner-Quinn EI models
+    Fitting and plotting for RxC models, fit via sampling
     """
 
     def __init__(self, model_name, **additional_model_params):
@@ -168,7 +170,7 @@ class RowByColumnEI:
             of p precincts and r demographic groups (sometimes denoted X)
         votes_fractions  :  c x p giving the fraction of each precinct_pop that votes
             for each of c candidates (sometimes denoted T)
-        precinct_pops   :   Length-p vector giving size of each precinct population
+        precinct_pops   :   Length-p array of ints giving size of each precinct population
                             of interest (e.g. voting population) (someteimes denoted N)
         Optional arguments:
         demographic_group_names  :  Names of the r demographic group of interest,
@@ -192,9 +194,15 @@ class RowByColumnEI:
         """
         # Additional params for hyperparameters
         # TODO: describe hyperparameters
+
         self.demographic_group_fractions = group_fractions
         self.votes_fractions = votes_fractions
+
+        # check that precinct_pops are integers
+        if not all(isinstance(p, (int, np.integer)) for p in precinct_pops):
+            raise ValueError("all elements of precinct_pops must be integer-valued")
         self.precinct_pops = precinct_pops
+
         # give demographic groups, candidates 1-indexed numbers as names if names are not specified
         if demographic_group_names is None:
             demographic_group_names = [str(i) for i in range(1, group_fractions.shape[0] + 1)]
@@ -258,7 +266,7 @@ class RowByColumnEI:
             self.calculate_summary()
 
     def calculate_summary(self):
-        """Calculate point estimates (post. means) and credible intervals"""
+        """Calculate point estimates (post. means) and 95% equal-tailed credible intervals"""
         # multiply sample proportions by precinct pops to get samples of
         # number of voters of the demographic group who voted for the candidate
         # in each precinct
@@ -305,9 +313,19 @@ class RowByColumnEI:
         Exactly one of {percentile, threshold} must be None.
         Parameters:
         -----------
-        groups: Length 2 vector of demographic groups from which to calculate polarization
-        candidate: String that matches a candidate on which to calculate polarization
-        threshold OR percentile: Float used to calculate the other variable that is None
+        groups: array-like
+            Length 2 vector of demographic groups from which to calculate polarization
+        candidate: string
+            Candidate for which to calculate polarization
+        threshold: float (optional)
+            A specified level of difference in support for the candidate
+            between one group and the other. If specified, use the threshold
+            to calculate the percentile (exactly one of threshold and percentile
+            must be None)
+        percentile: float (optional)
+            Between 0 and 100. Used to calculate the equal-tailed interval
+            for the polarization. At least one of threshold and percentile
+            must be None
         """
 
         candidate_index = self.candidate_names.index(candidate)
@@ -343,9 +361,22 @@ class RowByColumnEI:
         Exactly one of {percentile, threshold} must be None.
         Parameters:
         -----------
-        groups: Length 2 vector of demographic groups from which to calculate polarization
-        candidate: String that matches a candidate on which to calculate polarization
-        threshold OR percentile: Float used to calculate the other variable that is None
+        groups:
+            Length 2 vector of demographic groups from which to calculate polarization
+        candidate: string
+            Candidate for which to calculate polarization
+        threshold: float (optional)
+            A specified level of difference in support for the candidate
+            between one group and the other. If specified, use the threshold
+            to calculate the percentile (exactly one of threshold and percentile
+            must be None)
+        percentile: float (optional)
+            Between 0 and 100. Used to calculate the equal-tailed interval
+            for the polarization. At least one of threshold and percentile
+            must be None
+        verbose: bool
+            If true, print a report putting polarization in context
+
         """
         return_interval = threshold is None
 
@@ -392,7 +423,7 @@ class RowByColumnEI:
             return percentile
 
     def summary(self):
-        """Return a summary string"""
+        """Return a summary string for the ei results"""
         # TODO: probably format this as a table
         summary_str = """
             Computed from the raw b_ samples by multiplying by population and then 
@@ -404,15 +435,16 @@ class RowByColumnEI:
                 summ = f"""The posterior mean for the district-level voting preference of
                 {self.demographic_group_names[row]} for {self.candidate_names[col]} is
                 {self.posterior_mean_voting_prefs[row][col]:.3f}
-                95% credible interval:  {self.credible_interval_95_mean_voting_prefs[row][col]}
+                95% equal-tailed credible interval:  {self.credible_interval_95_mean_voting_prefs[row][col]}
                 """
                 summary_str += summ
         return summary_str
 
     def precinct_level_estimates(self):
-        """If desired, we can return precinct-level estimates
+        """Returns precinct-level posterior means and credible intervals
 
         Returns:
+        --------
             precinct_posterior_means: num_precincts x r x c
             precinct_credible_intervals: num_precincts x r x c x 2
         """
@@ -439,32 +471,76 @@ class RowByColumnEI:
 
         return (precinct_posterior_means, precinct_credible_intervals)
 
-    def candidate_of_choice_report(self, verbose=True):
-        """For each group, look at differences in preference within that group"""
+    def candidate_of_choice_report(self, verbose=True, non_candidate_names=None):
+        """For each group, look at differences in preference within that group
+        Parameters:
+        -----------
+        verbose: boolean (optional)
+            If true, print a report putting the candidate preference rate in context
+            If false, do not print report.
+            In either case, return the candidate preference dictionary
+        non_candidate_names: list of str (optional)
+            A list of strings giving the names of voting outcomes that should not be
+            considered candidates for the purposes of calculating the candidate of choice.
+            For example, if there is an 'Abstain' column, we want may want to to include
+            'Abstain' in our list of non_candidate_names so that we only consider candidates
+            of choice to be actual candidates.
+
+        Returns:
+        -------
+        candidate_preference_rate_dict: dict
+            keys are of the form (demographic group name, candidate name)
+            Values are fraction of the samples in which the support of that group for that
+            candidate was higher than for any other candidate
+        """
+
         candidate_preference_rate_dict = {}
+        if non_candidate_names is None:
+            non_candidate_names = []
+        non_cand_idxs = [self.candidate_names.index(n) for n in non_candidate_names]
+        cand_names = list(set(self.candidate_names) - set(non_candidate_names))
+        sampled_voting_prefs = np.delete(self.sampled_voting_prefs, non_cand_idxs, axis=2)
+
         for row in range(self.num_groups_and_num_candidates[0]):
             if verbose:
                 print(self.demographic_group_names[row])
-            for candidate_idx in range(self.num_groups_and_num_candidates[1]):
+            for candidate_idx, name in enumerate(cand_names):
                 frac = (
-                    np.argmax(self.sampled_voting_prefs[:, row, :], axis=1) == candidate_idx
-                ).sum() / self.sampled_voting_prefs.shape[0]
+                    np.argmax(sampled_voting_prefs[:, row, :], axis=1) == candidate_idx
+                ).sum() / sampled_voting_prefs.shape[0]
                 if verbose:
                     print(
                         f"     - In {round(frac*100,3)} percent of samples, the district-level "
                         f"vote preference of \n"
                         f"       {self.demographic_group_names[row]} for "
-                        f"{self.candidate_names[candidate_idx]} "
+                        f"{name} "
                         f"was higher than for any other candidate."
                     )
-                candidate_preference_rate_dict[
-                    (self.demographic_group_names[row], self.candidate_names[candidate_idx])
-                ] = frac
+                candidate_preference_rate_dict[(self.demographic_group_names[row], name)] = frac
         return candidate_preference_rate_dict
 
-    def candidate_of_choice_polarization_report(self, verbose=True):
+    def candidate_of_choice_polarization_report(self, verbose=True, non_candidate_names=None):
         """For each pair of groups, look at differences in preferences
         between those groups
+
+        Parameters:
+        -----------
+        verbose: boolean (optional)
+            If true, print a report putting the candidate of choice polarization rate context
+            If false, do not pritn report.
+            In either case, return the candidate difference rate dictionary
+        non_candidate_names: list of str (optional)
+            A list of strings giving the names of voting outcomes that should not be
+            considered candidates for the purposes of calculating the candidate of choice.
+            For example, if there is an 'Abstain' column, we want may want to to include
+            'Abstain' in our list of non_candidate_names so that we only consider candidates
+            of choice to be actual candidates.
+
+        Returns:
+        --------
+        candidate_differ_rate_dict: dict
+            Keys are of the form (group1, group2), values are the fraction of samples
+            for which those two groups had a different candidate of choice
 
         Notes:
         ------
@@ -474,12 +550,17 @@ class RowByColumnEI:
         is different from the `preferred candidate` of the others group
         """
         candidate_differ_rate_dict = {}
+        if non_candidate_names is None:
+            non_candidate_names = []
+        non_cand_idxs = [self.candidate_names.index(n) for n in non_candidate_names]
+        sampled_voting_prefs = np.delete(self.sampled_voting_prefs, non_cand_idxs, axis=2)
+
         for dem1 in range(self.num_groups_and_num_candidates[0]):
             for dem2 in range(dem1):
                 differ_frac = (
-                    np.argmax(self.sampled_voting_prefs[:, dem1, :], axis=1)
-                    != np.argmax(self.sampled_voting_prefs[:, dem2, :], axis=1)
-                ).sum() / self.sampled_voting_prefs.shape[0]
+                    np.argmax(sampled_voting_prefs[:, dem1, :], axis=1)
+                    != np.argmax(sampled_voting_prefs[:, dem2, :], axis=1)
+                ).sum() / sampled_voting_prefs.shape[0]
                 if verbose:
                     print(
                         f"In {round(differ_frac*100,3)} percent of samples, the district-level "
@@ -501,10 +582,12 @@ class RowByColumnEI:
     def plot_boxplots(self, plot_by="candidate", axes=None):
         """Plot boxplots of voting prefs (one boxplot for each candidate)
 
-        plot_by: {'candidate', 'group'}
+        Parameters:
+        -----------
+        plot_by: {'candidate', 'group'}, optional
             If candidate, make one plot for each candidate. If group, make
-            one subplot for each gropu
-        axes: list of Matplotlib axis objects
+            one subplot for each group. (Default: 'candidate')
+        axes: list of Matplotlib axis objects, optional
             Typically subplots within the same figure. Length c if plot_by = 'candidate',
             length r if plot_by = 'group'
         """
@@ -517,7 +600,17 @@ class RowByColumnEI:
         )
 
     def plot_kdes(self, plot_by="candidate", axes=None):
-        """Kernel density plots of voting preference, plots grouped by candidate or group"""
+        """Kernel density plots of voting preference, plots grouped by candidate or group
+
+        Parameters:
+        -----------
+        plot_by: {'candidate', 'group'}, optional
+            If candidate, make one plot for each candidate. If group, make
+            one subplot for each group (Default: 'candidate')
+        axes: list of Matplotlib axis objects, optional
+            Typically subplots within the same figure. Length c if plot_by = 'candidate',
+            length r if plot_by = 'group'
+        """
         return plot_kdes(
             self.sampled_voting_prefs,
             self.demographic_group_names,
@@ -529,7 +622,30 @@ class RowByColumnEI:
     def plot_polarization_kde(
         self, groups, candidate, threshold=None, percentile=None, show_threshold=False, ax=None
     ):
-        """Plot kde of differences between voting preferences"""
+        """Plot kde of differences between voting preferences
+
+        Parameters
+        ----------
+        groups : list of strings
+            Names of the demographic groups
+        candidate: str
+            Name of the candidate for whom the polarization is calculated
+        threshold: float (optional)
+            A specified level of difference in support for the candidate
+            between one group and the other. If specified, use the threshold
+            to calculate the percentile (exactly one of threshold and percentile
+            must be None)
+        percentile: float (optional)
+            Between 0 and 100. Used to calculate the equal-tailed interval
+            for the polarization. At least one of threshold and percentile
+            must be None
+        show_threshold: bool
+        ax : matplotlib Axis object
+
+        Returns
+        -------
+        matplotlib axis object
+        """
         return_interval = threshold is None
 
         if return_interval:
@@ -553,7 +669,15 @@ class RowByColumnEI:
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):
-        """Plot of credible intervals for all precincts, for specified group and candidate"""
+        """Plot of credible intervals for all precincts, for specified group and candidate
+
+        Parameters
+        ----------
+        group_name : str
+            Group for which to plot intervals. Should be in demographic_group_names
+        candiate_name : str
+            Candidate for which to plot intervals. Should be in candidate_names
+        """
         if group_name not in self.demographic_group_names:
             raise ValueError(
                 f"""group_name must be in the list of demographic_group_names provided to fit():
@@ -641,5 +765,18 @@ def check_dimensions_of_input(
         raise ValueError(
             """votes_fractions should have shape: r x num_precincts.
         In particular, it is required that len(precinct_pops) = group_fractions.shape[1]
+        """
+        )
+    # check shapes of group_fractions, votes_fractions, and precinct_pops to make sure
+    # number of precincts match (the last dimension of each)
+    if not (
+        len(votes_fractions[0]) == len(group_fractions[0])
+        and len(group_fractions[0]) == len(precinct_pops)
+    ):
+        raise ValueError(
+            """Mismatching num_precincts in input shapes. Inputs should have shape: \n
+        votes_fraction shape: r x num_precincts \n
+        group_fractions shape: c x num_precincts \n
+        precinct_pops length: num_precincts
         """
         )
