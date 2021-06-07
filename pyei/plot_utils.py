@@ -463,6 +463,59 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="
     return ax
 
 
+def plot_margin_kde(group, candidates, samples, thresholds, percentile, show_threshold, ax):
+    """
+    Plots a kde for the margin between two candidates among a given demographic group
+
+    Parameters:
+    -----------
+    samples: array
+        samples of the differences in voting preferences (candidate 1 - candidate 2)
+    thresholds: array
+        a list of thresholds for the difference in voting patterns between two groups
+    group: str
+        the name of the demographic group in question
+    candidates : list of str
+        the names of the two candidates in question
+    show_threshold: bool
+        if true, add vertical lines at the threshold on the plot
+
+    Returns
+    -------
+    ax: Matplotlib axis object
+    """
+    if ax is None:
+        _, ax = plt.subplots(figsize=FIGSIZE)
+
+    sns.histplot(
+        samples,
+        kde=True,
+        ax=ax,
+        element="step",
+        stat="density",
+        color="steelblue",
+        linewidth=0,
+    )
+    ax.set_ylabel("Density", fontsize=FONTSIZE)
+    if show_threshold:
+        for threshold in thresholds:
+            ax.axvline(threshold, c="gray")
+        ax.axvspan(thresholds[0], thresholds[1], facecolor="gray", alpha=0.2)
+        ax.text(
+            thresholds[-1] + 0.05,
+            0.5,
+            f"{percentile}% CI",
+            fontsize=FONTSIZE,
+        )
+
+    ax.set_title(f"{candidates[0]} - {candidates[1]} margin among {group}", fontsize=TITLESIZE)
+    ax.set_xlabel(f"{group} support for {candidates[0]} - {candidates[1]}", fontsize=FONTSIZE)
+    ax.set_xlim((-1, 1))
+    xticks = ax.get_xticks()
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticks, size=TICKSIZE)
+
+
 def plot_polarization_kde(
     diff_samples,
     thresholds,

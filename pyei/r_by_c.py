@@ -18,6 +18,7 @@ from .plot_utils import (
     plot_kdes,
     plot_intervals_all_precincts,
     plot_polarization_kde,
+    plot_margin_kde,
 )
 
 __all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet", "RowByColumnEI"]
@@ -617,6 +618,35 @@ class RowByColumnEI:
             self.candidate_names,
             plot_by=plot_by,
             axes=axes,
+        )
+
+    def plot_margin_kde(self, group, candidates, percentile=95, show_threshold=False, ax=None):
+        """
+        Plot kde of the margin between two candidates among the given demographic group.
+
+        Parameters:
+        ----------
+        group: str
+            Name of the demographic group to focus on
+        candidates: list of str
+            Names of the (two) candidates upon which to compute the Candidate 1 - Candidate 2 margin
+        ax: matplotlib Axis object
+        """
+        candidate_index_0 = self.candidate_names.index(candidates[0])
+        candidate_index_1 = self.candidate_names.index(candidates[1])
+        group_index = self.demographic_group_names.index(group)
+
+        samples = (
+            self.sampled_voting_prefs[:, group_index, candidate_index_0]
+            - self.sampled_voting_prefs[:, group_index, candidate_index_1]
+        )
+
+        lower_percentile = (100 - percentile) / 2
+        upper_percentile = lower_percentile + percentile
+        thresholds = [np.percentile(samples, perc) for perc in [lower_percentile, upper_percentile]]
+
+        return plot_margin_kde(
+            group, candidates, samples, thresholds, percentile, show_threshold, ax
         )
 
     def plot_polarization_kde(
