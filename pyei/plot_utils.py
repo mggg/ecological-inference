@@ -497,14 +497,21 @@ def plot_margin_kde(group, candidates, samples, thresholds, percentile, show_thr
         linewidth=0,
     )
     ax.set_ylabel("Density", fontsize=FONTSIZE)
+    if len(thresholds) == 1:
+        threshold_string = f"> {thresholds[0]:.2f}"
+    else:
+        threshold_string = f"in [{thresholds[0]:.2f}, {thresholds[1]:.2f}]"
     if show_threshold:
         for threshold in thresholds:
             ax.axvline(threshold, c="gray")
-        ax.axvspan(thresholds[0], thresholds[1], facecolor="gray", alpha=0.2)
+        if len(thresholds) == 2:
+            ax.axvspan(thresholds[0], thresholds[1], facecolor="gray", alpha=0.2)
+        else:
+            ax.axvspan(thresholds[0], 1, facecolor="gray", alpha=0.2)
         ax.text(
             thresholds[-1] + 0.05,
             0.5,
-            f"{percentile}% CI",
+            f"Prob (margin {threshold_string} ) = {percentile:.1f}%",
             fontsize=FONTSIZE,
         )
 

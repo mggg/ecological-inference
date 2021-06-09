@@ -308,6 +308,115 @@ class RowByColumnEI:
                     self.sampled_voting_prefs[:, row, col], percentiles
                 )
 
+    def _calculate_margin(self, group, candidates, threshold=None, percentile=None):
+        """
+        Calculating the Candidate 1 - Candidate 2 margin among the given group.
+        Calculate the percentile given a threshold, or vice versa. Exactly one of
+        {percentile, threshold} must be None.
+
+        Parameters:
+        ----------
+        group: str
+            Demographic group in question
+        candidates: list of str
+            Length 2 vector of candidates upon which to calculate the margin
+        threshold: float (optional)
+            A specified level for the margin between the two candidates. If specified,
+            use the threshold to calculate the percentile (% of samples with a larger margin)
+        percentile: float (opetional)
+            Between 0 and 100. Used to calculate the equal-tailed interval for the margin between
+            the two candidates.
+        """
+        candidate_index_0 = self.candidate_names.index(candidates[0])
+        candidate_index_1 = self.candidate_names.index(candidates[1])
+        group_index = self.demographic_group_names.index(group)
+
+        samples = (
+            self.sampled_voting_prefs[:, group_index, candidate_index_0]
+            - self.sampled_voting_prefs[:, group_index, candidate_index_1]
+        )
+
+        if percentile is None and threshold is not None:
+            percentile = 100 * (samples > threshold).sum() / len(self.sampled_voting_prefs)
+        elif threshold is None and percentile is not None:
+            threshold = np.percentile(samples, 100 - percentile)
+        else:
+            raise ValueError(
+                """Exactly one of threshold or percentile must be None.
+            Set a threshold to calculate the associated percentile, or a percentile
+            to calculate the associated threshold.
+            """
+            )
+        return threshold, percentile, samples, group, candidates
+
+    def margin_report(self, group, candidates, threshold=None, percentile=None, verbose=True):
+        """
+        For a given threshold, return the probability that the margin between
+        the two candidates preferences in the given demographic group is greater than
+        the threshold
+        OR
+        For a given confidence level, calculate the associated confidence interval
+        of the difference between the two candidates preference among the group.
+        Exactly one of {percentile, threshold} must be None.
+        Parameters:
+        -----------
+        group: str
+            Demographic group in question
+        candidates: list of str
+            Length 2 vector of candidates upon which to calculate the margin
+        threshold: float (optional)
+            A specified level for the margin between the two candidates. If specified,
+            use the threshold to calculate the percentile (% of samples with a larger margin)
+        percentile: float (opetional)
+            Between 0 and 100. Used to calculate the equal-tailed interval for the margin between
+            the two candidates.
+        verbose: bool
+            If true, print a report putting margin in context
+        """
+        return_interval = threshold is None
+
+        if not all(candidate in self.candidate_names for candidate in candidates):
+            raise ValueError(
+                f"""candidate names must be in the list of candidate_names provided to fit():
+                {self.candidate_names}"""
+            )
+
+        if group not in self.demographic_group_names:
+            raise ValueError(
+                f"""group name must be in the list of demographic_group_names
+                provided to fit():
+                {self.demographic_group_names}"""
+            )
+
+        if return_interval:
+            lower_percentile = (100 - percentile) / 2
+            upper_percentile = lower_percentile + percentile
+            lower_threshold, _, _, group, candidates = self._calculate_margin(
+                group, candidates, threshold, upper_percentile
+            )
+            upper_threshold, _, _, group, candidates = self._calculate_margin(
+                group, candidates, threshold, lower_percentile
+            )
+
+            if verbose:
+                print(
+                    f"There is a {percentile}% probability that the difference between"
+                    + f" the {group}s' preferences for {candidates[0]} and {candidates[1]} is"
+                    + f" between [{lower_threshold:.2f}, {upper_threshold:.2f}]."
+                )
+            return (lower_threshold, upper_threshold)
+        else:
+            threshold, percentile, _, group, candidates = self._calculate_margin(
+                group, candidates, threshold, percentile
+            )
+            if verbose:
+                print(
+                    f"There is a {percentile}% probability that the difference between"
+                    + f" the {group}s' preferences for {candidates[0]} and {candidates[1]} is"
+                    + f" between [{lower_threshold:.2f}, {upper_threshold:.2f}]."
+                )
+            return percentile
+
     def _calculate_polarization(self, groups, candidate, threshold=None, percentile=None):
         """
         Calculate percentile given a threshold, or vice versa.
@@ -620,30 +729,43 @@ class RowByColumnEI:
             axes=axes,
         )
 
-    def plot_margin_kde(self, group, candidates, percentile=95, show_threshold=False, ax=None):
+    def plot_margin_kde(
+        self, group, candidates, threshold=None, percentile=None, show_threshold=False, ax=None
+    ):
         """
         Plot kde of the margin between two candidates among the given demographic group.
 
         Parameters:
         ----------
         group: str
-            Name of the demographic group to focus on
+            Demographic group in question
         candidates: list of str
-            Names of the (two) candidates upon which to compute the Candidate 1 - Candidate 2 margin
-        ax: matplotlib Axis object
+            Length 2 vector of candidates upon which to calculate the margin
+        threshold: float (optional)
+            A specified level for the margin between the two candidates. If specified,
+            use the threshold to calculate the percentile (% of samples with a larger margin)
+        percentile: float (opetional)
+            Between 0 and 100. Used to calculate the equal-tailed interval for the margin between
+            the two candidates.
+        show_threshold: bool
+            Show threshold in the plot.
         """
-        candidate_index_0 = self.candidate_names.index(candidates[0])
-        candidate_index_1 = self.candidate_names.index(candidates[1])
-        group_index = self.demographic_group_names.index(group)
-
-        samples = (
-            self.sampled_voting_prefs[:, group_index, candidate_index_0]
-            - self.sampled_voting_prefs[:, group_index, candidate_index_1]
-        )
-
-        lower_percentile = (100 - percentile) / 2
-        upper_percentile = lower_percentile + percentile
-        thresholds = [np.percentile(samples, perc) for perc in [lower_percentile, upper_percentile]]
+        return_interval = threshold is None
+        if return_interval:
+            lower_percentile = (100 - percentile) / 2
+            upper_percentile = lower_percentile + percentile
+            lower_threshold, _, samples, group, candidates = self._calculate_margin(
+                group, candidates, threshold, upper_percentile
+            )
+            upper_threshold, _, samples, group, candidates = self._calculate_margin(
+                group, candidates, threshold, lower_percentile
+            )
+            thresholds = [lower_threshold, upper_threshold]
+        else:
+            threshold, percentile, samples, group, candidates = self._calculate_margin(
+                group, candidates, threshold, percentile
+            )
+            thresholds = [threshold]
 
         return plot_margin_kde(
             group, candidates, samples, thresholds, percentile, show_threshold, ax
