@@ -411,9 +411,9 @@ class RowByColumnEI:
             )
             if verbose:
                 print(
-                    f"There is a {percentile}% probability that the difference between"
-                    + f" {group}s' preferences for {candidates[0]} and {candidates[1]} is"
-                    + f" between [{lower_threshold:.2f}, {upper_threshold:.2f}]."
+                    f"There is a {percentile:.1f}% probability that the difference between"
+                    + f" {group}s' preferences for {candidates[0]} and {candidates[1]}"
+                    + f" is more than {threshold:.2f}."
                 )
             return percentile
 
