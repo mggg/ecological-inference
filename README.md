@@ -5,11 +5,18 @@ PyEI is a Python library for ecological inference. It is new and under active de
 ## Want to use PyEI? Start here.
 
 ### Installation
-You can install with pip:
+You can install the latest release from `PyPi` with:
+
+```
+pip install pyei
+```
+
+Or, install directly from GitHub for the most up-to-date (but potentially less stable) version:
 
 ```
 pip install git+git://github.com/mggg/ecological-inference.git
-```
+ ```
+
 ### Example notebooks
 
 Check out the [intro notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/intro_notebooks) and [example notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/examples) for sample code
