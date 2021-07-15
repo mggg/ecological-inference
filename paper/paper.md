@@ -58,7 +58,7 @@ ecological inference methods in different settings and/or develop new statistica
 - Dirichlet-Multinomial hierarchical models [@rosen2001bayesian]
 - A Bayesian hierarchical method for ${2 \times 2}$ EI following the approach of @wakefield2004ecological
 
-(In several of these cases, `PyEI` includes modifications to the models as originally proposed in the cited literature, such as reparametrizations or other changes to upper levels of the hierarchical models in order to ease sampling difficulties.)
+In several of these cases, `PyEI` includes modifications to the models as originally proposed in the cited literature, such as reparametrizations or other changes to upper levels of the hierarchical models in order to ease sampling difficulties.
 
 `PyEI` is intended to be easily extensible, so that additional methods from the literature can continue to be incorporated (for example, work is underway to add the method of @greiner2009r, currently implemented in the R package `RxCEcolInf` [@RxCEcolInf]). Newly developed statistical methods for ecological inference can be included and conveniently compared with existing methods.
 
