@@ -27,7 +27,7 @@ bibliography: paper.bib
 # Summary
 
 An important question in some voting rights and redistricting litigation in the U.S. is whether and to what degree voting is racially polarized.
-In the setting of voting rights cases, there is a family of methods called "ecological inference" (see especially [@king1997solution]) that uses
+In the setting of voting rights cases, there is a family of methods called "ecological inference" [see especially @king1997solution] that uses
 observed data, pairing voting outcomes with demographic information
 for each precinct in a given polity, to infer voting patterns for each demographic group.
 
