@@ -80,7 +80,7 @@ This software development is part of a research project comparing methods, joint
 \newpage
 # Examples of plotting functionality
 
-![KDE plots for visualizing uncertainty of support for candidates within each group.\label{fig:kdes}](figs/figure2.png){ width=100% } 
+![Kernel density estimation plots for visualizing uncertainty of support for candidates within each group.\label{fig:kdes}](figs/figure2.png){ width=100% } 
 
 ![Bayesian credible intervals for support of candidates within groups.\label{fig:credible_interval}](figs/figure3.png){ width=100% }
 
