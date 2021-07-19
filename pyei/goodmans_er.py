@@ -170,7 +170,7 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
             group_fraction, votes_fraction, **self.additional_model_params
         )
 
-        with self.sim_model:
+        with self.sim_model:  # pylint: disable=not-context-manager
             self.sim_trace = pm.sample(
                 1000, tune=tune, target_accept=target_accept, **other_sampling_args
             )

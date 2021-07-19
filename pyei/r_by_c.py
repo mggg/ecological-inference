@@ -259,7 +259,7 @@ class RowByColumnEI:
             )
 
         if draw_samples:
-            with self.sim_model:
+            with self.sim_model:  # pylint: disable=not-context-manager
                 self.sim_trace = pm.sample(
                     target_accept=target_accept, tune=tune, **other_sampling_args
                 )
