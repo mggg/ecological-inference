@@ -7,7 +7,7 @@ In the setting of voting rights cases, the family of methods called "ecological 
 observed data, pairing voting outcomes with demographic information
 for each precinct in a given polity, to infer voting patterns for each demographic group. 
 
-PyEI brings together a variety of ecological inference methods in one place and allows for reporting and plotting results; quantifying the uncertainty associated with results under a given model; making comparisons between methods; and bringing relevant diagnostic tools to bear on ecological inference methods.
+PyEI brings together a variety of ecological inference methods in one place and facilitates reporting and plotting results; quantifying the uncertainty associated with results under a given model; making comparisons between methods; and bringing relevant diagnostic tools to bear on ecological inference methods.
 
 PyEI is relatively new and under active development, so expect rough edges and bugs -- and for additional features and documentation to be coming quickly!
 
