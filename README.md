@@ -69,13 +69,7 @@ python -m pip install -r requirements-dev.txt  # install dev requirements
 ### Install with conda
 
 ```bash
-conda create --name pyei python=3.8  # create conda env with python 3.8
-conda activate pyei                 # activate conda env
-# See requirements.txt and requirements-dev.txt
-conda install pip
-pip install --upgrade -r requirements.txt
-pip install --upgrade -r requirements-dev.txt
-pip install -e . 
+conda create --name pyei --channel conda-forge python=3.8 --file requirements.txt --file requirements-dev.txt
 ```
 
 ### Testing
