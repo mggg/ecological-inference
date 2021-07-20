@@ -24,6 +24,7 @@ date: 10 May 2021
 bibliography: paper.bib
 ---
 
+
 # Summary
 
 An important question in some voting rights and redistricting litigation in the U.S. is whether and to what degree voting is racially polarized.
@@ -69,26 +70,24 @@ First, the Bayesian hierarchical methods implemented in `PyEI` rest on modern pr
 
 Second, integration with the existing tools `PyMC3` [@salvatier2016probabilistic] and `ArviZ` [@arviz_2019] makes the results amenable to state of the art diagnostics (e.g. convergence diagnostics) and some reasonable checks are automatically performed. 
  
-Third, summary and plotting utilities for reporting, visualizing, and comparing results are included (see example plots below), with an emphasis on visualizations and reports that clarify the uncertainty of estimates under a model.
+Third, summary and plotting utilities for reporting, visualizing, and comparing results are included (e.g. \autoref{fig:kdes}, \autoref{fig:polarization}), with an emphasis on visualizations and reports that clarify the uncertainty of estimates under a model.
 
 Lastly, clear documentation is provided, including a set of introductory and example notebooks.
+
+![Kernel density estimation plots for visualizing uncertainty of support for candidates within each group.\label{fig:kdes}](figs/figure2.png){ width=100% } 
+
+![Visualizing and quantifying degree of polarization.\label{fig:polarization}](figs/figure4.png){ width=100% }
 
 # Acknowledgments
 
 This software development is part of a research project comparing methods, joint with Moon Duchin and Thomas Weighill. We thank Colin Carroll, JN Matthews, and Matthew Sun for their helpful contributions to `PyEI`. 
 
-\newpage
-# Examples of plotting functionality
 
-![Kernel density estimation plots for visualizing uncertainty of support for candidates within each group.\label{fig:kdes}](figs/figure2.png){ width=100% } 
+<!-- ![Bayesian credible intervals for support of candidates within groups.\label{fig:credible_interval}](figs/figure3.png){ width=100% } -->
 
-![Bayesian credible intervals for support of candidates within groups.\label{fig:credible_interval}](figs/figure3.png){ width=100% }
+<!-- ![Visualizing estimates and uncertainty for precinct-level estimates.\label{fig:precinct_level}](figs/figure5.png){ width=50% }
 
-![Visualizing and quantifying degree of polarization.\label{fig:polarization}](figs/figure4.png){ width=100% }
-
-![Visualizing estimates and uncertainty for precinct-level estimates.\label{fig:precinct_level}](figs/figure5.png){ width=50% }
-
-![Tomography plots for two-by-two ecological inference.\label{fig:tomography}](figs/figure6.png){ width=40% }
+![Tomography plots for two-by-two ecological inference.\label{fig:tomography}](figs/figure6.png){ width=40% } -->
 
 \newpage
 
