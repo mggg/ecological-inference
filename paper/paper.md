@@ -35,7 +35,15 @@ for each precinct in a given polity, to infer voting patterns for each demograph
 More generally, we can think of ecological inference as seeking to use knowledge about the margins of a set of tables (\autoref{fig:table_ex}) to infer associations between the row and column variables, by making (typically probabilistic) assumptions. In the context of assessing racially polarized voting, a table like the one in \autoref{fig:table_ex} will correspond to a precinct, where each column corresponds to a candidate or voting outcome and each row to a racial group. Ecological inference methods then use the vote counts and demographic data for each precinct to make inferences about the overall voting preferences by demographic group, thus addressing questions like: "What percentage of East Asian voters voted for Hardy?". This example is an instance of what is referred to in the literature as "R by C" ecological inference, where here we have R $=$ 2 groups and C $=$ 3 voting outcomes.
 `PyEI` was created to support performing ecological inference with voting data; however, ecological inference methods also applicable in other fields, such as epidemiology [@elliot2000spatial] and sociology [@goodman1953ecological].
 
-![In ecological inference we have information about the marginal counts for a set of tables like the one above and would like to make inferences about, for example, the number or proportion of East Asian voters who voted for Hardy. The system is underdetermined and ecological inference methods proceed by making statistical assumptions. \label{fig:table_ex}](figs/table_ex2.png){ width=70% }
+\newpage
+|                 | Hardy         | Kolstad        | Nadeem |   |
+| :-------------  | :-----------: | :------------: | :-------------: | :------------- |
+| East Asian      | ?             |  ?                    | ? | Total East Asian |
+| non- East Asian | ?     | ?              | ? | Total non- East Asian |
+|                 | Total for    | Total for   | Total for |  |
+|                 |  Hardy     | Kolstad   |  Nadeem |  |
+
+Table: In ecological inference we have information about the marginal counts for a set of tables like the one here and would like to make inferences about, for example, the number or proportion of East Asian voters who voted for Hardy. The system is underdetermined and ecological inference methods proceed by making statistical assumptions.
 
 # Statement of need
 
