@@ -28,8 +28,8 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
     """
     An implementation of the r x c dirichlet/multinomial EI model
 
-    Parameters
-    ----------
+    Parameters:
+    -----------
     group_fractions: r x num_precincts  matrix giving demographic information
         as the fraction of precinct_pop in the demographic group of interest for each of
         p precincts and r demographic groups (sometimes denoted X)
@@ -80,8 +80,8 @@ def ei_multinom_dirichlet_modified(
     """
     An implementation of the r x c dirichlet/multinomial EI model with reparametrized hyperpriors
 
-    Parameters
-    ----------
+    Parameters:
+    -----------
     group_fractions: r x num_precincts  matrix giving demographic information
         as the fraction of precinct_pop in the demographic group of interest for each of
         p precincts and r demographic groups (sometimes denoted X)
@@ -133,8 +133,18 @@ class RowByColumnEI:
     """
 
     def __init__(self, model_name, **additional_model_params):
-        # model_name can be 'multinomial-dirichlet' or 'greiner-quinn'
+        """
+        Parameters:
+        -----------
+        model_name: str
+            The name of the model to use. Currently supported: multinomial-dirichlet,
+            multinomial-dirichlet-modified
+        additional_model_params: optional
+            Settings for model hyperparameters, if desired to change default. See
+            model function documentation for hyperparameter options
+        """
         # TODO: implement greiner quinn
+        # TODO: model_name as enumeration
         self.model_name = model_name
         self.additional_model_params = additional_model_params
 
@@ -358,6 +368,7 @@ class RowByColumnEI:
         For a given confidence level, calculate the associated confidence interval
         of the difference between the two candidates preference among the group.
         Exactly one of {percentile, threshold} must be None.
+
         Parameters:
         -----------
         group: str
@@ -776,8 +787,8 @@ class RowByColumnEI:
     ):
         """Plot kde of differences between voting preferences
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
         groups : list of strings
             Names of the demographic groups
         candidate: str
@@ -823,8 +834,8 @@ class RowByColumnEI:
     def plot_intervals_by_precinct(self, group_name, candidate_name):
         """Plot of credible intervals for all precincts, for specified group and candidate
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
         group_name : str
             Group for which to plot intervals. Should be in demographic_group_names
         candiate_name : str

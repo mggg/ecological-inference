@@ -447,7 +447,8 @@ class TwoByTwoEIBaseBayes:
         """
         model_name: str
             The name of one of the models ( "king99", "king99_pareto_modification",
-            "wakefield_beta", "wakefield_normal", "truncated_normal")
+            "wakefield_beta", "wakefield_normal", "truncated_normal", 
+            "goodman_er_bayes")
         additional_model_params
             Hyperparameters to pass to model, if changing default parameters
             (see model documentation for the hyperparameters for each model)
