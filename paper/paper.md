@@ -43,7 +43,7 @@ More generally, we can think of ecological inference as seeking to use knowledge
 |                 | Total for    | Total for   | Total for |  |
 |                 |  Hardy     | Kolstad   |  Nadeem |  |
 
-Table: In ecological inference we have information about the marginal counts for a set of tables like the one here and would like to make inferences about, for example, the number or proportion of East Asian voters who voted for Hardy. The system is underdetermined and ecological inference methods proceed by making statistical assumptions.
+Table: In ecological inference we have information about the marginal counts for a set of tables like the one here and would like to make inferences about, for example, the number or proportion of East Asian voters who voted for Hardy. The system is underdetermined and ecological inference methods proceed by making statistical assumptions. \label{fig:table_ex}
 
 # Statement of need
 
