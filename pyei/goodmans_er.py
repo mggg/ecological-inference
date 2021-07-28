@@ -120,7 +120,9 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
     Generate samples from the posterior.
     """
 
-    def __init__(self, model_name="goodman_er_bayes", weighted_by_pop=False, **additional_model_params):
+    def __init__(
+        self, model_name="goodman_er_bayes", weighted_by_pop=False, **additional_model_params
+    ):
         """
         Optional arguments:
         model_name: str
@@ -131,7 +133,7 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         additional_model_parameters:
             Any hyperparameters for model
         """
-        #TODO if no other model name is applicable here, remove need for model_name argument 
+        # TODO if no other model name is applicable here, remove need for model_name argument
         super().__init__(model_name, **additional_model_params)
         self.weighted_by_pop = weighted_by_pop
 
@@ -213,11 +215,10 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         Parameters
         ----------
         x_vals : numpy array, optional
-            Default: np.linspace(0, 1, 100). 1-dimensional numpy array of values between 0 and 1, for which 
-            the function should compute the mean line and 95% credible interval
-            Each element of x_vals represents the fraction of the population
-            that is in the demographic group of interest (values for 
-            X in the notation of King '97)
+            Default: np.linspace(0, 1, 100). 1-dimensional numpy array of values between
+            0 and 1, for which the function should compute the mean line and 95%
+            credible interval. Each element of x_vals represents the fraction of the population
+            that is in the demographic group of interest (values for X in the notation of King '97)
 
         """
         lower_bounds = np.empty_like(x_vals)
