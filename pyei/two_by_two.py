@@ -242,7 +242,7 @@ def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, 
     n1_curr: the (current value for the)count of the complement of given demographic group
          in the precinct
     b_1_curr: corresponds to p0 in wakefield's notation, the probability that an individual
-        in the given demographic group votes for the given candidate 
+        in the given demographic group votes for the given candidate
     b_2_curr: corresponds to p1 in wakefield's notation, the probability that an individual
         in the complement of the given demographic group votes for the given candidate
     prev: the partial sum of the log prob of the convolution of binomials
@@ -447,7 +447,7 @@ class TwoByTwoEIBaseBayes:
         """
         model_name: str
             The name of one of the models ( "king99", "king99_pareto_modification",
-            "wakefield_beta", "wakefield_normal", "truncated_normal", 
+            "wakefield_beta", "wakefield_normal", "truncated_normal",
             "goodman_er_bayes")
         additional_model_params
             Hyperparameters to pass to model, if changing default parameters
@@ -507,7 +507,7 @@ class TwoByTwoEIBaseBayes:
         Parameters
         ----------
         threshold: float
-            If not None, function will return the estimated probability that difference 
+            If not None, function will return the estimated probability that difference
             between the two groups' preferences for the given candidate is more than
             {threshold}
         percentile: float
@@ -518,7 +518,7 @@ class TwoByTwoEIBaseBayes:
             The index of the reference group. If 0, the thresholds are calcuated as
             (group 0 preferences - group 1 preferences). If 1, the thresholds are
             calculated as (group 1 preferences - group 0 preferences)
-        
+
         Notes
         -----
         Exactly one of threshold and percentile must be None
@@ -557,7 +557,7 @@ class TwoByTwoEIBaseBayes:
         Parameters
         ----------
         threshold: float
-            If not None, function will return the estimated probability that difference 
+            If not None, function will return the estimated probability that difference
             between the two groups' preferences for the given candidate is more than
             {threshold}
         percentile: float
@@ -570,7 +570,7 @@ class TwoByTwoEIBaseBayes:
             calculated as (group 1 preferences - group 0 preferences)
         verbose: bool
             If True, print out a report
-        
+
         Notes
         -----
         Exactly one of threshold and percentile must be None
@@ -676,7 +676,7 @@ class TwoByTwoEIBaseBayes:
         Parameters
         ----------
         threshold: float
-            If not None, function will return the estimated probability that difference 
+            If not None, function will return the estimated probability that difference
             between the two groups' preferences for the given candidate is more than
             {threshold}
         percentile: float
@@ -695,7 +695,7 @@ class TwoByTwoEIBaseBayes:
         Returns
         -------
         Matplotlib axis object
-        
+
         """
         return_interval = threshold is None
 
