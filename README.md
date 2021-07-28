@@ -69,7 +69,8 @@ python -m pip install -r requirements-dev.txt  # install dev requirements
 ### Install with conda
 
 ```bash
-conda create --name pyei --channel conda-forge python=3.8 --file requirements.txt --file requirements-dev.txt
+conda create --name pyei --channel conda-forge python=3.8 --file requirements.txt --file requirements-dev.txt # create conda environment and install requirements
+pip install -e . #install project locally
 ```
 
 ### Testing
