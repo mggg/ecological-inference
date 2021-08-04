@@ -19,6 +19,13 @@ class GoodmansER:
     """
 
     def __init__(self, is_weighted_regression=False):
+        """
+        Parameters
+        ----------
+        is_weighted_regression: bool, optional
+            Default is False. If true, weight precincts by population when
+            performing the regression.
+        """
         self.demographic_group_fraction = None
         self.vote_fraction = None
         self.demographic_group_fraction = None
@@ -113,7 +120,20 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
     Generate samples from the posterior.
     """
 
-    def __init__(self, model_name, weighted_by_pop=False, **additional_model_params):
+    def __init__(
+        self, model_name="goodman_er_bayes", weighted_by_pop=False, **additional_model_params
+    ):
+        """
+        Optional arguments:
+        model_name: str
+            Default is "goodman_er_bayes"
+        weighted_by_pop: bool
+            Default is False. If true, weight precincts by population when
+            performing the regression.
+        additional_model_parameters:
+            Any hyperparameters for model
+        """
+        # TODO if no other model name is applicable here, remove need for model_name argument
         super().__init__(model_name, **additional_model_params)
         self.weighted_by_pop = weighted_by_pop
 
@@ -170,7 +190,7 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
             group_fraction, votes_fraction, **self.additional_model_params
         )
 
-        with self.sim_model:
+        with self.sim_model:  # pylint: disable=not-context-manager
             self.sim_trace = pm.sample(
                 1000, tune=tune, target_accept=target_accept, **other_sampling_args
             )
@@ -189,8 +209,17 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         )  # sampled voted prefs across precincts
 
     def compute_credible_int_for_line(self, x_vals=np.linspace(0, 1, 100)):
-        """Computes regression line (mean) and 95% credible interval for the
-        mean line at each of the specified x values(x_vals)
+        """Computes regression line (mean) and 95% central credible interval for
+        the mean line at each of the specified x values(x_vals)
+
+        Parameters
+        ----------
+        x_vals : numpy array, optional
+            Default: np.linspace(0, 1, 100). 1-dimensional numpy array of values between
+            0 and 1, for which the function should compute the mean line and 95%
+            credible interval. Each element of x_vals represents the fraction of the population
+            that is in the demographic group of interest (values for X in the notation of King '97)
+
         """
         lower_bounds = np.empty_like(x_vals)
         upper_bounds = np.empty_like(x_vals)

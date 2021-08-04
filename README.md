@@ -1,15 +1,31 @@
 # PyEI
 
-PyEI is a Python library for ecological inference. It is new and under active development, so expect rough edges and bugs -- and for additional features and documentation to be coming quickly!
+PyEI is a Python library for ecological inference.
+
+An important question in some voting rights and redistricting litigation in the U.S. is whether and to what degree voting is racially polarized.
+In the setting of voting rights cases, the family of methods called "ecological inference" uses
+observed data, pairing voting outcomes with demographic information
+for each precinct in a given polity, to infer voting patterns for each demographic group. 
+
+PyEI brings together a variety of ecological inference methods in one place and facilitates reporting and plotting results; quantifying the uncertainty associated with results under a given model; making comparisons between methods; and bringing relevant diagnostic tools to bear on ecological inference methods.
+
+PyEI is relatively new and under active development, so expect rough edges and bugs -- and for additional features and documentation to be coming quickly!
 
 ## Want to use PyEI? Start here.
 
 ### Installation
-You can install with pip:
+You can install the latest release from `PyPi` with:
+
+```
+pip install pyei
+```
+
+Or, install directly from GitHub for the most up-to-date (but potentially less stable) version:
 
 ```
 pip install git+git://github.com/mggg/ecological-inference.git
-```
+ ```
+
 ### Example notebooks
 
 Check out the [intro notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/intro_notebooks) and [example notebooks](https://github.com/mggg/ecological-inference/tree/main/pyei/examples) for sample code
@@ -53,13 +69,8 @@ python -m pip install -r requirements-dev.txt  # install dev requirements
 ### Install with conda
 
 ```bash
-conda create --name pyei python=3.8  # create conda env with python 3.8
-conda activate pyei                 # activate conda env
-# See requirements.txt and requirements-dev.txt
-conda install pip
-pip install --upgrade -r requirements.txt
-pip install --upgrade -r requirements-dev.txt
-pip install -e . 
+conda create --name pyei --channel conda-forge python=3.8 --file requirements.txt --file requirements-dev.txt # create conda environment and install requirements
+pip install -e . #install project locally
 ```
 
 ### Testing

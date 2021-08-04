@@ -30,6 +30,20 @@ def truncated_normal_asym(
     """
     A modification of king97's truncated normal that puts some broad priors
     over the parameters of the truncated normal dist
+
+    Parameters
+    ----------
+    group_fraction: Length-p (p=# of precincts) vector giving demographic information
+        as the fraction of precinct_pop in the demographic group of interest
+    votes_fraction: Length p vector giving the fraction of each precinct_pop that
+        votes for the candidate of interest
+    precinct_pops: Length-p vector giving size of each precinct population of interest
+         (e.g. voting population)
+
+    Returns
+    -------
+    model: A pymc3 model
+
     """
     num_precincts = len(precinct_pops)
     b_1_l_bound = np.maximum(0, (votes_fraction - 1 + group_fraction) / group_fraction)
@@ -219,6 +233,26 @@ def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
 def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, prev):
     """
     Helper function for computing log prob of convolution of binomial
+
+    Parameters
+    ----------
+    lower, upper : lower and upper bounds on the (unobserved) count of votes from given
+        deographic group for given candidate within precinct
+    n0_curr: the (current value for the) count of given demographic group in the precinct
+    n1_curr: the (current value for the)count of the complement of given demographic group
+         in the precinct
+    b_1_curr: corresponds to p0 in wakefield's notation, the probability that an individual
+        in the given demographic group votes for the given candidate
+    b_2_curr: corresponds to p1 in wakefield's notation, the probability that an individual
+        in the complement of the given demographic group votes for the given candidate
+    prev: the partial sum of the log prob of the convolution of binomials
+
+    Returns
+    -------
+    prev + component_for_current_precinct : sum of the previous value of the partial sum
+        for the log prob of the convolution of binomials and an additional term for one
+        precinct
+
     """
 
     # votes_within_group_count is y_0i in Wakefield's notation, the count of votes from
@@ -278,8 +312,20 @@ def wakefield_model_beta(
     group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
 ):
     """
-    2 x 2 EI model Wakefield
+    2 x 2 EI model based on Wakefield's, with pareto distributions in upper level of hierarchy
 
+    Parameters
+    ----------
+    group_fraction: Length-p (p=# of precincts) vector giving demographic information
+        as the fraction of precinct_pop in the demographic group of interest
+    votes_fraction: Length p vector giving the fraction of each precinct_pop that
+        votes for the candidate of interest
+    precinct_pops: Length-p vector giving size of each precinct population of interest
+         (e.g. voting population)
+
+    Returns
+    -------
+    model: A pymc3 model
     """
 
     vote_count_obs = votes_fraction * precinct_pops
@@ -329,6 +375,24 @@ def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0
 
     Note: Wakefield suggests adding another level of hierarchy, with a prior over mu0 and mu1,
     sigma0, sigma1, but that is not yet implemented here
+
+    Parameters
+    ----------
+    group_fraction: Length-p (p=# of precincts) vector giving demographic information
+        as the fraction of precinct_pop in the demographic group of interest
+    votes_fraction: Length p vector giving the fraction of each precinct_pop that
+        votes for the candidate of interest
+    precinct_pops: Length-p vector giving size of each precinct population of interest
+         (e.g. voting population)
+    mu0: float
+        Mean of the normally distributed hyperparameter associated with the demographic
+        group of interest
+    m1: Mean of the normally distributed hyperparameter associated with the complement
+    of the demographic group of interest
+
+    Returns
+    -------
+    model: A pymc3 model
 
     """
 
@@ -380,6 +444,15 @@ class TwoByTwoEIBaseBayes:
     """
 
     def __init__(self, model_name, **additional_model_params):
+        """
+        model_name: str
+            The name of one of the models ( "king99", "king99_pareto_modification",
+            "wakefield_beta", "wakefield_normal", "truncated_normal",
+            "goodman_er_bayes")
+        additional_model_params
+            Hyperparameters to pass to model, if changing default parameters
+            (see model documentation for the hyperparameters for each model)
+        """
         self.model_name = model_name
         self.additional_model_params = additional_model_params
 
@@ -398,7 +471,7 @@ class TwoByTwoEIBaseBayes:
         self.sampled_voting_prefs = [None, None]
 
     def group_names_for_display(self):
-        """Sets the group names to be displayed in plots"""
+        """Returns the group names to be displayed in plots"""
         return self.demographic_group_name, "non-" + self.demographic_group_name
 
     def _voting_prefs_array(self):
@@ -430,6 +503,26 @@ class TwoByTwoEIBaseBayes:
     def _calculate_polarization(self, threshold=None, percentile=None, reference_group=0):
         """calculate percentile given a threshold, or threshold if given a percentile
         exactly one of percentile and threshold must be null
+
+        Parameters
+        ----------
+        threshold: float
+            If not None, function will return the estimated probability that difference
+            between the two groups' preferences for the given candidate is more than
+            {threshold}
+        percentile: float
+            If not None, function will return the threshold for which {percentile}
+            equals the estimated probability that difference between the two groups'
+            preferences for the given candidate is more than {threshold}
+        reference group: int {0, 1}
+            The index of the reference group. If 0, the thresholds are calcuated as
+            (group 0 preferences - group 1 preferences). If 1, the thresholds are
+            calculated as (group 1 preferences - group 0 preferences)
+
+        Notes
+        -----
+        Exactly one of threshold and percentile must be None
+
         """
         samples = self.sampled_voting_prefs[0] - self.sampled_voting_prefs[1]
         group = self.demographic_group_name
@@ -457,9 +550,30 @@ class TwoByTwoEIBaseBayes:
         For a given threshold, return the probability that difference between the group's
         preferences for the given candidate is more than threshold
         OR
-        For a given confidence level, return the associated confidence of the difference
-        between the two groups' preferences.
-        Exactly one {percentile,threshold} must be None/
+        For a given confidence level, return the associated central credible interval for
+        the difference between the two groups' preferences.
+        Exactly one {percentile,threshold} must be None
+
+        Parameters
+        ----------
+        threshold: float
+            If not None, function will return the estimated probability that difference
+            between the two groups' preferences for the given candidate is more than
+            {threshold}
+        percentile: float
+            If not None, function will return the central interval which {percentile}
+            equals the estimated probability that difference between the two groups'
+            preferences for the given candidate is in that interval
+        reference group: int {0, 1}
+            The index of the reference group. If 0, the thresholds are calcuated as
+            (group 0 preferences - group 1 preferences). If 1, the thresholds are
+            calculated as (group 1 preferences - group 0 preferences)
+        verbose: bool
+            If True, print out a report
+
+        Notes
+        -----
+        Exactly one of threshold and percentile must be None
         """
         return_interval = threshold is None
 
@@ -512,7 +626,10 @@ class TwoByTwoEIBaseBayes:
         """
 
     def plot_kde(self, ax=None):
-        """kernel density estimate/ histogram plot"""
+        """kernel density estimate/ histogram plot
+        Optional arguments:
+        ax  :  matplotlib axes object
+        """
         return plot_kdes(
             self._voting_prefs_array(),
             self.group_names_for_display(),
@@ -522,7 +639,9 @@ class TwoByTwoEIBaseBayes:
         )
 
     def plot_boxplot(self, ax=None):
-        """Boxplot of voting prefs for each group"""
+        """Boxplot of voting prefs for each group
+        Optional arguments:
+        ax  :  matplotlib axes object"""
         return plot_boxplots(
             self._voting_prefs_array(),
             self.group_names_for_display(),
@@ -532,7 +651,10 @@ class TwoByTwoEIBaseBayes:
         )
 
     def plot_intervals(self, ax=None):
-        """Plot of credible intervals for each group"""
+        """Plot of credible intervals for each group
+        Optional arguments:
+        ax  :  matplotlib axes object
+        """
         title = "95% credible intervals"
         return plot_conf_or_credible_interval(
             [
@@ -548,7 +670,33 @@ class TwoByTwoEIBaseBayes:
     def plot_polarization_kde(
         self, threshold=None, percentile=None, reference_group=0, show_threshold=False, ax=None
     ):
-        """Plot kde of differences between voting preferences"""
+        """
+        Plot kde of differences between voting preferences
+
+        Parameters
+        ----------
+        threshold: float
+            If not None, function will return the estimated probability that difference
+            between the two groups' preferences for the given candidate is more than
+            {threshold}
+        percentile: float
+            If not None, function will return the central interval which {percentile}
+            equals the estimated probability that difference between the two groups'
+            preferences for the given candidate is in that interval
+        reference group: int {0, 1}
+            The index of the reference group. If 0, the thresholds are calcuated as
+            (group 0 preferences - group 1 preferences). If 1, the thresholds are
+            calculated as (group 1 preferences - group 0 preferences)
+        show_threshold: bool (optional)
+            Default: False. If true, add a vertical line at the threshold on the plot
+            and display the associated tail probability
+        ax: matplotlib axis object (optional)
+
+        Returns
+        -------
+        Matplotlib axis object
+
+        """
         return_interval = threshold is None
 
         if return_interval:
@@ -584,8 +732,14 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
     """
 
     def __init__(self, model_name, **additional_model_params):
-        # model_name can be 'king97', 'king99' or 'king99_pareto_modification'
-        # 'wakefield_beta' or 'wakefield normal'
+        """
+        model_name: str
+            Name of model: can be 'king97', 'king99', 'king99_pareto_modification'
+            'wakefield_beta' or 'wakefield normal'
+        additional_model_params
+            Hyperparameters to pass to model, if changing default parameters
+            (see model documentation for the hyperparameters for each model)
+        """
         super().__init__(model_name, **additional_model_params)
 
         self.precinct_pops = None
@@ -791,7 +945,12 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         return plot_gp1, plot_gp2
 
     def plot(self, axes=None):
-        """kde, boxplot, and credible intervals"""
+        """kde, boxplot, and credible intervals
+        Optional arguments:
+        axes : list or tuple of matplotlib axis objects or None
+            Default=None
+            Length 2: (ax_box, ax_hist)
+        """
         return plot_summary(
             self._voting_prefs_array(),
             self.group_names_for_display()[0],
