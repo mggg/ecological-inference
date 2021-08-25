@@ -1,5 +1,7 @@
 # PyEI
 
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.03397/status.svg)](https://doi.org/10.21105/joss.03397)
+
 PyEI is a Python library for ecological inference.
 
 An important question in some voting rights and redistricting litigation in the U.S. is whether and to what degree voting is racially polarized.
@@ -82,3 +84,29 @@ After making changes, make sure everything works by running
 ```
 
 This will also run automatically when you make a pull request, so if you have trouble getting that to run, just open the PR, and we can help!
+
+
+## Citation
+
+If you are using PyEI, please cite it as: 
+
+Knudson et al., (2021). PyEI: A Python package for ecological inference. Journal of Open Source Software, 6(64), 3397, https://doi.org/10.21105/joss.03397
+
+BibTeX:
+
+```
+@article{Knudson2021,
+  doi = {10.21105/joss.03397},
+  url = {https://doi.org/10.21105/joss.03397},
+  year = {2021},
+  publisher = {The Open Journal},
+  volume = {6},
+  number = {64},
+  pages = {3397},
+  author = {Karin C. Knudson and Gabe Schoenbach and Amariah Becker},
+  title = {PyEI: A Python package for ecological inference},
+  journal = {Journal of Open Source Software}
+}
+```
+
+
