@@ -161,7 +161,7 @@ class RowByColumnEI:
         self.credible_interval_95_mean_voting_prefs = None
         self.num_groups_and_num_candidates = [None, None]
 
-    def fit(
+    def fit(  # pylint: disable=too-many-branches
         self,
         group_fractions,
         votes_fractions,
@@ -213,6 +213,18 @@ class RowByColumnEI:
         if not all(isinstance(p, (int, np.integer)) for p in precinct_pops):
             raise ValueError("all elements of precinct_pops must be integer-valued")
         self.precinct_pops = precinct_pops
+
+        # check that group_fractions and vote_fractions sum to 1 in each precinct
+        if not np.isclose(group_fractions.sum(axis=0), 1.0).all():
+            raise ValueError("group_fractions should sum to 1 within each precinct")
+        if not np.isclose(votes_fractions.sum(axis=0), 1.0).all():
+            raise ValueError("votes_fractions should sum to 1 within each precinct")
+
+        # check that group_fractions and vote_fractions are nonnegative
+        if not (group_fractions >= 0).all():
+            raise ValueError("group_fractions must be non-negative")
+        if not (votes_fractions >= 0).all():
+            raise ValueError("votes_fractions most be non-negative")
 
         # give demographic groups, candidates 1-indexed numbers as names if names are not specified
         if demographic_group_names is None:
