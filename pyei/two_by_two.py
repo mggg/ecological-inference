@@ -840,7 +840,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         if draw_samples:
             # TODO: this workaround shouldn't be necessary. Modify the model so that the checks
             # can run without error
-            if self.model_name == "wakefield_beta" or self.model_name == "wakefield_normal":
+            if self.model_name in ("wakefield_beta", "wakefield_normal"):
                 compute_convergence_checks = False
                 print("WARNING: some convergence checks currently disabled for wakefield model")
             else:
