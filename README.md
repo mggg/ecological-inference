@@ -2,12 +2,12 @@
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.03397/status.svg)](https://doi.org/10.21105/joss.03397)
 
-PyEI is a Python library for ecological inference.
+PyEI is a Python library for ecological inference. The target audience is the analyst with an interest in the phenomenon called Racially Polarized Voting.
 
-An important question in some voting rights and redistricting litigation in the U.S. is whether and to what degree voting is racially polarized.
-In the setting of voting rights cases, the family of methods called "ecological inference" uses
-observed data, pairing voting outcomes with demographic information
-for each precinct in a given polity, to infer voting patterns for each demographic group. 
+Racially Polarized Voting is a legal concept developed through case law under the Voting Rights Act of 1965; its genesis is in the majority opinion of ***Thornburg v. Gingles (1982)***. Considered the “evidentiary linchpin” for vote dilution cases, RPV is a necessary, but not sufficient, condition that plaintiffs must satisfy for a valid claim. 
+
+Toward that end, ecological inference uses observed data (historical election results), pairing voting outcomes with demographic information
+for each precinct in a given polity, to infer voting patterns for each demographic group.
 
 PyEI brings together a variety of ecological inference methods in one place and facilitates reporting and plotting results; quantifying the uncertainty associated with results under a given model; making comparisons between methods; and bringing relevant diagnostic tools to bear on ecological inference methods.
 
