@@ -1,4 +1,5 @@
 Theano==1.0.5
+Theano-PyMC==1.0.5 
 pymc3==3.9.3
 arviz==0.11.1
 scikit-learn
