@@ -925,6 +925,7 @@ def check_dimensions_of_input(
             """
             )
 
+    print(f"Running {demographic_group_names} x {candidate_names} EI")
     print(f"r = {num_groups_and_num_candidates[0]} rows (demographic groups)")
     print(f"c = {num_groups_and_num_candidates[1]} columns (candidates or voting outcomes)")
     print(f"number of precincts = {len(precinct_pops)}")
