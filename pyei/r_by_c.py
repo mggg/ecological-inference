@@ -69,7 +69,11 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)
         pm.Multinomial(
-            "votes_count", n=precinct_pops, p=theta, observed=votes_count_obs
+            "votes_count",
+            n=precinct_pops,
+            p=theta,
+            observed=votes_count_obs,
+            shape=(num_precincts, num_rows),
         )  # num_precincts x r
     return model
 
@@ -122,7 +126,11 @@ def ei_multinom_dirichlet_modified(
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)  # sum across num_rows
         pm.Multinomial(
-            "votes_count", n=precinct_pops, p=theta, observed=votes_count_obs
+            "votes_count",
+            n=precinct_pops,
+            p=theta,
+            observed=votes_count_obs,
+            shape=(num_precincts, num_rows),
         )  # num_precincts x r
     return model
 
@@ -260,18 +268,12 @@ class RowByColumnEI:
 
         if self.model_name == "multinomial-dirichlet":
             self.sim_model = ei_multinom_dirichlet(
-                group_fractions,
-                votes_fractions,
-                precinct_pops,
-                **self.additional_model_params,
+                group_fractions, votes_fractions, precinct_pops, **self.additional_model_params
             )
 
         elif self.model_name == "multinomial-dirichlet-modified":
             self.sim_model = ei_multinom_dirichlet_modified(
-                group_fractions,
-                votes_fractions,
-                precinct_pops,
-                **self.additional_model_params,
+                group_fractions, votes_fractions, precinct_pops, **self.additional_model_params
             )
         else:
             raise ValueError(
@@ -318,11 +320,7 @@ class RowByColumnEI:
         # compute credible intervals
         percentiles = [2.5, 97.5]
         self.credible_interval_95_mean_voting_prefs = np.zeros(
-            (
-                self.num_groups_and_num_candidates[0],
-                self.num_groups_and_num_candidates[1],
-                2,
-            )
+            (self.num_groups_and_num_candidates[0], self.num_groups_and_num_candidates[1], 2)
         )
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1]):
@@ -559,8 +557,8 @@ class RowByColumnEI:
         """Return a summary string for the ei results"""
         # TODO: probably format this as a table
         summary_str = """
-            Computed from the raw b_ samples by multiplying by population and then 
-            getting the proportion of the total pop 
+            Computed from the raw b_ samples by multiplying by population and then
+            getting the proportion of the total pop
             (total pop=summed across all districts):
             """
         for row in range(self.num_groups_and_num_candidates[0]):

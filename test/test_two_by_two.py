@@ -84,7 +84,7 @@ def log_binom_sum_in_scipy(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b
 def test_log_binom_sum():
     kwargs = generate_kwargs_for_log_binom_sum()
     np.testing.assert_almost_equal(
-        two_by_two.log_binom_sum(**kwargs).eval(), log_binom_sum_in_scipy(**kwargs)
+        two_by_two.log_binom_sum(**kwargs).eval(), log_binom_sum_in_scipy(**kwargs), decimal=4
     )
 
 
