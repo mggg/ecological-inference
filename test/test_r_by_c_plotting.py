@@ -88,8 +88,39 @@ def test_ei_calculate_turnout_adjusted_samples(
     test_adj_samples = calculate_turnout_adjust_samples_basic(
         non_adjusted_samples, "Hardy", example_r_by_c_ei.candidate_names
     )
-    turnout_adjusted_samps_pyei = example_r_by_c_ei._calculate_turnout_adjusted_samples("Hardy")
-    assert np.all(test_adj_samples == turnout_adjusted_samps_pyei)
+
+    example_r_by_c_ei._calculate_turnout_adjusted_samples("Hardy")
+    turnout_adjusted_samps_pyei = example_r_by_c_ei.turnout_adjusted_samples
+    assert np.all(np.isclose(test_adj_samples, turnout_adjusted_samps_pyei))
+
+
+def test_computation_of_districtwide_samples(
+    two_r_by_c_ei_runs,
+):  # pylint: disable=redefined-outer-name:  # pylint: disable=redefined-outer-name:
+    """
+    Testing calculations of RowByColumnEI.sampled_voting_prefs
+    """
+    ei_ex = two_r_by_c_ei_runs[0]
+
+    def calculate_districtwide_samples_basic(samples, demographic_group_fractions, precinct_pops):
+        # group fraction has shape: r x num_precincts
+        demographic_group_counts = np.transpose(
+            demographic_group_fractions * precinct_pops
+        )  # num_precincts x r
+        num_samples, num_precincts, r, c = samples.shape
+        districtwide_prefs = np.empty((num_samples, r, c))
+        for r_idx in range(r):
+            for samp_idx in range(num_samples):
+                for c_idx in range(c):
+                    districtwide_prefs[samp_idx, r_idx, c_idx] = (
+                        samples[samp_idx, :, r_idx, c_idx] * demographic_group_counts[:, r_idx]
+                    ).sum() / (demographic_group_counts[:, r_idx]).sum()
+        return districtwide_prefs
+
+    test_districtwide_prefs = calculate_districtwide_samples_basic(
+        ei_ex.sim_trace.get_values("b"), ei_ex.demographic_group_fractions, ei_ex.precinct_pops
+    )
+    np.all(np.isclose(test_districtwide_prefs, ei_ex.sampled_voting_prefs))
 
 
 def test_candidate_of_choice_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name

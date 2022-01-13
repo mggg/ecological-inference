@@ -8,10 +8,7 @@ TODO: Greiner-Quinn Model
 TODO: Refactor to integrate with two_by_two
 """
 
-
-from typing import AsyncIterable
 import warnings
-from numpy.core.fromnumeric import _nonzero_dispatcher
 import pymc3 as pm
 import theano.tensor as tt
 import numpy as np
@@ -172,8 +169,12 @@ class RowByColumnEI:
         self.num_groups_and_num_candidates = [None, None]
 
         self.turnout_adjusted_samples = None  # num_samples x num_precincts x r x (c-1)
-        self.turnout_adjusted_voting_prefs = None  # samps districtwide prefs,num_samples x r x c-1
+        self.turnout_adjusted_sampled_voting_prefs = (
+            None  # samps districtwide prefs,num_samples x r x c-1
+        )
         self.turnout_adjusted_candidate_names = None  # candidate names with no-vote column omitted
+        self.turnout_adjusted_posterior_mean_voting_prefs = None
+        self.turnout_adjusted_credible_interval_95_mean_voting_prefs = None
         self.turnout_samples = None
 
     def fit(  # pylint: disable=too-many-branches
@@ -348,6 +349,13 @@ class RowByColumnEI:
         )  # num_samples x num_precincts x r x c-1
 
     def calculate_turnout_adjusted_summary(self, abstain_column_name):
+        """
+        Calculates districtwide samples, means, and credible intervals
+        Sets
+            self.turnout_adjusted_voting_prefs
+            self.turnout_adjusted_posterior_mean_voting_prefs
+            self.turnout_adjusted_credible_interval_95_mean_voting_prefs
+        """
         self._calculate_turnout_adjusted_samples(abstain_column_name)
 
         samples_converted_to_pops = (
@@ -359,52 +367,61 @@ class RowByColumnEI:
         )  # (c-1) x num_samples x r
 
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
-        self.turnout_adj_sampled_voting_prefs = np.transpose(
+        self.turnout_adjusted_sampled_voting_prefs = np.transpose(
             samples_of_votes_summed_across_district / self.turnout_samples.sum(axis=1),
-            axes=(2, 1, 0),
+            axes=(1, 2, 0),
         )  # sampled voted prefs across precincts,  num_samples x r x c-1
 
         # # compute point estimates
-        self.turnout_adj_posterior_mean_voting_prefs = self.turnout_adj_sampled_voting_prefs.mean(
-            axis=0
+        self.turnout_adjusted_posterior_mean_voting_prefs = (
+            self.turnout_adjusted_sampled_voting_prefs.mean(axis=0)
         )  # r x (c -1)
 
         # # compute credible intervals
         percentiles = [2.5, 97.5]
-        self.turnout_adj_credible_interval_95_mean_voting_prefs = np.zeros(
+        self.turnout_adjusted_credible_interval_95_mean_voting_prefs = np.zeros(
             (self.num_groups_and_num_candidates[0], self.num_groups_and_num_candidates[1] - 1, 2)
         )
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1] - 1):
-                self.turnout_adj_credible_interval_95_mean_voting_prefs[row][col][
+                self.turnout_adjusted_credible_interval_95_mean_voting_prefs[row][col][
                     :
-                ] = np.percentile(self.turnout_adj_sampled_voting_prefs[:, row, col], percentiles)
+                ] = np.percentile(
+                    self.turnout_adjusted_sampled_voting_prefs[:, row, col], percentiles
+                )
 
     def calculate_summary(self):
-        """Calculate point estimates (post. means) and 95% equal-tailed credible intervals"""
-        # multiply sample proportions by precinct pops to get samples of
+        """Calculate point estimates (post. means) and 95% equal-tailed credible intervals
+
+        Sets
+            self.sampled_voting_prefs
+            self.posterior_mean_voting_prefs
+            self.credible_interval_95_mean_voting_prefs
+        """
+        # multiply sample proportions by precinct pops for each group to get samples of
         # number of voters of the demographic group who voted for the candidate
         # in each precinct
         # self.sim_trace.get_values("b") is num_samples x num_precincts x r x c
-        b_reshaped = np.swapaxes(
-            self.sim_trace.get_values("b"), 1, 2
-        )  # num_samples x r x num_precincts x c
-        b_reshaped = np.swapaxes(b_reshaped, 2, 3)  # num_samples x r x c x num_precincts
+        demographic_group_counts = np.transpose(
+            self.demographic_group_fractions * self.precinct_pops
+        )  # num_precincts x r
         samples_converted_to_pops = (
-            b_reshaped * self.precinct_pops
-        )  # num_samples x r x c num_precincts
+            np.transpose(self.sim_trace.get_values("b"), axes=(3, 0, 1, 2))
+            * demographic_group_counts
+        )
+        # c x num_samples x num_precincts x r
 
-        # obtain samples of total votes summed across all precinct for each candidate and each group
         samples_of_votes_summed_across_district = samples_converted_to_pops.sum(
-            axis=3
-        )  # num_samples x r x c
+            axis=2
+        )  # c x num_samples x r
 
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
-        self.sampled_voting_prefs = (
-            samples_of_votes_summed_across_district / self.precinct_pops.sum()
+        self.sampled_voting_prefs = np.transpose(
+            samples_of_votes_summed_across_district / demographic_group_counts.sum(axis=0),
+            axes=(1, 2, 0),
         )  # sampled voted prefs across precincts,  num_samples x r x c
 
-        # compute point estimates
+        # # compute point estimates
         self.posterior_mean_voting_prefs = self.sampled_voting_prefs.mean(axis=0)  # r x c
 
         # compute credible intervals
@@ -436,7 +453,17 @@ class RowByColumnEI:
         percentile: float (opetional)
             Between 0 and 100. Used to calculate the equal-tailed interval for the margin between
             the two candidates.
+
+        Returns:
+        --------
+            threshold
+            percentile
+            samples
+            group
+            candidates
         """
+        # TODO: document return values
+        # TODO: make turnout-adjusted-version
         candidate_index_0 = self.candidate_names.index(candidates[0])
         candidate_index_1 = self.candidate_names.index(candidates[1])
         group_index = self.demographic_group_names.index(group)
@@ -644,7 +671,16 @@ class RowByColumnEI:
             return percentile
 
     def summary(self, abstain_column_name=None):
-        """Return a summary string for the ei results"""
+        """Return a summary string for the ei results
+
+        Parameters:
+        -----------
+        abstain_column_name: str (optional)
+            A string in self.candidate_names() that correspondes to the name of a "no-vote"
+            or abstain column, if applicable. If passed, the summary will be estimates of
+            support for candidates AMONG those who were estimated to not be in the
+            specified abstain column
+        """
         # TODO: probably format this as a table
         summary_str = """
             Computed from the raw b_ samples by multiplying by population and then
@@ -656,45 +692,59 @@ class RowByColumnEI:
                 raise ValueError(
                     f"abstain_column_name must be in self.candidate_names: {self.candidate_names}"
                 )
-            self._calculate_turnout_adjusted_samples(abstain_column_name)
-            self._calculate_turnout_adjusted_samples
+            self.calculate_turnout_adjusted_summary(abstain_column_name)
             candidate_names_for_summary = self.turnout_adjusted_candidate_names
+            posterior_means = self.turnout_adjusted_posterior_mean_voting_prefs
+            credible_intervals = self.turnout_adjusted_credible_interval_95_mean_voting_prefs
+        else:
+            candidate_names_for_summary = self.candidate_names
+            posterior_means = self.posterior_mean_voting_prefs
+            credible_intervals = self.credible_interval_95_mean_voting_prefs
 
         for row in range(self.num_groups_and_num_candidates[0]):
-            for col in range(self.num_groups_and_num_candidates[1]):
+            for col in range(len(candidate_names_for_summary)):
                 summ = f"""The posterior mean for the district-level voting preference of
-                {self.demographic_group_names[row]} for {self.candidate_names[col]} is
-                {self.posterior_mean_voting_prefs[row][col]:.3f}
-                95% equal-tailed credible interval:  {self.credible_interval_95_mean_voting_prefs[row][col]}
+                {self.demographic_group_names[row]} for {candidate_names_for_summary[col]} is
+                {posterior_means[row][col]:.3f}
+                95% equal-tailed credible interval:  {credible_intervals[row][col]}
                 """
                 summary_str += summ
         return summary_str
 
-    def precinct_level_estimates(self):
+    def precinct_level_estimates(self, abstain_column_name=None):
         """Returns precinct-level posterior means and credible intervals
 
+        Parameters:
+        ----------
+        abstain_column_name: str
+            Optional. If specified, this will give the name of a column to be
+            treated as a no-vote column, and the precinct-level estimates
+            will be computed AMONG those who were estimated to have voted
         Returns:
         --------
             precinct_posterior_means: num_precincts x r x c
             precinct_credible_intervals: num_precincts x r x c x 2
         """
-
-        precinct_level_samples = self.sim_trace.get_values(
-            "b"
-        )  # num_samples x num_precincts x r x c
+        if abstain_column_name is not None:
+            precinct_level_samples = self.turnout_adjusted_samples
+        else:
+            precinct_level_samples = self.sim_trace.get_values(
+                "b"
+            )  # num_samples x num_precincts x r x c
+        _, _, r, c = precinct_level_samples.shape
         precinct_posterior_means = precinct_level_samples.mean(axis=0)
         precinct_credible_intervals = np.ones(
             (
                 len(self.precinct_pops),
-                self.num_groups_and_num_candidates[0],
-                self.num_groups_and_num_candidates[1],
+                r,
+                c,
                 2,
             )
         )
         percentiles = [2.5, 97.5]
 
-        for row in range(self.num_groups_and_num_candidates[0]):
-            for col in range(self.num_groups_and_num_candidates[1]):
+        for row in range(r):
+            for col in range(c):
                 precinct_credible_intervals[:, row, col, :] = np.percentile(
                     precinct_level_samples[:, :, row, col], percentiles, axis=0
                 ).T
@@ -723,6 +773,7 @@ class RowByColumnEI:
             Values are fraction of the samples in which the support of that group for that
             candidate was higher than for any other candidate
         """
+        # TODO: make turnout-adjusted version
 
         candidate_preference_rate_dict = {}
         if non_candidate_names is None:
@@ -779,6 +830,7 @@ class RowByColumnEI:
         by the plurality within that group according to the sampled distric-level support value)
         is different from the `preferred candidate` of the others group
         """
+        # TODO: make turnout adjusted version
         candidate_differ_rate_dict = {}
         if non_candidate_names is None:
             non_candidate_names = []
@@ -805,11 +857,13 @@ class RowByColumnEI:
                 ] = differ_frac
         return candidate_differ_rate_dict
 
-    def plot(self):
+    def plot(self, abstain_column_name=None):
         """Plot with no arguments returns the kde plots, with one plot for each candidate"""
-        return self.plot_kdes(plot_by="candidate", axes=None)
+        return self.plot_kdes(
+            plot_by="candidate", abstain_column_name=abstain_column_name, axes=None
+        )
 
-    def plot_boxplots(self, plot_by="candidate", axes=None):
+    def plot_boxplots(self, plot_by="candidate", abstain_column_name=None, axes=None):
         """Plot boxplots of voting prefs (one boxplot for each candidate)
 
         Parameters:
@@ -821,15 +875,23 @@ class RowByColumnEI:
             Typically subplots within the same figure. Length c if plot_by = 'candidate',
             length r if plot_by = 'group'
         """
+        if abstain_column_name is None:
+            voting_prefs = self.sampled_voting_prefs
+            candidate_names = self.candidate_names
+        else:  # turnout adjusted samples, names without no-vote column
+            self.calculate_turnout_adjusted_summary(abstain_column_name)
+            voting_prefs = self.turnout_adjusted_sampled_voting_prefs
+            candidate_names = self.turnout_adjusted_candidate_names
+
         return plot_boxplots(
-            self.sampled_voting_prefs,
+            voting_prefs,
             self.demographic_group_names,
-            self.candidate_names,
+            candidate_names,
             plot_by=plot_by,
             axes=axes,
         )
 
-    def plot_kdes(self, plot_by="candidate", axes=None):
+    def plot_kdes(self, plot_by="candidate", abstain_column_name=None, axes=None):
         """Kernel density plots of voting preference, plots grouped by candidate or group
 
         Parameters:
@@ -841,10 +903,18 @@ class RowByColumnEI:
             Typically subplots within the same figure. Length c if plot_by = 'candidate',
             length r if plot_by = 'group'
         """
+        if abstain_column_name is None:
+            voting_prefs = self.sampled_voting_prefs
+            candidate_names = self.candidate_names
+        else:  # turnout adjusted samples, names without no-vote column
+            self.calculate_turnout_adjusted_summary(abstain_column_name)
+            voting_prefs = self.turnout_adjusted_sampled_voting_prefs
+            candidate_names = self.turnout_adjusted_candidate_names
+
         return plot_kdes(
-            self.sampled_voting_prefs,
+            voting_prefs,
             self.demographic_group_names,
-            self.candidate_names,
+            candidate_names,
             plot_by=plot_by,
             axes=axes,
         )
