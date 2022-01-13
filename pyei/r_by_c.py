@@ -298,7 +298,7 @@ class RowByColumnEI:
 
             self.calculate_summary()
 
-    def _calculate_turnout_adjusted_samples(self, abstain_column_name):
+    def _calculate_turnout_adjusted_samples(self, non_candidate_names):
         """
         For each sample, calculate the voting support of each group for each candidate
         *as a fraction of all those who voted* (instead of as a fraction of all those
@@ -308,7 +308,7 @@ class RowByColumnEI:
 
         Parameters
         ----------
-        abstain_column_name: str
+        non_candidate_names: str
             name of the column / voting outcome that corresponds to not voting, if applicable.
             Must be in candidate_names
 
@@ -319,25 +319,29 @@ class RowByColumnEI:
             self.turnout_samples
             self.turnout_adjusted_samples
         """
+        # TODO: make it acccept multiple non-candidate names
 
-        if abstain_column_name not in self.candidate_names:
+        if non_candidate_names not in self.candidate_names:
             raise ValueError(
-                f"abstain_column_name must be in candidate_names: {self.candidate_names}"
+                f"non_candidate_names must be in candidate_names: {self.candidate_names}"
             )
         else:
-            abstain_column_index = self.candidate_names.index(abstain_column_name)
+            abstain_column_index = self.candidate_names.index(non_candidate_names)
 
         non_adjusted_samples = self.sim_trace.get_values("b")  # num_samples x num_precincts x r x c
 
         self.turnout_adjusted_candidate_names = [
-            name for name in self.candidate_names if name != abstain_column_name
+            name
+            for name in self.candidate_names
+            if name != non_candidate_names
+            # name for name in self.candidate_names if name not in non_candidate_names
         ]
 
         self.turnout_samples = (
             1
             - non_adjusted_samples[
                 :, :, :, abstain_column_index
-            ]  # fraction that aren't in the no-vote column
+            ]  # fraction that aren't in the no-vote column(s)
         ) * np.swapaxes(self.demographic_group_fractions * self.precinct_pops, 0, 1)
 
         turnout_adjusted_samples = np.delete(
@@ -348,7 +352,7 @@ class RowByColumnEI:
             axis=3, keepdims=True
         )  # num_samples x num_precincts x r x c-1
 
-    def calculate_turnout_adjusted_summary(self, abstain_column_name):
+    def calculate_turnout_adjusted_summary(self, non_candidate_names):
         """
         Calculates districtwide samples, means, and credible intervals
         Sets
@@ -356,7 +360,7 @@ class RowByColumnEI:
             self.turnout_adjusted_posterior_mean_voting_prefs
             self.turnout_adjusted_credible_interval_95_mean_voting_prefs
         """
-        self._calculate_turnout_adjusted_samples(abstain_column_name)
+        self._calculate_turnout_adjusted_samples(non_candidate_names)
 
         samples_converted_to_pops = (
             np.transpose(self.turnout_adjusted_samples, axes=(3, 0, 1, 2)) * self.turnout_samples
@@ -463,7 +467,6 @@ class RowByColumnEI:
             candidates
         """
         # TODO: document return values
-        # TODO: make turnout-adjusted-version
         candidate_index_0 = self.candidate_names.index(candidates[0])
         candidate_index_1 = self.candidate_names.index(candidates[1])
         group_index = self.demographic_group_names.index(group)
@@ -670,12 +673,12 @@ class RowByColumnEI:
                 )
             return percentile
 
-    def summary(self, abstain_column_name=None):
+    def summary(self, non_candidate_names=None):
         """Return a summary string for the ei results
 
         Parameters:
         -----------
-        abstain_column_name: str (optional)
+        non_candidate_names: str (optional)
             A string in self.candidate_names() that correspondes to the name of a "no-vote"
             or abstain column, if applicable. If passed, the summary will be estimates of
             support for candidates AMONG those who were estimated to not be in the
@@ -687,12 +690,12 @@ class RowByColumnEI:
             getting the proportion of the total pop
             (total pop=summed across all districts):
             """
-        if abstain_column_name is not None:
-            if abstain_column_name not in self.candidate_names():
+        if non_candidate_names is not None:
+            if non_candidate_names not in self.candidate_names:
                 raise ValueError(
-                    f"abstain_column_name must be in self.candidate_names: {self.candidate_names}"
+                    f"non_candidate_names must be in self.candidate_names: {self.candidate_names}"
                 )
-            self.calculate_turnout_adjusted_summary(abstain_column_name)
+            self.calculate_turnout_adjusted_summary(non_candidate_names)
             candidate_names_for_summary = self.turnout_adjusted_candidate_names
             posterior_means = self.turnout_adjusted_posterior_mean_voting_prefs
             credible_intervals = self.turnout_adjusted_credible_interval_95_mean_voting_prefs
@@ -711,12 +714,12 @@ class RowByColumnEI:
                 summary_str += summ
         return summary_str
 
-    def precinct_level_estimates(self, abstain_column_name=None):
+    def precinct_level_estimates(self, non_candidate_names=None):
         """Returns precinct-level posterior means and credible intervals
 
         Parameters:
         ----------
-        abstain_column_name: str
+        non_candidate_names: str
             Optional. If specified, this will give the name of a column to be
             treated as a no-vote column, and the precinct-level estimates
             will be computed AMONG those who were estimated to have voted
@@ -725,7 +728,7 @@ class RowByColumnEI:
             precinct_posterior_means: num_precincts x r x c
             precinct_credible_intervals: num_precincts x r x c x 2
         """
-        if abstain_column_name is not None:
+        if non_candidate_names is not None:
             precinct_level_samples = self.turnout_adjusted_samples
         else:
             precinct_level_samples = self.sim_trace.get_values(
@@ -773,7 +776,6 @@ class RowByColumnEI:
             Values are fraction of the samples in which the support of that group for that
             candidate was higher than for any other candidate
         """
-        # TODO: make turnout-adjusted version
 
         candidate_preference_rate_dict = {}
         if non_candidate_names is None:
@@ -857,13 +859,13 @@ class RowByColumnEI:
                 ] = differ_frac
         return candidate_differ_rate_dict
 
-    def plot(self, abstain_column_name=None):
+    def plot(self, non_candidate_names=None):
         """Plot with no arguments returns the kde plots, with one plot for each candidate"""
         return self.plot_kdes(
-            plot_by="candidate", abstain_column_name=abstain_column_name, axes=None
+            plot_by="candidate", non_candidate_names=non_candidate_names, axes=None
         )
 
-    def plot_boxplots(self, plot_by="candidate", abstain_column_name=None, axes=None):
+    def plot_boxplots(self, plot_by="candidate", non_candidate_names=None, axes=None):
         """Plot boxplots of voting prefs (one boxplot for each candidate)
 
         Parameters:
@@ -875,11 +877,11 @@ class RowByColumnEI:
             Typically subplots within the same figure. Length c if plot_by = 'candidate',
             length r if plot_by = 'group'
         """
-        if abstain_column_name is None:
+        if non_candidate_names is None:
             voting_prefs = self.sampled_voting_prefs
             candidate_names = self.candidate_names
         else:  # turnout adjusted samples, names without no-vote column
-            self.calculate_turnout_adjusted_summary(abstain_column_name)
+            self.calculate_turnout_adjusted_summary(non_candidate_names)
             voting_prefs = self.turnout_adjusted_sampled_voting_prefs
             candidate_names = self.turnout_adjusted_candidate_names
 
@@ -891,7 +893,7 @@ class RowByColumnEI:
             axes=axes,
         )
 
-    def plot_kdes(self, plot_by="candidate", abstain_column_name=None, axes=None):
+    def plot_kdes(self, plot_by="candidate", non_candidate_names=None, axes=None):
         """Kernel density plots of voting preference, plots grouped by candidate or group
 
         Parameters:
@@ -903,11 +905,11 @@ class RowByColumnEI:
             Typically subplots within the same figure. Length c if plot_by = 'candidate',
             length r if plot_by = 'group'
         """
-        if abstain_column_name is None:
+        if non_candidate_names is None:
             voting_prefs = self.sampled_voting_prefs
             candidate_names = self.candidate_names
         else:  # turnout adjusted samples, names without no-vote column
-            self.calculate_turnout_adjusted_summary(abstain_column_name)
+            self.calculate_turnout_adjusted_summary(non_candidate_names)
             voting_prefs = self.turnout_adjusted_sampled_voting_prefs
             candidate_names = self.turnout_adjusted_candidate_names
 
