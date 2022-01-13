@@ -62,17 +62,14 @@ def test_ei_calculate_turnout_adjusted_samples(
     def calculate_turnout_adjust_samples_basic(
         non_adjusted_samples, abstain_column_name, candidate_names
     ):
-        # non_adjusted_samples = self.sim_trace.get_values("b")  # num_samples x num_precincts x r x c
-        num_samples, num_precincts, r, c = non_adjusted_samples.shape
+        # non_adjusted_samples = self.sim_trace.get_values("b") num_samples x num_precincts x r x c
+        num_samples, num_precincts, num_rows, _ = non_adjusted_samples.shape
 
         abstain_column_index = candidate_names.index(abstain_column_name)
-        turnout_adjusted_candidate_names = [
-            name for name in candidate_names if name != abstain_column_name
-        ]
 
         turnout_adjusted_samples = np.delete(non_adjusted_samples, abstain_column_index, axis=3)
 
-        for r_idx in range(r):
+        for r_idx in range(num_rows):
             for samp_idx in range(num_samples):
                 for p_idx in range(num_precincts):
                     # for c_idx in range(c-1):
@@ -89,7 +86,7 @@ def test_ei_calculate_turnout_adjusted_samples(
         non_adjusted_samples, "Hardy", example_r_by_c_ei.candidate_names
     )
 
-    example_r_by_c_ei._calculate_turnout_adjusted_samples("Hardy")
+    example_r_by_c_ei.calculate_turnout_adjusted_summary("Hardy")
     turnout_adjusted_samps_pyei = example_r_by_c_ei.turnout_adjusted_samples
     assert np.all(np.isclose(test_adj_samples, turnout_adjusted_samps_pyei))
 
@@ -107,11 +104,11 @@ def test_computation_of_districtwide_samples(
         demographic_group_counts = np.transpose(
             demographic_group_fractions * precinct_pops
         )  # num_precincts x r
-        num_samples, num_precincts, r, c = samples.shape
-        districtwide_prefs = np.empty((num_samples, r, c))
-        for r_idx in range(r):
+        num_samples, _, num_rows, num_cols = samples.shape
+        districtwide_prefs = np.empty((num_samples, num_rows, num_cols))
+        for r_idx in range(num_rows):
             for samp_idx in range(num_samples):
-                for c_idx in range(c):
+                for c_idx in range(num_cols):
                     districtwide_prefs[samp_idx, r_idx, c_idx] = (
                         samples[samp_idx, :, r_idx, c_idx] * demographic_group_counts[:, r_idx]
                     ).sum() / (demographic_group_counts[:, r_idx]).sum()

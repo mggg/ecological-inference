@@ -1,4 +1,7 @@
-import warnings
+"""
+Functions that return pymc models for RowByColumnEI
+"""
+
 import pymc3 as pm
 import theano.tensor as tt
 import numpy as np
