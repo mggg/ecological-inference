@@ -9,7 +9,9 @@ TODO: Refactor to integrate with two_by_two
 """
 
 
+from typing import AsyncIterable
 import warnings
+from numpy.core.fromnumeric import _nonzero_dispatcher
 import pymc3 as pm
 import theano.tensor as tt
 import numpy as np
@@ -169,6 +171,11 @@ class RowByColumnEI:
         self.credible_interval_95_mean_voting_prefs = None
         self.num_groups_and_num_candidates = [None, None]
 
+        self.turnout_adjusted_samples = None  # num_samples x num_precincts x r x (c-1)
+        self.turnout_adjusted_voting_prefs = None  # samps districtwide prefs,num_samples x r x c-1
+        self.turnout_adjusted_candidate_names = None  # candidate names with no-vote column omitted
+        self.turnout_samples = None
+
     def fit(  # pylint: disable=too-many-branches
         self,
         group_fractions,
@@ -289,6 +296,89 @@ class RowByColumnEI:
                 )
 
             self.calculate_summary()
+
+    def _calculate_turnout_adjusted_samples(self, abstain_column_name):
+        """
+        For each sample, calculate the voting support of each group for each candidate
+        *as a fraction of all those who voted* (instead of as a fraction of all those
+        included in the precinct population. This fn is only applicable when one of the
+        c voting outcomes is a no-vote or abstain column. In this case, the total number
+        of voters is unknown but samples from its distribution can be calculated)
+
+        Parameters
+        ----------
+        abstain_column_name: str
+            name of the column / voting outcome that corresponds to not voting, if applicable.
+            Must be in candidate_names
+
+        Notes
+        -----
+        Sets the values of:
+            self.turnout_adjusted_candidate_names
+            self.turnout_samples
+            self.turnout_adjusted_samples
+        """
+
+        if abstain_column_name not in self.candidate_names:
+            raise ValueError(
+                f"abstain_column_name must be in candidate_names: {self.candidate_names}"
+            )
+        else:
+            abstain_column_index = self.candidate_names.index(abstain_column_name)
+
+        non_adjusted_samples = self.sim_trace.get_values("b")  # num_samples x num_precincts x r x c
+
+        self.turnout_adjusted_candidate_names = [
+            name for name in self.candidate_names if name != abstain_column_name
+        ]
+
+        self.turnout_samples = (
+            1
+            - non_adjusted_samples[
+                :, :, :, abstain_column_index
+            ]  # fraction that aren't in the no-vote column
+        ) * np.swapaxes(self.demographic_group_fractions * self.precinct_pops, 0, 1)
+
+        turnout_adjusted_samples = np.delete(
+            non_adjusted_samples, abstain_column_index, axis=3
+        )  # num_samples x num_precincts x r x c-1
+
+        self.turnout_adjusted_samples = turnout_adjusted_samples / turnout_adjusted_samples.sum(
+            axis=3, keepdims=True
+        )  # num_samples x num_precincts x r x c-1
+
+    def calculate_turnout_adjusted_summary(self, abstain_column_name):
+        self._calculate_turnout_adjusted_samples(abstain_column_name)
+
+        samples_converted_to_pops = (
+            np.transpose(self.turnout_adjusted_samples, axes=(3, 0, 1, 2)) * self.turnout_samples
+        )
+        # (c-1) x num_samples x num_precincts x r x
+        samples_of_votes_summed_across_district = samples_converted_to_pops.sum(
+            axis=2
+        )  # (c-1) x num_samples x r
+
+        # obtain samples of the districtwide proportion of each demog. group voting for candidate
+        self.turnout_adj_sampled_voting_prefs = np.transpose(
+            samples_of_votes_summed_across_district / self.turnout_samples.sum(axis=1),
+            axes=(2, 1, 0),
+        )  # sampled voted prefs across precincts,  num_samples x r x c-1
+
+        # # compute point estimates
+        self.turnout_adj_posterior_mean_voting_prefs = self.turnout_adj_sampled_voting_prefs.mean(
+            axis=0
+        )  # r x (c -1)
+
+        # # compute credible intervals
+        percentiles = [2.5, 97.5]
+        self.turnout_adj_credible_interval_95_mean_voting_prefs = np.zeros(
+            (self.num_groups_and_num_candidates[0], self.num_groups_and_num_candidates[1] - 1, 2)
+        )
+        for row in range(self.num_groups_and_num_candidates[0]):
+            for col in range(self.num_groups_and_num_candidates[1] - 1):
+                self.turnout_adj_credible_interval_95_mean_voting_prefs[row][col][
+                    :
+                ] = np.percentile(self.turnout_adj_sampled_voting_prefs[:, row, col], percentiles)
 
     def calculate_summary(self):
         """Calculate point estimates (post. means) and 95% equal-tailed credible intervals"""
@@ -553,7 +643,7 @@ class RowByColumnEI:
                 )
             return percentile
 
-    def summary(self):
+    def summary(self, abstain_column_name=None):
         """Return a summary string for the ei results"""
         # TODO: probably format this as a table
         summary_str = """
@@ -561,6 +651,15 @@ class RowByColumnEI:
             getting the proportion of the total pop
             (total pop=summed across all districts):
             """
+        if abstain_column_name is not None:
+            if abstain_column_name not in self.candidate_names():
+                raise ValueError(
+                    f"abstain_column_name must be in self.candidate_names: {self.candidate_names}"
+                )
+            self._calculate_turnout_adjusted_samples(abstain_column_name)
+            self._calculate_turnout_adjusted_samples
+            candidate_names_for_summary = self.turnout_adjusted_candidate_names
+
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1]):
                 summ = f"""The posterior mean for the district-level voting preference of
