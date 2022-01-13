@@ -56,6 +56,42 @@ def test_ei_r_by_c_summary(two_r_by_c_ei_runs):  # pylint: disable=redefined-out
     assert isinstance(example_r_by_c_ei.summary(), str)
 
 
+def test_ei_calculate_turnout_adjusted_samples(
+    two_r_by_c_ei_runs,
+):  # pylint: disable=redefined-outer-name
+    def calculate_turnout_adjust_samples_basic(
+        non_adjusted_samples, abstain_column_name, candidate_names
+    ):
+        # non_adjusted_samples = self.sim_trace.get_values("b")  # num_samples x num_precincts x r x c
+        num_samples, num_precincts, r, c = non_adjusted_samples.shape
+
+        abstain_column_index = candidate_names.index(abstain_column_name)
+        turnout_adjusted_candidate_names = [
+            name for name in candidate_names if name != abstain_column_name
+        ]
+
+        turnout_adjusted_samples = np.delete(non_adjusted_samples, abstain_column_index, axis=3)
+
+        for r_idx in range(r):
+            for samp_idx in range(num_samples):
+                for p_idx in range(num_precincts):
+                    # for c_idx in range(c-1):
+                    turnout_adjusted_samples[samp_idx, p_idx, r_idx, :] = (
+                        turnout_adjusted_samples[samp_idx, p_idx, r_idx, :]
+                        / turnout_adjusted_samples[samp_idx, p_idx, r_idx, :].sum()
+                    )
+
+        return turnout_adjusted_samples
+
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    non_adjusted_samples = example_r_by_c_ei.sim_trace.get_values("b")
+    test_adj_samples = calculate_turnout_adjust_samples_basic(
+        non_adjusted_samples, "Hardy", example_r_by_c_ei.candidate_names
+    )
+    turnout_adjusted_samps_pyei = example_r_by_c_ei._calculate_turnout_adjusted_samples("Hardy")
+    assert np.all(test_adj_samples == turnout_adjusted_samps_pyei)
+
+
 def test_candidate_of_choice_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
     example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
     candidate_preference_rate_dict = example_r_by_c_ei.candidate_of_choice_report(
