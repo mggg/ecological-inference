@@ -200,9 +200,10 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
 
         Parameters
         ----------
-        non_candidate_names: str
-            name of the column / voting outcome that corresponds to not voting, if applicable.
-            Must be in candidate_names
+        non_candidate_names: list of str
+            each aname of the column / voting outcome that corresponds to not voting,
+            if applicable.
+            Each string in the list must be in candidate_names
 
         Notes
         -----
@@ -212,32 +213,30 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             self.turnout_adjusted_samples
         """
         # TODO: make it acccept multiple non-candidate names
-
-        if non_candidate_names not in self.candidate_names:
-            raise ValueError(
-                f"non_candidate_names must be in candidate_names: {self.candidate_names}"
-            )
-
-        abstain_column_index = self.candidate_names.index(non_candidate_names)
+        abstain_column_indices = []
+        for non_candidate_name in non_candidate_names:
+            if non_candidate_name not in self.candidate_names:
+                raise ValueError(
+                    f"non_candidate_names must be in candidate_names: {self.candidate_names}"
+                )
+            abstain_column_indices.append(self.candidate_names.index(non_candidate_name))
 
         non_adjusted_samples = self.sim_trace.get_values("b")  # num_samples x num_precincts x r x c
 
         self.turnout_adjusted_candidate_names = [
-            name
-            for name in self.candidate_names
-            if name != non_candidate_names
-            # name for name in self.candidate_names if name not in non_candidate_names
+            name for name in self.candidate_names if name not in non_candidate_names
         ]
 
+        total_abstentions = non_adjusted_samples[:, :, :, abstain_column_indices].sum(
+            axis=3
+        )  # total fraction in all vote columnn num_samples x num_precincts x r
+
         self.turnout_samples = (
-            1
-            - non_adjusted_samples[
-                :, :, :, abstain_column_index
-            ]  # fraction that aren't in the no-vote column(s)
+            1 - total_abstentions  # fraction that aren't in the no-vote column(s)
         ) * np.swapaxes(self.demographic_group_fractions * self.precinct_pops, 0, 1)
 
         turnout_adjusted_samples = np.delete(
-            non_adjusted_samples, abstain_column_index, axis=3
+            non_adjusted_samples, abstain_column_indices, axis=3
         )  # num_samples x num_precincts x r x c-1
 
         self.turnout_adjusted_samples = turnout_adjusted_samples / turnout_adjusted_samples.sum(
@@ -570,8 +569,8 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
 
         Parameters:
         -----------
-        non_candidate_names: str (optional)
-            A string in self.candidate_names() that correspondes to the name of a "no-vote"
+        non_candidate_names: list of str (optional)
+            Each a string in self.candidate_names() that correspondes to the name of a "no-vote"
             or abstain column, if applicable. If passed, the summary will be estimates of
             support for candidates AMONG those who were estimated to not be in the
             specified abstain column
@@ -583,10 +582,6 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             (total pop=summed across all districts):
             """
         if non_candidate_names is not None:
-            if non_candidate_names not in self.candidate_names:
-                raise ValueError(
-                    f"non_candidate_names must be in self.candidate_names: {self.candidate_names}"
-                )
             self.calculate_turnout_adjusted_summary(non_candidate_names)
             candidate_names_for_summary = self.turnout_adjusted_candidate_names
             posterior_means = self.turnout_adjusted_posterior_mean_voting_prefs
@@ -611,8 +606,8 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
 
         Parameters:
         ----------
-        non_candidate_names: str
-            Optional. If specified, this will give the name of a column to be
+        non_candidate_names: list of str
+            Optional. If specified, this will give the names of column to be
             treated as a no-vote column, and the precinct-level estimates
             will be computed AMONG those who were estimated to have voted
         Returns:

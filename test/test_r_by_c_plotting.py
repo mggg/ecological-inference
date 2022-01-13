@@ -86,7 +86,7 @@ def test_ei_calculate_turnout_adjusted_samples(
         non_adjusted_samples, "Hardy", example_r_by_c_ei.candidate_names
     )
 
-    example_r_by_c_ei.calculate_turnout_adjusted_summary("Hardy")
+    example_r_by_c_ei.calculate_turnout_adjusted_summary(["Hardy"])
     turnout_adjusted_samps_pyei = example_r_by_c_ei.turnout_adjusted_samples
     assert np.all(np.isclose(test_adj_samples, turnout_adjusted_samps_pyei))
 
