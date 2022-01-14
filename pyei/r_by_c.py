@@ -201,9 +201,8 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         Parameters
         ----------
         non_candidate_names: list of str
-            each aname of the column / voting outcome that corresponds to not voting,
-            if applicable.
-            Each string in the list must be in candidate_names
+            each a name of the column/ voting outcome that corresponds to not voting,
+            if applicable. Each string in the list must be in candidate_names
 
         Notes
         -----
@@ -246,10 +245,17 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
     def calculate_turnout_adjusted_summary(self, non_candidate_names):
         """
         Calculates districtwide samples, means, and credible intervals
-        Sets
-            self.turnout_adjusted_voting_prefs
-            self.turnout_adjusted_posterior_mean_voting_prefs
-            self.turnout_adjusted_credible_interval_95_mean_voting_prefs
+
+        Parameters
+        ----------
+        non_candidate_names: list of str
+            each a name of the column/ voting outcome that corresponds to not voting,
+            if applicable. Each string in the list must be in candidate_names
+
+        Notes
+        -----
+        Sets turnout_adjusted_voting_prefs, turnout_adjusted_posterior_mean_voting_prefs,
+            turnout_adjusted_credible_interval_95_mean_voting_prefs
         """
         self._calculate_turnout_adjusted_samples(non_candidate_names)
 
@@ -608,7 +614,7 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         ----------
         non_candidate_names: list of str
             Optional. If specified, this will give the names of column to be
-            treated as a no-vote column, and the precinct-level estimates
+            treated as no-vote columns, and the precinct-level estimates
             will be computed AMONG those who were estimated to have voted
         Returns:
         --------
@@ -719,7 +725,7 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         by the plurality within that group according to the sampled distric-level support value)
         is different from the `preferred candidate` of the others group
         """
-        # TODO: make turnout adjusted version
+
         candidate_differ_rate_dict = {}
         if non_candidate_names is None:
             non_candidate_names = []
@@ -747,7 +753,13 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         return candidate_differ_rate_dict
 
     def plot(self, non_candidate_names=None):
-        """Plot with no arguments returns the kde plots, with one plot for each candidate"""
+        """Plot with no arguments returns the kde plots, with one plot for each candidate
+
+        Parameters:
+        non_candidate_names: list of str
+            each a name of the column/ voting outcome that corresponds to not voting,
+            if applicable. Each string in the list must be in candidate_names
+        """
         return self.plot_kdes(
             plot_by="candidate", non_candidate_names=non_candidate_names, axes=None
         )
@@ -873,8 +885,8 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         show_threshold: bool
         ax : matplotlib Axis object
 
-        Returns
-        -------
+        Returns:
+        --------ß
         matplotlib axis object
         """
         return_interval = threshold is None
