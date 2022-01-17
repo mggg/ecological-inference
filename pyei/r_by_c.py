@@ -211,7 +211,7 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             self.turnout_samples
             self.turnout_adjusted_samples
         """
-        # TODO: make it acccept multiple non-candidate names
+
         abstain_column_indices = []
         for non_candidate_name in non_candidate_names:
             if non_candidate_name not in self.candidate_names:
@@ -576,7 +576,7 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         Parameters:
         -----------
         non_candidate_names: list of str (optional)
-            Each a string in self.candidate_names() that correspondes to the name of a "no-vote"
+            Each a string in self.candidate_names() that corresponds to the name of a "no-vote"
             or abstain column, if applicable. If passed, the summary will be estimates of
             support for candidates AMONG those who were estimated to not be in the
             specified abstain column
