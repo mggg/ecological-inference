@@ -132,6 +132,20 @@ def plot_single_ridgeplot(
     ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=z_init + 3)
 
 
+def plot_single_histogram(
+    ax,
+    group1_pref,
+    group2_pref,
+    colors,  # pylint: disable=redefined-outer-name
+    z_init,
+    trans,
+    overlap=1.3,
+):
+    # bins = np.linspace(0, 1.0, num=20)
+    ax.hist(group1_pref, bottom=trans, zorder=z_init + 1, color=colors[0])
+    ax.hist(group2_pref, bottom=trans, zorder=z_init + 1, color=colors[1])
+
+
 def plot_precincts(
     voting_prefs_group1,
     voting_prefs_group2,
