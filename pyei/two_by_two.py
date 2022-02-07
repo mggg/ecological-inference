@@ -99,18 +99,18 @@ def truncated_normal_asym(
 
         mu_i = tn_mean_upper * group_fraction + tn_mean_lower * (1 - group_fraction)
         w_i = pm.Deterministic(
-            "w_i", sigma_upper ** 2 * group_fraction + sigma_12 * (1 - group_fraction)
+            "w_i", sigma_upper**2 * group_fraction + sigma_12 * (1 - group_fraction)
         )
         sigma_i_sq = pm.Deterministic(
             "sigma_i_sq",
-            sigma_lower ** 2
-            + 2 * (sigma_12 - sigma_lower ** 2) * group_fraction
-            + (sigma_upper * 2 + sigma_lower ** 2 - 2 * sigma_12) * group_fraction ** 2,
+            sigma_lower**2
+            + 2 * (sigma_12 - sigma_lower**2) * group_fraction
+            + (sigma_upper * 2 + sigma_lower**2 - 2 * sigma_12) * group_fraction**2,
         )
 
-        votes_frac_mean = mu_i + w_i * (upper_b - tn_mean_upper) / (sigma_upper ** 2)
+        votes_frac_mean = mu_i + w_i * (upper_b - tn_mean_upper) / (sigma_upper**2)
         votes_frac_var = pm.Deterministic(
-            "votes_frac_var", sigma_i_sq - w_i ** 2 / (sigma_upper ** 2)
+            "votes_frac_var", sigma_i_sq - w_i**2 / (sigma_upper**2)
         )
 
         votes_frac_l_bound = group_fraction * upper_b
@@ -959,7 +959,9 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             axes=axes,
         )
 
-    def precinct_level_plot(self, ax=None, show_all_precincts=False, precinct_names=None):
+    def precinct_level_plot(
+        self, ax=None, show_all_precincts=False, precinct_names=None, plot_as_histograms=False
+    ):
         """Ridgeplots for precincts
         Optional arguments:
         ax                  :  matplotlib axes object
@@ -968,6 +970,8 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         precinct_names      :  Labels for each precinct (if not supplied, by
                                default we label each precinct with an integer
                                label, 1 to n)
+        plot_as_histograms : bool, optional. Default is false. If true, plot
+                                with histograms instead of kdes
         """
         voting_prefs_group1 = self.sim_trace.get_values("b_1")
         voting_prefs_group2 = self.sim_trace.get_values("b_2")
@@ -983,5 +987,6 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             candidate=self.candidate_name,
             precinct_labels=precinct_names,
             show_all_precincts=show_all_precincts,
+            plot_as_histograms=plot_as_histograms,
             ax=ax,
         )

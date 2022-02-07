@@ -132,6 +132,55 @@ def plot_single_ridgeplot(
     ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=z_init + 3)
 
 
+def plot_single_histogram(
+    ax, group1_pref, group2_pref, colors, z_init, trans  # pylint: disable=redefined-outer-name
+):
+    """Helper function for plot_precincts that plots a single precinct histogram(s)
+       (i.e.,for a single precinct for a given candidate.)
+
+    Parameters
+    ----------
+    ax : matplotlib axis object
+    group1_pref : array
+        The estimates for the support for the candidate among
+        Group 1 (array of floats, expected to be between 0 and 1)
+    group2_pref : array
+        The estimates for the support for the candidate among
+        Group 2 (array of floats, expected to be between 0 and 1)
+    colors : array
+        The (ordered) names of colors to use to fill ridgeplots
+    z_init : float
+        The initial value for the z-order (helps determine
+        how plots get drawn over one another)
+    trans
+        The y-translation for this plot
+    """
+
+    bins = np.linspace(0, 1.0, num=20)
+    weights, bins = np.histogram(group1_pref, bins=bins)
+    weights = weights / weights.max()
+    ax.hist(
+        bins[:-1],
+        bins=bins,
+        weights=weights,
+        bottom=trans,
+        zorder=z_init + 1,
+        color=colors[0],
+        edgecolor="black",
+    )
+    weights, bins = np.histogram(group2_pref, bins=bins)
+    weights = weights / weights.max()
+    ax.hist(
+        bins[:-1],
+        bins=bins,
+        weights=weights,
+        bottom=trans,
+        zorder=z_init + 1,
+        color=colors[1],
+        edgecolor="black",
+    )
+
+
 def plot_precincts(
     voting_prefs_group1,
     voting_prefs_group2,
@@ -139,6 +188,7 @@ def plot_precincts(
     candidate,
     precinct_labels=None,
     show_all_precincts=False,
+    plot_as_histograms=False,
     ax=None,
 ):
     """Ridgeplots of sampled voting preferences for each precinct
@@ -161,6 +211,8 @@ def plot_precincts(
         precincts. If show_all_precincts is True, we plot the ridgeplots
         for all precincts (i.e., one ridgeplot for every column in the
         voting_prefs matrices)
+    plot_as_histograms : bool, optional
+        Default: False If true, plot with histograms instead of kdes
     ax : Matplotlib axis object or None, optional
         Default=None
 
@@ -193,7 +245,10 @@ def plot_precincts(
     for idx, (group1, group2) in enumerate(iterator, 0):
         ax.plot([0], [idx])
         trans = ax.convert_yunits(idx)
-        plot_single_ridgeplot(ax, group1, group2, colors, 4 * (N - idx), trans)
+        if plot_as_histograms:
+            plot_single_histogram(ax, group1, group2, colors, 4 * (N - idx), trans)
+        else:
+            plot_single_ridgeplot(ax, group1, group2, colors, 4 * (N - idx), trans)
     for i in range(legend_space):
         # add `legend_space` number of lines to the top of the plot for legend
         ax.plot([0], [N + i])
