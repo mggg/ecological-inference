@@ -959,7 +959,9 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             axes=axes,
         )
 
-    def precinct_level_plot(self, ax=None, show_all_precincts=False, precinct_names=None):
+    def precinct_level_plot(
+        self, ax=None, show_all_precincts=False, precinct_names=None, plot_as_histograms=False
+    ):
         """Ridgeplots for precincts
         Optional arguments:
         ax                  :  matplotlib axes object
@@ -968,6 +970,8 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         precinct_names      :  Labels for each precinct (if not supplied, by
                                default we label each precinct with an integer
                                label, 1 to n)
+        plot_as_histograms : bool, optional. Default is false. If true, plot
+                                with histograms instead of kdes
         """
         voting_prefs_group1 = self.sim_trace.get_values("b_1")
         voting_prefs_group2 = self.sim_trace.get_values("b_2")
@@ -983,5 +987,6 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             candidate=self.candidate_name,
             precinct_labels=precinct_names,
             show_all_precincts=show_all_precincts,
+            plot_as_histograms=plot_as_histograms,
             ax=ax,
         )
