@@ -99,18 +99,18 @@ def truncated_normal_asym(
 
         mu_i = tn_mean_upper * group_fraction + tn_mean_lower * (1 - group_fraction)
         w_i = pm.Deterministic(
-            "w_i", sigma_upper ** 2 * group_fraction + sigma_12 * (1 - group_fraction)
+            "w_i", sigma_upper**2 * group_fraction + sigma_12 * (1 - group_fraction)
         )
         sigma_i_sq = pm.Deterministic(
             "sigma_i_sq",
-            sigma_lower ** 2
-            + 2 * (sigma_12 - sigma_lower ** 2) * group_fraction
-            + (sigma_upper * 2 + sigma_lower ** 2 - 2 * sigma_12) * group_fraction ** 2,
+            sigma_lower**2
+            + 2 * (sigma_12 - sigma_lower**2) * group_fraction
+            + (sigma_upper * 2 + sigma_lower**2 - 2 * sigma_12) * group_fraction**2,
         )
 
-        votes_frac_mean = mu_i + w_i * (upper_b - tn_mean_upper) / (sigma_upper ** 2)
+        votes_frac_mean = mu_i + w_i * (upper_b - tn_mean_upper) / (sigma_upper**2)
         votes_frac_var = pm.Deterministic(
-            "votes_frac_var", sigma_i_sq - w_i ** 2 / (sigma_upper ** 2)
+            "votes_frac_var", sigma_i_sq - w_i**2 / (sigma_upper**2)
         )
 
         votes_frac_l_bound = group_fraction * upper_b
