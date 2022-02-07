@@ -133,14 +133,29 @@ def plot_single_ridgeplot(
 
 
 def plot_single_histogram(
-    ax,
-    group1_pref,
-    group2_pref,
-    colors,  # pylint: disable=redefined-outer-name
-    z_init,
-    trans,
-    overlap=1.3,
+    ax, group1_pref, group2_pref, colors, z_init, trans  # pylint: disable=redefined-outer-name
 ):
+    """Helper function for plot_precincts that plots a single precinct histogram(s)
+       (i.e.,for a single precinct for a given candidate.)
+
+    Parameters
+    ----------
+    ax : matplotlib axis object
+    group1_pref : array
+        The estimates for the support for the candidate among
+        Group 1 (array of floats, expected to be between 0 and 1)
+    group2_pref : array
+        The estimates for the support for the candidate among
+        Group 2 (array of floats, expected to be between 0 and 1)
+    colors : array
+        The (ordered) names of colors to use to fill ridgeplots
+    z_init : float
+        The initial value for the z-order (helps determine
+        how plots get drawn over one another)
+    trans
+        The y-translation for this plot
+    """
+
     bins = np.linspace(0, 1.0, num=20)
     weights, bins = np.histogram(group1_pref, bins=bins)
     weights = weights / weights.max()
