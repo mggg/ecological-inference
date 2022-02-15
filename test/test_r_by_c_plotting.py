@@ -27,6 +27,25 @@ def example_r_by_c_data():
     }
 
 
+@pytest.fixture(scope="session")
+def example_r_by_c_data_asym():
+    """trimmed santa clara dataset with r not equal to c"""
+    sc_data = data.Datasets.Santa_Clara.to_dataframe()
+    sc_data = sc_data.iloc[:10, :]
+    precinct_pops = np.array(sc_data["total2"])
+    votes_fractions = np.array(sc_data[["pct_for_hardy2", "pct_for_kolstad2", "pct_for_nadeem2"]]).T
+    candidate_names = ["Hardy", "Kolstad", "Nadeem"]
+    group_fractions = np.array(sc_data[["pct_asian_vote", "pct_non_asian_vote"]]).T
+    demographic_group_names = ["asian", "non_asian"]
+    return {
+        "group_fractions": group_fractions,
+        "votes_fractions": votes_fractions,
+        "precinct_pops": precinct_pops,
+        "demographic_group_names": demographic_group_names,
+        "candidate_names": candidate_names,
+    }
+
+
 def example_r_by_c_ei(example_r_by_c_data, model_name):  # pylint: disable=redefined-outer-name
     """Run this to generate an EI instance"""
 
@@ -44,11 +63,14 @@ def example_r_by_c_ei(example_r_by_c_data, model_name):  # pylint: disable=redef
 
 
 @pytest.fixture(scope="session")
-def two_r_by_c_ei_runs(example_r_by_c_data):  # pylint: disable=redefined-outer-name
+def two_r_by_c_ei_runs(
+    example_r_by_c_data, example_r_by_c_data_asym
+):  # pylint: disable=redefined-outer-name
     """use the EI Factory to fix two EI instances for our tests"""
     example_ei_r_by_c_1 = example_r_by_c_ei(example_r_by_c_data, "multinomial-dirichlet")
     example_ei_r_by_c_2 = example_r_by_c_ei(example_r_by_c_data, "multinomial-dirichlet-modified")
-    return [example_ei_r_by_c_1, example_ei_r_by_c_2]
+    example_ei_r_by_c_asym = example_r_by_c_ei(example_r_by_c_data_asym, "multinomial-dirichlet")
+    return [example_ei_r_by_c_1, example_ei_r_by_c_2, example_ei_r_by_c_asym]
 
 
 def test_ei_r_by_c_summary(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
