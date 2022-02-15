@@ -26,6 +26,7 @@ def example_r_by_c_data():
         "candidate_names": candidate_names,
     }
 
+
 @pytest.fixture(scope="session")
 def example_r_by_c_data_asym():
     """trimmed santa clara dataset with r not equal to c"""
