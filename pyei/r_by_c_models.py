@@ -58,8 +58,7 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
             n=precinct_pops,
             p=theta,
             observed=votes_count_obs,
-            shape=(num_precincts, num_rows),
-        )  # num_precincts x r
+        )  # num_precincts x c
     return model
 
 
@@ -115,6 +114,5 @@ def ei_multinom_dirichlet_modified(
             n=precinct_pops,
             p=theta,
             observed=votes_count_obs,
-            shape=(num_precincts, num_rows),
-        )  # num_precincts x r
+        )  # num_precincts x c
     return model
