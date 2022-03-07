@@ -70,8 +70,7 @@ def size_yticklabels(ax):
 
 def plot_single_ridgeplot(
     ax,
-    group1_pref,
-    group2_pref,
+    group_prefs,
     colors,  # pylint: disable=redefined-outer-name
     z_init,
     trans,
@@ -84,12 +83,9 @@ def plot_single_ridgeplot(
     Parameters
     ----------
     ax : matplotlib axis object
-    group1_pref : array
-        The estimates for the support for the candidate among
-        Group 1 (array of floats, expected to be between 0 and 1)
-    group2_pref : array
-        The estimates for the support for the candidate among
-        Group 2 (array of floats, expected to be between 0 and 1)
+    group_prefs: [array]
+        A list where each element is an array of estimates for support
+        for the candidate from a group (array of floats, expected in [0,1])
     colors : array
         The (ordered) names of colors to use to fill ridgeplots
     z_init : float
@@ -105,35 +101,32 @@ def plot_single_ridgeplot(
         use to plot compute the KDE curve
     """
     x = np.linspace(0, 1, num_points)  # 500 points between 0 and 1 on the x-axis
-    group1_kde = st.gaussian_kde(group1_pref)
-    group2_kde = st.gaussian_kde(group2_pref)
+    group_kdes = [st.gaussian_kde(group_pref) for group_pref in group_prefs]
 
-    group1_y = group1_kde(x)
-    group1_y = overlap * group1_y / group1_y.max()
-    group2_y = group2_kde(x)
-    group2_y = overlap * group2_y / group2_y.max()
+    group_ys = []
+    for i in range(len(group_prefs)):
+        group_y = group_kdes[i](x)
+        group_y = overlap * group_y / group_y.max()
+        group_ys.append(group_y)
 
-    ax.fill_between(
-        x,
-        group1_y + trans,
-        trans,
-        color=colors[0],
-        zorder=z_init,
-    )
-    ax.plot(x, group1_y + trans, color="black", linewidth=1, zorder=z_init + 1)
-
-    ax.fill_between(
-        x,
-        group2_y + trans,
-        trans,
-        color=colors[1],
-        zorder=z_init + 2,
-    )
-    ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=z_init + 3)
+    for i, group_y in enumerate(group_ys):
+        ax.fill_between(
+            x,
+            group_y + trans,
+            trans,
+            color=colors[i],
+            zorder=z_init,
+        )
+        ax.plot(x,
+                group_y + trans,
+                color='black',
+                linewidth=1,
+                zorder=z_init + 1 + (2 * i),
+                )
 
 
 def plot_single_histogram(
-    ax, group1_pref, group2_pref, colors, z_init, trans  # pylint: disable=redefined-outer-name
+    ax, group_prefs, colors, z_init, trans  # pylint: disable=redefined-outer-name
 ):
     """Helper function for plot_precincts that plots a single precinct histogram(s)
        (i.e.,for a single precinct for a given candidate.)
@@ -141,12 +134,9 @@ def plot_single_histogram(
     Parameters
     ----------
     ax : matplotlib axis object
-    group1_pref : array
-        The estimates for the support for the candidate among
-        Group 1 (array of floats, expected to be between 0 and 1)
-    group2_pref : array
-        The estimates for the support for the candidate among
-        Group 2 (array of floats, expected to be between 0 and 1)
+    group_prefs: [array]
+        A list where each element is an array of estimates for support
+        for the candidate from a group (array of floats, expected in [0,1])
     colors : array
         The (ordered) names of colors to use to fill ridgeplots
     z_init : float
@@ -157,28 +147,18 @@ def plot_single_histogram(
     """
 
     bins = np.linspace(0, 1.0, num=20)
-    weights, bins = np.histogram(group1_pref, bins=bins)
-    weights = weights / weights.max()
-    ax.hist(
-        bins[:-1],
-        bins=bins,
-        weights=weights,
-        bottom=trans,
-        zorder=z_init + 1,
-        color=colors[0],
-        edgecolor="black",
-    )
-    weights, bins = np.histogram(group2_pref, bins=bins)
-    weights = weights / weights.max()
-    ax.hist(
-        bins[:-1],
-        bins=bins,
-        weights=weights,
-        bottom=trans,
-        zorder=z_init + 1,
-        color=colors[1],
-        edgecolor="black",
-    )
+    for i, group_pref in enumerate(group_prefs):
+        weights, bins = np.histogram(group_pref, bins=bins)
+        weights = weights / weights.max()
+        ax.hist(
+            bins[:-1],
+            bins=bins,
+            weights=weights,
+            bottom=trans,
+            zorder=z_init + 1,
+            color=colors[i],
+            edgecolor="black",
+        )
 
 
 def plot_precincts(
