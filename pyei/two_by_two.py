@@ -981,8 +981,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             voting_prefs_group1 = voting_prefs_group1[:, precinct_idxs]
             voting_prefs_group2 = voting_prefs_group2[:, precinct_idxs]
         return plot_precincts(
-            voting_prefs_group1,
-            voting_prefs_group2,
+            [voting_prefs_group1, voting_prefs_group2],
             group_names=group_names,
             candidate=self.candidate_name,
             precinct_labels=precinct_names,
