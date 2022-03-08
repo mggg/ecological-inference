@@ -72,6 +72,7 @@ def plot_single_ridgeplot(
     ax,
     group_prefs,
     colors,  # pylint: disable=redefined-outer-name
+    alpha,
     z_init,
     trans,
     overlap=1.3,
@@ -115,6 +116,7 @@ def plot_single_ridgeplot(
             group_y + trans,
             trans,
             color=colors[i],
+            alpha=alpha,
             zorder=z_init,
         )
         ax.plot(
@@ -127,7 +129,7 @@ def plot_single_ridgeplot(
 
 
 def plot_single_histogram(
-    ax, group_prefs, colors, z_init, trans  # pylint: disable=redefined-outer-name
+    ax, group_prefs, colors, alpha, z_init, trans  # pylint: disable=redefined-outer-name
 ):
     """Helper function for plot_precincts that plots a single precinct histogram(s)
        (i.e.,for a single precinct for a given candidate.)
@@ -158,6 +160,7 @@ def plot_single_histogram(
             bottom=trans,
             zorder=z_init + 1,
             color=colors[i],
+            alpha=alpha,
             edgecolor="black",
         )
 
@@ -166,6 +169,7 @@ def plot_precincts(
     voting_prefs,
     group_names,
     candidate,
+    alpha=1,
     precinct_labels=None,
     show_all_precincts=False,
     plot_as_histograms=False,
@@ -176,13 +180,15 @@ def plot_precincts(
     Parameters
     ----------
     voting_prefs : list of numpy arrays
-        Each element has shape (# of samples x # pf precincts) representing
+        Each element has shape (# of samples x # of precincts) representing
         the samples of support for the given candidate among a given group
         in each precinct. Each element refers to a different group.
     group_names: list of str
         The demographic group names, for display in the legend
     candidate: str
         The candidate name
+    alpha: float
+        The opacity for the fill color in the kdes/histograms
     precinct_labels : list of str (optional)
         The names for each precinct
     show_all_precincts : bool, optional
@@ -213,7 +219,7 @@ def plot_precincts(
     if precinct_labels is None:
         precinct_labels = range(1, N + 1)
 
-    legend_space = 3
+    legend_space = len(group_names) + 2
     if ax is None:
         # adapt height of plot to the number of precincts
         _, ax = plt.subplots(figsize=(FIGSIZE[0], 0.3 * (N + legend_space)))
@@ -225,9 +231,9 @@ def plot_precincts(
         ax.plot([0], [idx])
         trans = ax.convert_yunits(idx)
         if plot_as_histograms:
-            plot_single_histogram(ax, group_prefs, colors, 4 * (N - idx), trans)
+            plot_single_histogram(ax, group_prefs, colors, alpha, 4 * (N - idx), trans)
         else:
-            plot_single_ridgeplot(ax, group_prefs, colors, 4 * (N - idx), trans)
+            plot_single_ridgeplot(ax, group_prefs, colors, alpha, 4 * (N - idx), trans)
     for i in range(legend_space):
         # add `legend_space` number of lines to the top of the plot for legend
         ax.plot([0], [N + i])
@@ -248,7 +254,7 @@ def plot_precincts(
     ax.set_ylabel("Precinct", fontsize=FONTSIZE)
 
     proxy_handles = [
-        mpatches.Patch(color=colors[i], ec="black", label=group_names[i]) for i in range(2)
+        mpatches.Patch(color=colors[i], alpha=alpha, ec="black", label=group_names[i]) for i in range(len(group_names))
     ]
     ax.legend(handles=proxy_handles, prop={"size": 14}, loc="upper center")
     ax.set_ylim(-1, ax.get_ylim()[1])
