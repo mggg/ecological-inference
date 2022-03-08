@@ -117,12 +117,13 @@ def plot_single_ridgeplot(
             color=colors[i],
             zorder=z_init,
         )
-        ax.plot(x,
-                group_y + trans,
-                color='black',
-                linewidth=1,
-                zorder=z_init + 1 + (2 * i),
-                )
+        ax.plot(
+            x,
+            group_y + trans,
+            color="black",
+            linewidth=1,
+            zorder=z_init + 1 + (2 * i),
+        )
 
 
 def plot_single_histogram(
