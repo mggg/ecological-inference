@@ -962,7 +962,21 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         plot_as_histograms=False,
     ):
         """
-        TODO: Add documentation
+        Optional arguments:
+        candidate           : str
+                                The candidate whose support we're examining
+        groups              : list of str
+                                The groups whose support we're examining
+        alpha               : float
+                                The opacity of the ridgeplots' fill color
+        ax                  :  matplotlib axes object
+        show_all_precincts  :  If True, then it will show all ridge plots
+                               (even if there are more than 50)
+        precinct_names      :  Labels for each precinct (if not supplied, by
+                               default we label each precinct with an integer
+                               label, 1 to n)
+        plot_as_histograms : bool, optional. Default is false. If true, plot
+                                with histograms instead of kdes
         """
         precinct_level_samples = self.sim_trace.get_values(
             "b"
@@ -978,7 +992,7 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             group_names=groups,
             candidate=candidate,
             alpha=alpha,
-            precinct_labels=precinct_names,
+            precinct_labels=precinct_names,  # pylint: disable=duplicate-code
             show_all_precincts=show_all_precincts,
             plot_as_histograms=plot_as_histograms,
             ax=ax,
