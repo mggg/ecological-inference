@@ -952,29 +952,27 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         )
 
     def precinct_level_plot(
-                            self,
-                            candidate,
-                            groups=None,
-                            alpha=1,
-                            ax=None,
-                            show_all_precincts=False,
-                            precinct_names=None,
-                            plot_as_histograms=False
+        self,
+        candidate,
+        groups=None,
+        alpha=1,
+        ax=None,
+        show_all_precincts=False,
+        precinct_names=None,
+        plot_as_histograms=False,
     ):
         """
         TODO: Add documentation
         """
         precinct_level_samples = self.sim_trace.get_values(
             "b"
-        ) # num_samples x num_precincts x r x c
+        )  # num_samples x num_precincts x r x c
         groups = self.demographic_group_names if groups is None else groups
         candidate_idx = self.candidate_names.index(candidate)
         voting_prefs = []
         for group in groups:
             group_idx = self.demographic_group_names.index(group)
-            voting_prefs.append(
-                precinct_level_samples[:,:,group_idx, candidate_idx]
-            )
+            voting_prefs.append(precinct_level_samples[:, :, group_idx, candidate_idx])
         return plot_precincts(
             voting_prefs,
             group_names=groups,
@@ -983,5 +981,5 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             precinct_labels=precinct_names,
             show_all_precincts=show_all_precincts,
             plot_as_histograms=plot_as_histograms,
-            ax=ax
+            ax=ax,
         )

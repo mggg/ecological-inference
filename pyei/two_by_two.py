@@ -960,7 +960,12 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         )
 
     def precinct_level_plot(
-        self, ax=None, alpha=1, show_all_precincts=False, precinct_names=None, plot_as_histograms=False
+        self,
+        ax=None,
+        alpha=1,
+        show_all_precincts=False,
+        precinct_names=None,
+        plot_as_histograms=False,
     ):
         """Ridgeplots for precincts
         Optional arguments:

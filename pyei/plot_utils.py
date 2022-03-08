@@ -254,7 +254,8 @@ def plot_precincts(
     ax.set_ylabel("Precinct", fontsize=FONTSIZE)
 
     proxy_handles = [
-        mpatches.Patch(color=colors[i], alpha=alpha, ec="black", label=group_names[i]) for i in range(len(group_names))
+        mpatches.Patch(color=colors[i], alpha=alpha, ec="black", label=group_names[i])
+        for i in range(len(group_names))
     ]
     ax.legend(handles=proxy_handles, prop={"size": 14}, loc="upper center")
     ax.set_ylim(-1, ax.get_ylim()[1])
