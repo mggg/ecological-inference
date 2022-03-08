@@ -163,8 +163,7 @@ def plot_single_histogram(
 
 
 def plot_precincts(
-    voting_prefs_group1,
-    voting_prefs_group2,
+    voting_prefs,
     group_names,
     candidate,
     precinct_labels=None,
@@ -176,11 +175,10 @@ def plot_precincts(
 
     Parameters
     ----------
-    voting_prefs_group1 : numpy array
-        Shape (# of samples x # of precincts) representing the samples
-        of support for given candidate among group 1 in each precinct
-    voting_prefs_group2 : numpy array
-        Same as voting_prefs_group2, except showing support among group 2
+    voting_prefs : list of numpy arrays
+        Each element has shape (# of samples x # pf precincts) representing
+        the samples of support for the given candidate among a given group
+        in each precinct. Each element refers to a different group.
     group_names: list of str
         The demographic group names, for display in the legend
     candidate: str
@@ -201,15 +199,14 @@ def plot_precincts(
     -------
     ax: Matplotlib axis object
     """
-    N = voting_prefs_group1.shape[1]
+    N = voting_prefs[0].shape[1]
     if N > 50 and not show_all_precincts:
         warnings.warn(
             f"User attempted to plot {N} precinct-level voting preference "
             f"ridgeplots. Automatically restricting to first 50 precincts "
             f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)"
         )
-        voting_prefs_group1 = voting_prefs_group1[:, :50]
-        voting_prefs_group2 = voting_prefs_group2[:, :50]
+        voting_prefs = [prefs[:, :50] for prefs in voting_prefs]
         if precinct_labels is not None:
             precinct_labels = precinct_labels[:50]
         N = 50
@@ -221,15 +218,16 @@ def plot_precincts(
         # adapt height of plot to the number of precincts
         _, ax = plt.subplots(figsize=(FIGSIZE[0], 0.3 * (N + legend_space)))
 
-    iterator = zip(voting_prefs_group1.T, voting_prefs_group2.T)
+    transposed_voting_prefs = [prefs.T for prefs in voting_prefs]
+    iterator = zip(*transposed_voting_prefs)
 
-    for idx, (group1, group2) in enumerate(iterator, 0):
+    for idx, group_prefs in enumerate(iterator, 0):
         ax.plot([0], [idx])
         trans = ax.convert_yunits(idx)
         if plot_as_histograms:
-            plot_single_histogram(ax, group1, group2, colors, 4 * (N - idx), trans)
+            plot_single_histogram(ax, group_prefs, colors, 4 * (N - idx), trans)
         else:
-            plot_single_ridgeplot(ax, group1, group2, colors, 4 * (N - idx), trans)
+            plot_single_ridgeplot(ax, group_prefs, colors, 4 * (N - idx), trans)
     for i in range(legend_space):
         # add `legend_space` number of lines to the top of the plot for legend
         ax.plot([0], [N + i])
