@@ -70,9 +70,9 @@ def size_yticklabels(ax):
 
 def plot_single_ridgeplot(
     ax,
-    group1_pref,
-    group2_pref,
+    group_prefs,
     colors,  # pylint: disable=redefined-outer-name
+    alpha,
     z_init,
     trans,
     overlap=1.3,
@@ -84,12 +84,9 @@ def plot_single_ridgeplot(
     Parameters
     ----------
     ax : matplotlib axis object
-    group1_pref : array
-        The estimates for the support for the candidate among
-        Group 1 (array of floats, expected to be between 0 and 1)
-    group2_pref : array
-        The estimates for the support for the candidate among
-        Group 2 (array of floats, expected to be between 0 and 1)
+    group_prefs: [array]
+        A list where each element is an array of estimates for support
+        for the candidate from a group (array of floats, expected in [0,1])
     colors : array
         The (ordered) names of colors to use to fill ridgeplots
     z_init : float
@@ -105,35 +102,34 @@ def plot_single_ridgeplot(
         use to plot compute the KDE curve
     """
     x = np.linspace(0, 1, num_points)  # 500 points between 0 and 1 on the x-axis
-    group1_kde = st.gaussian_kde(group1_pref)
-    group2_kde = st.gaussian_kde(group2_pref)
+    group_kdes = [st.gaussian_kde(group_pref) for group_pref in group_prefs]
 
-    group1_y = group1_kde(x)
-    group1_y = overlap * group1_y / group1_y.max()
-    group2_y = group2_kde(x)
-    group2_y = overlap * group2_y / group2_y.max()
+    group_ys = []
+    for i in range(len(group_prefs)):
+        group_y = group_kdes[i](x)
+        group_y = overlap * group_y / group_y.max()
+        group_ys.append(group_y)
 
-    ax.fill_between(
-        x,
-        group1_y + trans,
-        trans,
-        color=colors[0],
-        zorder=z_init,
-    )
-    ax.plot(x, group1_y + trans, color="black", linewidth=1, zorder=z_init + 1)
-
-    ax.fill_between(
-        x,
-        group2_y + trans,
-        trans,
-        color=colors[1],
-        zorder=z_init + 2,
-    )
-    ax.plot(x, group2_y + trans, color="black", linewidth=1, zorder=z_init + 3)
+    for i, group_y in enumerate(group_ys):
+        ax.fill_between(
+            x,
+            group_y + trans,
+            trans,
+            color=colors[i],
+            alpha=alpha,
+            zorder=z_init,
+        )
+        ax.plot(
+            x,
+            group_y + trans,
+            color="black",
+            linewidth=1,
+            zorder=z_init + 1 + (2 * i),
+        )
 
 
 def plot_single_histogram(
-    ax, group1_pref, group2_pref, colors, z_init, trans  # pylint: disable=redefined-outer-name
+    ax, group_prefs, colors, alpha, z_init, trans  # pylint: disable=redefined-outer-name
 ):
     """Helper function for plot_precincts that plots a single precinct histogram(s)
        (i.e.,for a single precinct for a given candidate.)
@@ -141,12 +137,9 @@ def plot_single_histogram(
     Parameters
     ----------
     ax : matplotlib axis object
-    group1_pref : array
-        The estimates for the support for the candidate among
-        Group 1 (array of floats, expected to be between 0 and 1)
-    group2_pref : array
-        The estimates for the support for the candidate among
-        Group 2 (array of floats, expected to be between 0 and 1)
+    group_prefs: [array]
+        A list where each element is an array of estimates for support
+        for the candidate from a group (array of floats, expected in [0,1])
     colors : array
         The (ordered) names of colors to use to fill ridgeplots
     z_init : float
@@ -157,35 +150,26 @@ def plot_single_histogram(
     """
 
     bins = np.linspace(0, 1.0, num=20)
-    weights, bins = np.histogram(group1_pref, bins=bins)
-    weights = weights / weights.max()
-    ax.hist(
-        bins[:-1],
-        bins=bins,
-        weights=weights,
-        bottom=trans,
-        zorder=z_init + 1,
-        color=colors[0],
-        edgecolor="black",
-    )
-    weights, bins = np.histogram(group2_pref, bins=bins)
-    weights = weights / weights.max()
-    ax.hist(
-        bins[:-1],
-        bins=bins,
-        weights=weights,
-        bottom=trans,
-        zorder=z_init + 1,
-        color=colors[1],
-        edgecolor="black",
-    )
+    for i, group_pref in enumerate(group_prefs):
+        weights, bins = np.histogram(group_pref, bins=bins)
+        weights = weights / weights.max()
+        ax.hist(
+            bins[:-1],
+            bins=bins,
+            weights=weights,
+            bottom=trans,
+            zorder=z_init + 1,
+            color=colors[i],
+            alpha=alpha,
+            edgecolor="black",
+        )
 
 
 def plot_precincts(
-    voting_prefs_group1,
-    voting_prefs_group2,
+    voting_prefs,
     group_names,
     candidate,
+    alpha=1,
     precinct_labels=None,
     show_all_precincts=False,
     plot_as_histograms=False,
@@ -195,15 +179,16 @@ def plot_precincts(
 
     Parameters
     ----------
-    voting_prefs_group1 : numpy array
-        Shape (# of samples x # of precincts) representing the samples
-        of support for given candidate among group 1 in each precinct
-    voting_prefs_group2 : numpy array
-        Same as voting_prefs_group2, except showing support among group 2
+    voting_prefs : list of numpy arrays
+        Each element has shape (# of samples x # of precincts) representing
+        the samples of support for the given candidate among a given group
+        in each precinct. Each element refers to a different group.
     group_names: list of str
         The demographic group names, for display in the legend
     candidate: str
         The candidate name
+    alpha: float
+        The opacity for the fill color in the kdes/histograms
     precinct_labels : list of str (optional)
         The names for each precinct
     show_all_precincts : bool, optional
@@ -220,35 +205,35 @@ def plot_precincts(
     -------
     ax: Matplotlib axis object
     """
-    N = voting_prefs_group1.shape[1]
+    N = voting_prefs[0].shape[1]
     if N > 50 and not show_all_precincts:
         warnings.warn(
             f"User attempted to plot {N} precinct-level voting preference "
             f"ridgeplots. Automatically restricting to first 50 precincts "
             f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)"
         )
-        voting_prefs_group1 = voting_prefs_group1[:, :50]
-        voting_prefs_group2 = voting_prefs_group2[:, :50]
+        voting_prefs = [prefs[:, :50] for prefs in voting_prefs]
         if precinct_labels is not None:
             precinct_labels = precinct_labels[:50]
         N = 50
     if precinct_labels is None:
         precinct_labels = range(1, N + 1)
 
-    legend_space = 3
+    legend_space = len(group_names) + 2
     if ax is None:
         # adapt height of plot to the number of precincts
         _, ax = plt.subplots(figsize=(FIGSIZE[0], 0.3 * (N + legend_space)))
 
-    iterator = zip(voting_prefs_group1.T, voting_prefs_group2.T)
+    transposed_voting_prefs = [prefs.T for prefs in voting_prefs]
+    iterator = zip(*transposed_voting_prefs)
 
-    for idx, (group1, group2) in enumerate(iterator, 0):
+    for idx, group_prefs in enumerate(iterator, 0):
         ax.plot([0], [idx])
         trans = ax.convert_yunits(idx)
         if plot_as_histograms:
-            plot_single_histogram(ax, group1, group2, colors, 4 * (N - idx), trans)
+            plot_single_histogram(ax, group_prefs, colors, alpha, 4 * (N - idx), trans)
         else:
-            plot_single_ridgeplot(ax, group1, group2, colors, 4 * (N - idx), trans)
+            plot_single_ridgeplot(ax, group_prefs, colors, alpha, 4 * (N - idx), trans)
     for i in range(legend_space):
         # add `legend_space` number of lines to the top of the plot for legend
         ax.plot([0], [N + i])
@@ -269,7 +254,8 @@ def plot_precincts(
     ax.set_ylabel("Precinct", fontsize=FONTSIZE)
 
     proxy_handles = [
-        mpatches.Patch(color=colors[i], ec="black", label=group_names[i]) for i in range(2)
+        mpatches.Patch(color=colors[i], alpha=alpha, ec="black", label=group_names[i])
+        for i in range(len(group_names))
     ]
     ax.legend(handles=proxy_handles, prop={"size": 14}, loc="upper center")
     ax.set_ylim(-1, ax.get_ylim()[1])

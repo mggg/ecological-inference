@@ -960,13 +960,21 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         )
 
     def precinct_level_plot(
-        self, ax=None, show_all_precincts=False, precinct_names=None, plot_as_histograms=False
+        self,
+        ax=None,
+        alpha=1,
+        show_all_precincts=False,
+        precinct_names=None,
+        plot_as_histograms=False,
     ):
         """Ridgeplots for precincts
         Optional arguments:
         ax                  :  matplotlib axes object
         show_all_precincts  :  If True, then it will show all ridge plots
                                (even if there are more than 50)
+        alpha               : float
+                                The opacity for the fill color in the
+                                kdes / histograms
         precinct_names      :  Labels for each precinct (if not supplied, by
                                default we label each precinct with an integer
                                label, 1 to n)
@@ -981,10 +989,10 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             voting_prefs_group1 = voting_prefs_group1[:, precinct_idxs]
             voting_prefs_group2 = voting_prefs_group2[:, precinct_idxs]
         return plot_precincts(
-            voting_prefs_group1,
-            voting_prefs_group2,
+            [voting_prefs_group1, voting_prefs_group2],
             group_names=group_names,
             candidate=self.candidate_name,
+            alpha=alpha,
             precinct_labels=precinct_names,
             show_all_precincts=show_all_precincts,
             plot_as_histograms=plot_as_histograms,

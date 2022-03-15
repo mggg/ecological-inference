@@ -17,6 +17,7 @@ from .plot_utils import (
     plot_intervals_all_precincts,
     plot_polarization_kde,
     plot_margin_kde,
+    plot_precincts,
 )
 from .r_by_c_models import ei_multinom_dirichlet, ei_multinom_dirichlet_modified
 from .r_by_c_utils import check_dimensions_of_input
@@ -948,4 +949,51 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             group_name,  # TODO: _group_names_for_display?
             ax=None,
             show_all_precincts=False,
+        )
+
+    def precinct_level_plot(
+        self,
+        candidate,
+        groups=None,
+        alpha=1,
+        ax=None,
+        show_all_precincts=False,
+        precinct_names=None,
+        plot_as_histograms=False,
+    ):
+        """
+        Optional arguments:
+        candidate           : str
+                                The candidate whose support we're examining
+        groups              : list of str
+                                The groups whose support we're examining
+        alpha               : float
+                                The opacity of the ridgeplots' fill color
+        ax                  :  matplotlib axes object
+        show_all_precincts  :  If True, then it will show all ridge plots
+                               (even if there are more than 50)
+        precinct_names      :  Labels for each precinct (if not supplied, by
+                               default we label each precinct with an integer
+                               label, 1 to n)
+        plot_as_histograms : bool, optional. Default is false. If true, plot
+                                with histograms instead of kdes
+        """
+        precinct_level_samples = self.sim_trace.get_values(
+            "b"
+        )  # num_samples x num_precincts x r x c
+        groups = self.demographic_group_names if groups is None else groups
+        candidate_idx = self.candidate_names.index(candidate)
+        voting_prefs = []
+        for group in groups:
+            group_idx = self.demographic_group_names.index(group)
+            voting_prefs.append(precinct_level_samples[:, :, group_idx, candidate_idx])
+        return plot_precincts(
+            voting_prefs,
+            group_names=groups,
+            candidate=candidate,
+            alpha=alpha,
+            precinct_labels=precinct_names,  # pylint: disable=duplicate-code
+            show_all_precincts=show_all_precincts,
+            plot_as_histograms=plot_as_histograms,
+            ax=ax,
         )
