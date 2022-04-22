@@ -11,7 +11,6 @@ TODO: Refactor to integrate with two_by_two
 import warnings
 import pymc3 as pm
 import numpy as np
-from copy import copy
 from .plot_utils import (
     plot_boxplots,
     plot_kdes,
