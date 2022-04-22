@@ -675,7 +675,7 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         if non_candidate_names is None:
             non_candidate_names = []
         non_cand_idxs = [self.candidate_names.index(n) for n in non_candidate_names]
-        cand_names = list(set(self.candidate_names) - set(non_candidate_names))
+        cand_names = [c for c in self.candidate_names if c not in non_candidate_names]
         sampled_voting_prefs = np.delete(self.sampled_voting_prefs, non_cand_idxs, axis=2)
 
         for row in range(self.num_groups_and_num_candidates[0]):
