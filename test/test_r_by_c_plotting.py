@@ -103,7 +103,10 @@ def test_ei_calculate_turnout_adjusted_samples(
         return turnout_adjusted_samples
 
     example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
-    non_adjusted_samples = example_r_by_c_ei.sim_trace.get_values("b")
+    non_adjusted_samples = np.transpose(
+        example_r_by_c_ei.sim_trace["posterior"]["b"].stack(all_draws=["chain", "draw"]).values,
+        axes=(3, 0, 1, 2),
+    )
     test_adj_samples = calculate_turnout_adjust_samples_basic(
         non_adjusted_samples, "Hardy", example_r_by_c_ei.candidate_names
     )
@@ -137,7 +140,12 @@ def test_computation_of_districtwide_samples(
         return districtwide_prefs
 
     test_districtwide_prefs = calculate_districtwide_samples_basic(
-        ei_ex.sim_trace.get_values("b"), ei_ex.demographic_group_fractions, ei_ex.precinct_pops
+        np.transpose(
+            ei_ex.sim_trace["posterior"]["b"].stack(all_draws=["chain", "draw"]).values,
+            axes=(3, 0, 1, 2),
+        ),
+        ei_ex.demographic_group_fractions,
+        ei_ex.precinct_pops,
     )
     np.all(np.isclose(test_districtwide_prefs, ei_ex.sampled_voting_prefs))
 
