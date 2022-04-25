@@ -201,12 +201,14 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
     def calculate_sampled_voting_prefs(self):
         """Sets sampled_voting_prefs"""
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
-        self.sampled_voting_prefs[0] = self.sim_trace.get_values(
-            "b_1"
-        )  # sampled voted prefs across precincts
-        self.sampled_voting_prefs[1] = self.sim_trace.get_values(
-            "b_2"
-        )  # sampled voted prefs across precincts
+        self.sampled_voting_prefs[0] = (
+            self.sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
+        )
+        # sampled voted prefs across precincts
+        self.sampled_voting_prefs[1] = (
+            self.sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
+        )
+        # sampled voted prefs across precincts
 
     def compute_credible_int_for_line(self, x_vals=np.linspace(0, 1, 100)):
         """Computes regression line (mean) and 95% central credible interval for
