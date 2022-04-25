@@ -1,4 +1,4 @@
-pymc==
+pymc=="4.0.0b5"
 arviz
 scikit-learn
 matplotlib
