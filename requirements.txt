@@ -1,4 +1,4 @@
-pymc
+pymc==
 arviz
 scikit-learn
 matplotlib
