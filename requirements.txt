@@ -1,8 +1,8 @@
-pymc3>=3.9.3
+pymc
 arviz
 scikit-learn
 matplotlib
 pandas
 seaborn
 graphviz
-numpy<1.22.0
+numpy

@@ -355,16 +355,14 @@ def wakefield_model_beta(
 
         pm.DensityDist(
             "votes_count_obs",
+            b_1,
+            b_2,
+            group_count_obs,
+            precinct_pops - group_count_obs,
+            upper,
+            lower,
+            vote_count_obs,
             logp=binom_conv_log_p,
-            observed={
-                "b_1": b_1,
-                "b_2": b_2,
-                "n_0": group_count_obs,
-                "n_1": precinct_pops - group_count_obs,
-                "upper": upper,
-                "lower": lower,
-                "obs_votes": vote_count_obs,
-            },
         )
     return model
 
@@ -417,16 +415,14 @@ def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0
 
         pm.DensityDist(
             "votes_count_obs",
+            b_1,
+            b_2,
+            group_count_obs,  # n_0
+            precinct_pops - group_count_obs,  # n_1
+            upper,
+            lower,
+            vote_count_obs,  # obs_votes
             logp=binom_conv_log_p,
-            observed={
-                "b_1": b_1,
-                "b_2": b_2,
-                "n_0": group_count_obs,
-                "n_1": precinct_pops - group_count_obs,
-                "upper": upper,
-                "lower": lower,
-                "obs_votes": vote_count_obs,
-            },
         )
     return model
 
