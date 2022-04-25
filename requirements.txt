@@ -7,3 +7,5 @@ seaborn
 graphviz
 numpy
 jax
+numpyro
+jaxlib
