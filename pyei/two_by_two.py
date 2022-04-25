@@ -259,7 +259,7 @@ def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, 
     # given group for given candidate within precinct i (unobserved)
     votes_within_group_count = at.arange(lower, upper)
     component_for_current_precinct = pm.math.logsumexp(
-        #The `rv.logp(x)` method was removed. Instead use `pm.logp(rv, x)`.`
+        # The `rv.logp(x)` method was removed. Instead use `pm.logp(rv, x)`.`
         pm.logp(pm.Binomial.dist(n0_curr, b_1_curr), votes_within_group_count)
         + pm.logp(pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count)
     )
