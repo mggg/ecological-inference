@@ -5,7 +5,7 @@ Goodman's ecological regression
 from matplotlib import pyplot as plt
 import numpy as np
 import seaborn as sns
-import pymc3 as pm
+import pymc as pm
 from sklearn.linear_model import LinearRegression
 
 from .two_by_two import TwoByTwoEIBaseBayes

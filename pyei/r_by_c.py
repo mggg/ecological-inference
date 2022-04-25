@@ -8,8 +8,9 @@ TODO: Greiner-Quinn Model
 TODO: Refactor to integrate with two_by_two
 """
 
+
 import warnings
-import pymc3 as pm
+from pymc import sampling_jax
 import numpy as np
 from .plot_utils import (
     plot_boxplots,
@@ -185,7 +186,7 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
 
         if draw_samples:
             with self.sim_model:  # pylint: disable=not-context-manager
-                self.sim_trace = pm.sample(
+                self.sim_trace = sampling_jax.sample_numpyro_nuts(
                     target_accept=target_accept, tune=tune, **other_sampling_args
                 )
 
@@ -221,7 +222,10 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
                 )
             abstain_column_indices.append(self.candidate_names.index(non_candidate_name))
 
-        non_adjusted_samples = self.sim_trace.get_values("b")  # num_samples x num_precincts x r x c
+        non_adjusted_samples = np.transpose(
+            self.sim_trace["posterior"]["b"].stack(all_draws=["chain", "draw"]).values,
+            axes=(3, 0, 1, 2),
+        )  # num_samples x num_precincts x r x c  # num_samples x num_precincts x r x c
 
         self.turnout_adjusted_candidate_names = [
             name for name in self.candidate_names if name not in non_candidate_names
@@ -303,13 +307,18 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         # multiply sample proportions by precinct pops for each group to get samples of
         # number of voters of the demographic group who voted for the candidate
         # in each precinct
-        # self.sim_trace.get_values("b") is num_samples x num_precincts x r x c
+        # This next messy line created to extract/reshape the InferenceData object to
+        # match what was previously returned by self.sim_trace.get_values("b")
+        # (needs to flatten out the chains dimension)
+        b_values = np.transpose(
+            self.sim_trace["posterior"]["b"].stack(all_draws=["chain", "draw"]).values,
+            axes=(3, 0, 1, 2),
+        )  # num_samples x num_precincts x r x c
         demographic_group_counts = np.transpose(
             self.demographic_group_fractions * self.precinct_pops
         )  # num_precincts x r
         samples_converted_to_pops = (
-            np.transpose(self.sim_trace.get_values("b"), axes=(3, 0, 1, 2))
-            * demographic_group_counts
+            np.transpose(b_values, axes=(3, 0, 1, 2)) * demographic_group_counts
         )
         # c x num_samples x num_precincts x r
 
@@ -625,9 +634,10 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         if non_candidate_names is not None:
             precinct_level_samples = self.turnout_adjusted_samples
         else:
-            precinct_level_samples = self.sim_trace.get_values(
-                "b"
-            )  # num_samples x num_precincts x r x c
+            precinct_level_samples = np.transpose(
+                self.sim_trace["posterior"]["b"].stack(all_draws=["chain", "draw"]).values,
+                axes=(3, 0, 1, 2),
+            )  # num_samples x num_precincts x r x c # num_samples x num_precincts x r x c
         _, _, r, c = precinct_level_samples.shape
         precinct_posterior_means = precinct_level_samples.mean(axis=0)
         precinct_credible_intervals = np.ones(
@@ -978,9 +988,10 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         plot_as_histograms : bool, optional. Default is false. If true, plot
                                 with histograms instead of kdes
         """
-        precinct_level_samples = self.sim_trace.get_values(
-            "b"
-        )  # num_samples x num_precincts x r x c
+        precinct_level_samples = np.transpose(
+            self.sim_trace["posterior"]["b"].stack(all_draws=["chain", "draw"]).values,
+            axes=(3, 0, 1, 2),
+        )  # num_samples x num_precincts x r x c  # num_samples x num_precincts x r x c
         groups = self.demographic_group_names if groups is None else groups
         candidate_idx = self.candidate_names.index(candidate)
         voting_prefs = []

@@ -2,8 +2,8 @@
 Functions that return pymc models for RowByColumnEI
 """
 
-import pymc3 as pm
-import theano.tensor as tt
+import pymc as pm
+import aesara.tensor as tt
 import numpy as np
 
 __all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet"]
