@@ -77,10 +77,10 @@ def truncated_normal_asym(
 
     with pm.Model() as model:
         sigma_upper = pm.HalfNormal(
-            upper_level_sigma_name, sd=0.707
+            upper_level_sigma_name, sigma=0.707
         )  # chosen to match King 97 #sigma11
         sigma_lower = pm.HalfNormal(
-            lower_level_sigma_name, sd=0.707
+            lower_level_sigma_name, sigma=0.707
         )  # chosen to match king 97 #sigma22
         rho = pm.Uniform("rho", -0.5, 0.5)  # TODO: revisit
         sigma_12 = sigma_upper * sigma_lower * rho
@@ -835,21 +835,23 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         )
 
         if draw_samples:
-            # TODO: this workaround shouldn't be necessary. Modify the model so that the checks
-            # can run without error
-            # if self.model_name in ("wakefield_beta", "wakefield_normal"):
-            #     compute_convergence_checks = False
-            #     print("WARNING: some convergence checks currently disabled for wakefield model")
-            # else:
-            #     compute_convergence_checks = True
-
             with self.sim_model:
-                self.sim_trace = sampling_jax.sample_numpyro_nuts(
-                    target_accept=target_accept,
-                    tune=tune,
-                    # compute_convergence_checks=compute_convergence_checks,
-                    **other_sampling_args,
-                )
+                # this "if" is a workaround until jax.scipy.special.erfcx is
+                # implemented https://github.com/google/jax/issues/1987
+                # (when that's implemented, trunc-normal can use jax sampling
+                # as well) @TODO: check on this in a little while
+                if self.model_name == "truncated_normal":
+                    self.sim_trace = pm.sample(
+                        target_accept=target_accept,
+                        tune=tune,
+                        **other_sampling_args,
+                    )
+                else:
+                    self.sim_trace = sampling_jax.sample_numpyro_nuts(
+                        target_accept=target_accept,
+                        tune=tune,
+                        **other_sampling_args,
+                    )
 
             self.calculate_sampled_voting_prefs()
             super().calculate_summary()
