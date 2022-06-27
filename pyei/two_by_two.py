@@ -362,7 +362,7 @@ def wakefield_model_beta(
             precinct_pops - group_count_obs,
             upper,
             lower,
-            vote_count_obs,
+            observed=vote_count_obs,
             logp=binom_conv_log_p,
         )
     return model
@@ -422,7 +422,7 @@ def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0
             precinct_pops - group_count_obs,  # n_1
             upper,
             lower,
-            vote_count_obs,  # obs_votes
+            observed=vote_count_obs,  # obs_votes
             logp=binom_conv_log_p,
         )
     return model
@@ -840,7 +840,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
                 # implemented https://github.com/google/jax/issues/1987
                 # (when that's implemented, trunc-normal can use jax sampling
                 # as well) @TODO: check on this in a little while
-                if self.model_name == "truncated_normal":
+                if self.model_name in ["truncated_normal", "wakefield_normal", "wakefield_beta"]:
                     self.sim_trace = pm.sample(
                         target_accept=target_accept,
                         tune=tune,
