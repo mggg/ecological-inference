@@ -1,15 +1,24 @@
+"""
+Functionality for Gibbs sampler to generate posterior samples
+from model from James Greiner, D. and Quinn, K.M., 2009.
+R× C ecological inference: bounds, correlations, flexibility
+and transparency of assumptions. Journal of the Royal Statistical
+Society: Series A (Statistics in Society), 172(1), pp.67-81.
+"""
+
 import scipy.stats as st
 import numpy as np
+from pyei.distribution_utils import NonCentralHyperGeometric
 
 
-def greiner_quinn_gibbs_sample(
-    group_counts, votes_counts, num_samples, nu_0, psi_0, K_0_inv, mu_0, gamma=1
+def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
+    group_counts, vote_counts, num_samples, nu_0, psi_0, k_0_inv, mu_0, gamma=0.1
 ):
     """
     group_counts: ndarray
         num_precincts x r gives number of people for each of r groups
         in num_precincts precincts
-    vote_counts: nudarray
+    vote_counts: ndarray
         num_precincts x c gives number of votes for each of c candidates
         in num_precincts precincts
     num_samples: int
@@ -19,15 +28,15 @@ def greiner_quinn_gibbs_sample(
         roughly interpretable as number of pseudodistricts for prior
     psi_0: ndarray
         hyperparameter (scale) - square matrix r * (c - 1) x r * (c - 1)
-    K_0_inv:
+    k_0_inv:
         hyperparameter - square matrix r * (c - 1) x r * (c - 1)
         Precision for prior distribution over mu, the mean of the distribution of omega
-        mu | mu_0, K_0 ~ N(mu_0, K_0) = N(mu_0, K_0_inv^{-1})
+        mu | mu_0, k_0 ~ N(mu_0, k_0) = N(mu_0, k_0_inv^{-1})
         omega | mu, Sigma ~ N(mu, Sigma)
     mu_0: ndarray
         vector of length r * (c - 1)
         Governs prior distribution over mu, the mean of the distribution of omega
-        mu | mu_0, K_0 ~ N(mu_0, K_0)
+        mu | mu_0, k_0 ~ N(mu_0, k_0)
         omega | mu, Sigma ~ N(mu, Sigma)
     num_precincts: int
         The number of precincts
@@ -42,7 +51,7 @@ def greiner_quinn_gibbs_sample(
     # TODO: add burn-in
     # TODO: set default values of parameters
     # TODO: validate parameters
-    # TODO: how should gamma be set in initial runs?
+    # TODO: gamma set in initial runs?
 
     num_precincts = group_counts.shape[0]
     if np.all(num_precincts != vote_counts.shape[0]):
@@ -51,14 +60,14 @@ def greiner_quinn_gibbs_sample(
         )
 
     precinct_pops = vote_counts.sum(axis=1)
-    num_precincts, num_candidates = vote_counts.shape
+    _, num_candidates = vote_counts.shape
     _, num_groups = group_counts.shape
 
     # set initial values
     mu_samp = mu_0
     Sigma_samp = st.invwishart.rvs(df=nu_0, scale=psi_0)
-    # omega_samp = proposal_dist_generate_sample(mu_samp, Sigma_samp, gamma, num_precincts, deg_freedom=4)
     omega_samp = np.zeros((num_precincts, num_groups * (num_candidates - 1)))
+    print(num_groups, num_candidates)
     theta_samp = omega_to_theta(omega_samp, num_groups, num_candidates)
     internal_cell_counts_samp = get_initial_internal_count_sample(
         group_counts, vote_counts, precinct_pops
@@ -74,7 +83,7 @@ def greiner_quinn_gibbs_sample(
     for i in range(num_samples):
         # (a) sample internal cell counts
         internal_cell_counts_samp = sample_internal_cell_counts(
-            group_counts, votes_counts, theta_samp, internal_cell_counts_samp
+            theta_samp, internal_cell_counts_samp
         )
         internal_cell_counts_samples[i, :, :, :] = internal_cell_counts_samp
 
@@ -88,7 +97,7 @@ def greiner_quinn_gibbs_sample(
         omega_samp = omega_samp.reshape((num_precincts, num_groups * (num_candidates - 1)))
 
         # (c) sample mu and sigma given omega (or, equivalently, given theta)
-        mu_samp = sample_mu(omega_samp, Sigma_samp, K_0_inv, mu_0, num_precincts)
+        mu_samp = sample_mu(omega_samp, Sigma_samp, k_0_inv, mu_0, num_precincts)
         mu_samples[i, :] = mu_samp
         Sigma_samp = sample_Sigma(omega_samp, mu_samp, nu_0, psi_0)
 
@@ -97,17 +106,21 @@ def greiner_quinn_gibbs_sample(
 
 def sample_Sigma(omega, mu, nu_0, psi_0):
     """
-    Parameters
-    ----------
-    omega: num_precints x (r * (c - 1))
-    mu: vector of length r * (c - 1)
-
-    nu_0: hyperparameter (df) - scalar
-    psi_0: hyperparameter (scale) - square matrix r * (c - 1) x r * (c - 1)
+    Parameters:
+    -----------
+    omega: ndarray
+        num_precints x (r * (c - 1))
+    mu: array
+        vector of length r * (c - 1)
+    nu_0: float
+        hyperparameter (deg of freedom) - scalar
+    psi_0: n
+        darray:hyperparameter (scale)
+        square matrix r * (c - 1) x r * (c - 1)
 
     Returns:
     --------
-    Sigma
+    Sigma: ndarray
         square matrix r * (c - 1) x r * (c - 1)
     """
     num_precincts = omega.shape[0]
@@ -118,11 +131,11 @@ def sample_Sigma(omega, mu, nu_0, psi_0):
     return Sigma
 
 
-def sample_mu(omega, Sigma, K_0_inv, mu_0, num_precincts):
+def sample_mu(omega, Sigma, k_0_inv, mu_0, num_precincts):
     """
     omega: num_precints x (r * (c - 1))
     Sigma: square matrix r * (c - 1) x r * (c - 1)
-    K_0_inv is hyperparameter - square matrix r * (c - 1) x r * (c - 1)
+    k_0_inv is hyperparameter - square matrix r * (c - 1) x r * (c - 1)
     mu_0 is hyperparameter - vector of length r * (c - 1)
     num_precincts: int
         The number of precincts
@@ -133,10 +146,10 @@ def sample_mu(omega, Sigma, K_0_inv, mu_0, num_precincts):
 
     Sigma_inv = np.linalg.inv(Sigma)
     mean_omega = np.mean(omega, axis=0)
-    mu_n = (np.linalg.inv(K_0_inv + num_precincts * Sigma_inv)) @ (
-        K_0_inv @ mu_0.T + num_precincts * Sigma_inv @ mean_omega
+    mu_n = (np.linalg.inv(k_0_inv + num_precincts * Sigma_inv)) @ (
+        k_0_inv @ mu_0.T + num_precincts * Sigma_inv @ mean_omega
     )
-    Sigma_n_inv = K_0_inv + num_precincts * Sigma_inv
+    Sigma_n_inv = k_0_inv + num_precincts * Sigma_inv
     mu = st.multivariate_normal.rvs(mean=mu_n, cov=np.linalg.inv(Sigma_n_inv))
 
     return mu
@@ -150,7 +163,7 @@ def proposal_dist_generate_sample(mu_samp, Sigma_samp, gamma, num_precincts, deg
 
     Returns:
     --------
-    omega_proposed: num_precincts * (r * (c-1)
+    omega_proposed:n num_precincts * (r * (c-1)
     """
     omega_proposed = st.multivariate_t.rvs(
         mu_samp, gamma * Sigma_samp, df=deg_freedom, size=num_precincts
@@ -158,25 +171,24 @@ def proposal_dist_generate_sample(mu_samp, Sigma_samp, gamma, num_precincts, deg
     return omega_proposed
 
 
-def log_unnormalized_pdf(theta, omega, internal_cell_counts_samp, mu_samp, Sigma_samp, tol=0.001):
+def log_unnormalized_pdf(theta, omega, internal_cell_counts_samp, mu_samp, Sigma_samp, tol=0.01):
     """pdf proportional t to the product of lines (4)-(6) and (10) and (11) in G&Q
     0 if thetas don't sum to 1 across rows
 
     tol: float
-        how far can the sum of theta b e from 1
-    theta: num_precints x r x c]]
+        how far can the sum of theta be from 1
+    theta: ndarray
+        num_precints x r x c
     """
 
     # Lines (10) - (11) are this check
-    if not (np.all(abs(theta.sum(axis=2) - 1) < 0.01)):  # CHECK IF THETAS SUM TO 1 across rows
+    if not np.all(abs(theta.sum(axis=2) - 1) < tol):  # CHECK IF THETAS SUM TO 1 across rows
         return -np.inf  # if not, prob is zero, so log_prob is -inf
 
     else:
-        # line_4_and_6 = ( (internal_cell_counts_samp - 1) * np.log(theta) ).flat().sum() #sum over rows and columns
         line_4_and_6 = np.apply_over_axes(
             np.sum, (internal_cell_counts_samp - 1) * np.log(theta), [1, 2]
         ).flatten()  # sum over rows and columns
-        # line_5 =  - 0.5 * (omega - mu_samp).T @ np.linalg.inv(Sigma_samp) @ (omega - mu_samp)
         line_5 = -0.5 * np.linalg.det(Sigma_samp) - 0.5 * (
             (omega - mu_samp) @ np.linalg.inv(Sigma_samp) * (omega - mu_samp)
         ).sum(axis=1)
@@ -185,8 +197,15 @@ def log_unnormalized_pdf(theta, omega, internal_cell_counts_samp, mu_samp, Sigma
 
 def theta_to_omega(theta):
     """
-    theta: num_precints x r x c
-    omega: num_precincts x r x (c-1)
+    Parameters:
+    -----------
+    theta: ndarray
+        num_precints x r x c
+
+    Returns:
+    --------
+    omega: ndarray
+        num_precincts x r x (c-1)
     """
     return np.log(theta[:, :, :-1]) - np.log(theta[:, :, [-1]])
 
@@ -214,14 +233,14 @@ def sample_theta(internal_cell_counts_samp, theta_prev, omega_prev, mu_samp, Sig
     log_unnormalized_pdf_prev = log_unnormalized_pdf(
         theta_prev, omega_prev, internal_cell_counts_samp, mu_samp, Sigma_samp
     )
-    # print("proposed", log_unnormalized_pdf_proposed)
-    # print("prev", log_unnormalized_pdf_prev)
+
+    # calculate acceptance prbability
     log_acc_prob = log_unnormalized_pdf_proposed - log_unnormalized_pdf_prev
     log_acc_prob = np.min([log_acc_prob, 0])
     acc_prob = np.exp(log_acc_prob)
 
-    u = st.uniform.rvs(size=1)
-    if u < acc_prob:
+    unif_samp = st.uniform.rvs(size=1)
+    if unif_samp < acc_prob:
 
         return theta_proposed
     else:
@@ -234,7 +253,8 @@ def omega_to_theta(omega, r, c):
     omega: num_precincts x (r * (c-1))
 
     Note:
-    RESHAPES OMEGA
+    -----
+    SIDE EFFECT: RESHAPES OMEGA
     """
     num_precincts = omega.shape[0]
     omega = omega.reshape(num_precincts, r, c - 1)
@@ -244,14 +264,13 @@ def omega_to_theta(omega, r, c):
     return np.concatenate((theta_other, theta_last_ext), axis=2)
 
 
-def sample_internal_cell_counts(group_counts, vote_counts, theta_samp, prev_internal_counts_samp):
+def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     """
     group_counts: num_precincts x r
     vote_counts: num_precincts x c
     theta: num_precints x r x c
     prev_internal_counts_samp: num_precincts x r x c
 
-    @TODO FINISH
     @TODO VECTORIZE
     """
     num_precincts, num_groups, num_candidates = prev_internal_counts_samp.shape
@@ -261,28 +280,28 @@ def sample_internal_cell_counts(group_counts, vote_counts, theta_samp, prev_inte
             for r_prime in range(r + 1, num_groups):
                 for c in range(num_candidates - 1):
                     for c_prime in range(c + 1, num_candidates):
-                        n1 = (
+                        n1 = (  # pylint: disable=invalid-name
                             prev_internal_counts_samp[i, r, c]
                             + prev_internal_counts_samp[i, r, c_prime]
-                        )  # row total in row r_prime
-                        n2 = (
+                        )  # n1 gives row total in row r
+                        n2 = (  # pylint: disable=invalid-name
                             prev_internal_counts_samp[i, r_prime, c]
                             + prev_internal_counts_samp[i, r_prime, c_prime]
-                        )  # row total in row r
-                        m1 = (
+                        )  # n2 row total in row r_prime
+                        m1 = (  # pylint: disable=invalid-name
                             prev_internal_counts_samp[i, r, c]
                             + prev_internal_counts_samp[i, r_prime, c]
-                        )  # column total in column c
+                        )  # m1 gives column total in column c
                         pi1 = theta_samp[i, r, c]
                         pi2 = theta_samp[i, r_prime, c]
                         psi = (pi1 * (1 - pi2)) / (pi2 * (1 - pi1))
                         nchg = NonCentralHyperGeometric(n1, n2, m1, psi)
-                        y1 = nchg.get_sample()  # sample for the r, c internal count
+                        r_c_count = nchg.get_sample()  # sample for the r, c internal count
 
                         # update prev_internal counts in the 2 x 2 subarray
-                        prev_internal_counts_samp[i, r, c] = y1
-                        prev_internal_counts_samp[i, r, c_prime] = n1 - y1
-                        prev_internal_counts_samp[i, r_prime, c] = m1 - y1
+                        prev_internal_counts_samp[i, r, c] = r_c_count
+                        prev_internal_counts_samp[i, r, c_prime] = n1 - r_c_count
+                        prev_internal_counts_samp[i, r_prime, c] = m1 - r_c_count
                         prev_internal_counts_samp[i, r_prime, c_prime] = (
                             n2 - prev_internal_counts_samp[i, r_prime, c]
                         )
@@ -313,6 +332,16 @@ def get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops):
             within each group that voted for each candidates that
             is possible given the marginal sums
             vote_counts and group_counts
+
+    Notes:
+    ------
+    Within each of rows up to row num_groups-1, for c=0,..num_candidates-1
+    and samples according to a binomial with
+    p=vote_counts[i, c] / precinct_pops[i],
+    making sure not to exceed the remaining counts left to assign in the
+    column and row.
+    Keep track of remaining counts in each row and column and use that
+    to fill the last row and column.
     """
     num_precincts, num_groups = group_counts.shape
     _, num_candidates = vote_counts.shape
@@ -324,13 +353,13 @@ def get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops):
     for i in range(num_precincts):
         for r in range(num_groups - 1):
             for c in range(num_candidates - 1):
-                n = np.round(
+                count_for_binom = np.round(
                     group_counts[i, r]
                     * (vote_counts[i, c] + vote_counts[i, c + 1])
                     / precinct_pops[i]
                 ).astype(int)
-                p = vote_counts[i, c] / precinct_pops[i]
-                samp = st.binom.rvs(n, p)
+                prop_for_binom = vote_counts[i, c] / precinct_pops[i]
+                samp = st.binom.rvs(count_for_binom, prop_for_binom)
 
                 samp = min(samp, vote_counts_remaining[i, c])
                 samp = min(samp, group_counts_remaining[i, r])

@@ -246,7 +246,13 @@ good-names=i,
            x,
            r,
            c,
+           mu,
            Run,
+           Sigma,
+           Sigma_inv,
+           Sigma_samp,
+           sample_Sigma,
+           Sigma_n_inv,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,

@@ -1,15 +1,22 @@
+# pylint: disable-all
 """
 Port of R code for Noncentral Hypergeometric distribution
- from Martin AD, Quinn KM, Park JH (2011). “MCMCpack: 
- Markov Chain Monte Carlo in R.” Journal of Statistical 
- Software, 42(9), 22. doi: 10.18637/jss.v042.i09.
+adapted from R code published in conjunction with:
+Liao, J.G. And Rosen, O. (2001) Fast and Stable Algorithms for Computing and
+Sampling from the Noncentral Hypergeometric Distribution.  The American
+Statistician 55, 366-369.
 
 Used in Greiner-Quinn method Gibbs sampler
 """
+# TODO: lint or replace with scipy implementation
 import math
+import numpy as np
 
-# The function r defined in Liao and Rosen 2001
+
 def r_function(n1, n2, m1, psi, i):
+    """
+    The function r defined in Liao and Rosen 2001
+    """
     return (n1 - i + 1) * (m1 - i + 1) / (i * (n2 - m1 + i)) * psi
 
 
@@ -65,7 +72,9 @@ class NonCentralHyperGeometric:
 
     @property
     def mode(self):
-        # calculate mode
+        """
+        Calculate distribution mode and set self._mode
+        """
         if self._mode is None:
             a = self.psi - 1
             b = -((self.m1 + self.n1 + 2) * self.psi + self.n2 - self.m1)
@@ -77,8 +86,6 @@ class NonCentralHyperGeometric:
             else:
                 self._mode = math.trunc(q / a)
         return self._mode
-
-    # def get_samples(self, num_samples=1):
 
     @property
     def density(self):
