@@ -6,13 +6,112 @@ and transparency of assumptions. Journal of the Royal Statistical
 Society: Series A (Statistics in Society), 172(1), pp.67-81.
 """
 
+import random
 import scipy.stats as st
 import numpy as np
+import arviz as az
+from tqdm import tqdm
 from pyei.distribution_utils import NonCentralHyperGeometric
 
+__all__ = ["pyei_greiner_quinn_sample", "greiner_quinn_sample"]
+
+def pyei_greiner_quinn_sample(group_fractions, votes_fractions, precinct_pops, num_samples=10000, burnin=1000, nu_0=None, psi_0=None, k_0_inv=None, mu_0=None, gamma=0.1):
+    """
+    Converts pyei inputs to counts for gq, sets default hyperparams, 
+    runs sampler, returns samples as an arviz InferenceData object
+
+    Parameters:
+    -----------
+    group_fractions :   r x p (p =#precincts = num_precincts) matrix giving demographic
+            information as the fraction of precinct_pop in the demographic group for each
+            of p precincts and r demographic groups (sometimes denoted X)
+    votes_fractions  :  c x p giving the fraction of each precinct_pop that votes
+        for each of c candidates (sometimes denoted T)
+    precinct_pops   :   Length-p array of ints giving size of each precinct population
+                        of interest (e.g. voting population) (someteimes denoted N)
+    num_samples: int (optional)
+        number of MCMC samples to draw using the Gibbs sampler
+    nu_0: int (optional)
+        hyperparameter (df) scalar
+        roughly interpretable as number of pseudodistricts for prior
+    psi_0: ndarray (optional)
+        hyperparameter (scale) - square matrix r * (c - 1) x r * (c - 1)
+    k_0_inv: (optional)
+        hyperparameter - square matrix r * (c - 1) x r * (c - 1)
+        Precision for prior distribution over mu, the mean of the distribution of omega
+        mu | mu_0, k_0 ~ N(mu_0, k_0) = N(mu_0, k_0_inv^{-1})
+        omega | mu, Sigma ~ N(mu, Sigma)
+    mu_0: ndarray (optional)
+        vector of length r * (c - 1)
+        Governs prior distribution over mu, the mean of the distribution of omega
+        mu | mu_0, k_0 ~ N(mu_0, k_0)
+        omega | mu, Sigma ~ N(mu, Sigma)
+    gamma: float (optional)
+        parameter of proposal dist in the Metropolis step for sampling theta
+    burnin: int
+        the number of samples at the start of the MCMC chain to be discarded
+
+    Returns:
+    --------
+    idata: arviz.InverenceData 
+        An InferenceData object containing the posterior samples
+        obtained via the Gibbs sampler
+
+    Notes:
+    -----
+    This function converts group_fraction and votes_fraction to counts
+    using the precinct_pops in the following manner: first,
+    the fractions are multiplied by the precinct population and each rounded
+    if the sum of the counts obtained by rounding don't match the precinct
+    populations, the difference is subtracted from a *random* group or column        
+    """
+    # covert fractions to counts
+    # and make counts match precinct_pops (for example)
+    # if a mismatch, add or subtract from a random group/candidate
+    num_groups = group_fractions.shape[0]
+    num_candidates = votes_fractions.shape[0]
+
+    group_counts = np.round(group_fractions * precinct_pops)
+    vote_counts = np.round(votes_fractions * precinct_pops)
+
+    group_diff = group_counts.sum(axis=0) - precinct_pops
+    for idx_of_mismatch in np.where(group_diff != 0):
+        group_to_adjust = random.randint(0, num_groups-1)
+        group_counts[group_to_adjust, idx_of_mismatch]-= group_diff[idx_of_mismatch]
+        
+    vote_diff = vote_counts.sum(axis=0) - precinct_pops
+    for idx_of_mismatch in np.where(vote_diff != 0):
+        candidate_to_adjust = random.randint(0, num_candidates-1)
+        vote_counts[candidate_to_adjust, idx_of_mismatch]-= vote_diff[idx_of_mismatch]
+
+    group_counts = group_counts.T
+    vote_counts = vote_counts.T
+
+    #Set any unspecified hyperparameters to default values
+    if nu_0 is None:
+        nu_0 = 10
+    if psi_0 is None:
+        psi_0 = 1 / 10 * np.identity( num_groups * (num_candidates - 1) ) # relates to prior precision
+    if k_0_inv is None:
+        k_0_inv = 1/ (.5) * np.identity( num_groups * (num_candidates - 1) ) # same size as Sigma
+    if mu_0 is None:
+        votes_all_precincts = vote_counts.sum(axis=0)
+        log_ratio_support = np.log(votes_all_precincts[0:-1] / votes_all_precincts[-1]) # assume each group supports according to the total vote split
+        mu_0 = np.tile(log_ratio_support, num_groups) # shape r * (c-1)
+
+    samples = greiner_quinn_gibbs_sample( 
+    group_counts, vote_counts, num_samples, nu_0, psi_0, k_0_inv, mu_0, gamma=gamma, burnin=burnin
+    )
+    # convert to InferenceData object
+    for var_name in samples.keys():
+        samples[var_name] =  np.expand_dims(samples[var_name], 0) # add an axis for chain
+    samples["b"] = samples.pop("theta") # changing variable name for vote prefernces to match pyei
+    idata = az.from_dict(samples)
+
+    return idata
 
 def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
-    group_counts, vote_counts, num_samples, nu_0, psi_0, k_0_inv, mu_0, gamma=0.1
+    group_counts, vote_counts, num_samples, nu_0, psi_0, k_0_inv, mu_0, gamma=0.1, burnin=0
 ):
     """
     group_counts: ndarray
@@ -38,10 +137,10 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
         Governs prior distribution over mu, the mean of the distribution of omega
         mu | mu_0, k_0 ~ N(mu_0, k_0)
         omega | mu, Sigma ~ N(mu, Sigma)
-    num_precincts: int
-        The number of precincts
     gamma: float
         parameter of proposal dist in the Metropolis step for sampling theta
+    burnin: int
+        the number of samples at the start of the MCMC chain to be discarded
 
     Note:
     -----
@@ -57,6 +156,10 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
     if np.all(num_precincts != vote_counts.shape[0]):
         raise ValueError(
             "group_counts and vote_counts must both have first dim of length num_precincts"
+        )
+    if burnin >= num_samples:
+        raise ValueError(
+            "num_samples is only {num_samples} but burn-in is {burnin}"
         )
 
     precinct_pops = vote_counts.sum(axis=1)
@@ -79,8 +182,9 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
     )
     theta_samples = np.empty((num_samples, num_precincts, num_groups, num_candidates))
     mu_samples = np.empty((num_samples, num_groups * (num_candidates - 1)))
+    sigma_samples = np.empty((num_samples, num_groups * (num_candidates -1 ),  num_groups * (num_candidates -1 )))
 
-    for i in range(num_samples):
+    for i in tqdm(range(num_samples)):
         # (a) sample internal cell counts
         internal_cell_counts_samp = sample_internal_cell_counts(
             theta_samp, internal_cell_counts_samp
@@ -94,14 +198,16 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
         theta_samples[i, :, :, :] = theta_samp
 
         omega_samp = theta_to_omega(theta_samp)
+        #TODO: IS THE NEXT LINE UNNECESSARY?
         omega_samp = omega_samp.reshape((num_precincts, num_groups * (num_candidates - 1)))
 
         # (c) sample mu and sigma given omega (or, equivalently, given theta)
         mu_samp = sample_mu(omega_samp, Sigma_samp, k_0_inv, mu_0, num_precincts)
         mu_samples[i, :] = mu_samp
         Sigma_samp = sample_Sigma(omega_samp, mu_samp, nu_0, psi_0)
+        sigma_samples[i,:,:] = Sigma_samp
 
-    return {"theta": theta_samples, "counts": internal_cell_counts_samples, "mu": mu_samples}
+    return {"theta": theta_samples, "counts": internal_cell_counts_samples, "mu": mu_samples, "Sigma":sigma_samples}
 
 
 def sample_Sigma(omega, mu, nu_0, psi_0):
