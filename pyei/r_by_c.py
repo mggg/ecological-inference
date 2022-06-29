@@ -178,7 +178,7 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             self.sim_model = ei_multinom_dirichlet_modified(
                 group_fractions, votes_fractions, precinct_pops, **self.additional_model_params
             )
-        
+
         elif self.model_name == "greiner-quinn":
             self.sim_model = None
 
@@ -190,13 +190,18 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             )
 
         if draw_samples:
-            if self.model_name in ["multinomial-dirichlet-modified", "multinomial-dirichlet"]: # for models whose sampling is w/ pycm
+            if self.model_name in [
+                "multinomial-dirichlet-modified",
+                "multinomial-dirichlet",
+            ]:  # for models whose sampling is w/ pycm
                 with self.sim_model:  # pylint: disable=not-context-manager
                     self.sim_trace = sampling_jax.sample_numpyro_nuts(
                         target_accept=target_accept, tune=tune, **other_sampling_args
                     )
             elif self.model_name == "greiner-quinn":
-                self.sim_trace = pyei_greiner_quinn_sample(group_fractions, votes_fractions, precinct_pops)#
+                self.sim_trace = pyei_greiner_quinn_sample(
+                    group_fractions, votes_fractions, precinct_pops, **other_sampling_args
+                )  #
 
             self.calculate_summary()
 

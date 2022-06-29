@@ -6,6 +6,7 @@ import numpy as np
 import scipy.stats as st
 
 from pyei import data
+from pyei.r_by_c import RowByColumnEI
 from pyei.greiner_quinn_gibbs_sampling import (
     get_initial_internal_count_sample,
     theta_to_omega,
@@ -41,6 +42,8 @@ def example_r_by_c_data_asym():
     group_counts = group_counts.T
     vote_counts = vote_counts.T
     return {
+        "group_fractions": group_fractions,
+        "votes_fractions": votes_fractions,
         "group_counts": group_counts,
         "vote_counts": vote_counts,
         "precinct_pops": precinct_pops,
@@ -102,4 +105,17 @@ def test_greiner_quinn_gibbs_sample(
         k_0_inv,
         mu_0,
         gamma=gamma,
+    )
+
+
+def test_pyei_greiner_quinn_gibbs(
+    example_r_by_c_data_asym,
+):  # pylint: disable=redefined-outer-name
+    ei_greiner_quinn = RowByColumnEI(model_name="greiner-quinn")
+    ei_greiner_quinn.fit(
+        example_r_by_c_data_asym["group_fractions"],
+        example_r_by_c_data_asym["votes_fractions"],
+        example_r_by_c_data_asym["precinct_pops"],
+        num_samples=5,
+        burnin=1,
     )
