@@ -13,11 +13,23 @@ import arviz as az
 from tqdm import tqdm
 from pyei.distribution_utils import NonCentralHyperGeometric
 
-__all__ = ["pyei_greiner_quinn_sample", "greiner_quinn_sample"]
+__all__ = ["pyei_greiner_quinn_sample", "greiner_quinn_gibbs_sample"]
 
-def pyei_greiner_quinn_sample(group_fractions, votes_fractions, precinct_pops, num_samples=10000, burnin=1000, nu_0=None, psi_0=None, k_0_inv=None, mu_0=None, gamma=0.1):
+
+def pyei_greiner_quinn_sample(  # pylint: disable=too-many-locals
+    group_fractions,
+    votes_fractions,
+    precinct_pops,
+    num_samples=None,
+    burnin=None,
+    nu_0=None,
+    psi_0=None,
+    k_0_inv=None,
+    mu_0=None,
+    gamma=0.1,
+):
     """
-    Converts pyei inputs to counts for gq, sets default hyperparams, 
+    Converts pyei inputs to counts for gq, sets default hyperparams,
     runs sampler, returns samples as an arviz InferenceData object
 
     Parameters:
@@ -53,7 +65,7 @@ def pyei_greiner_quinn_sample(group_fractions, votes_fractions, precinct_pops, n
 
     Returns:
     --------
-    idata: arviz.InverenceData 
+    idata: arviz.InverenceData
         An InferenceData object containing the posterior samples
         obtained via the Gibbs sampler
 
@@ -63,8 +75,13 @@ def pyei_greiner_quinn_sample(group_fractions, votes_fractions, precinct_pops, n
     using the precinct_pops in the following manner: first,
     the fractions are multiplied by the precinct population and each rounded
     if the sum of the counts obtained by rounding don't match the precinct
-    populations, the difference is subtracted from a *random* group or column        
+    populations, the difference is subtracted from a *random* group or column
     """
+    if num_samples is None:
+        num_samples = 10000
+    if burnin is None:
+        burnin = 1000
+
     # covert fractions to counts
     # and make counts match precinct_pops (for example)
     # if a mismatch, add or subtract from a random group/candidate
@@ -76,39 +93,52 @@ def pyei_greiner_quinn_sample(group_fractions, votes_fractions, precinct_pops, n
 
     group_diff = group_counts.sum(axis=0) - precinct_pops
     for idx_of_mismatch in np.where(group_diff != 0):
-        group_to_adjust = random.randint(0, num_groups-1)
-        group_counts[group_to_adjust, idx_of_mismatch]-= group_diff[idx_of_mismatch]
-        
+        group_to_adjust = random.randint(0, num_groups - 1)
+        group_counts[group_to_adjust, idx_of_mismatch] -= group_diff[idx_of_mismatch]
+
     vote_diff = vote_counts.sum(axis=0) - precinct_pops
     for idx_of_mismatch in np.where(vote_diff != 0):
-        candidate_to_adjust = random.randint(0, num_candidates-1)
-        vote_counts[candidate_to_adjust, idx_of_mismatch]-= vote_diff[idx_of_mismatch]
+        candidate_to_adjust = random.randint(0, num_candidates - 1)
+        vote_counts[candidate_to_adjust, idx_of_mismatch] -= vote_diff[idx_of_mismatch]
 
     group_counts = group_counts.T
     vote_counts = vote_counts.T
 
-    #Set any unspecified hyperparameters to default values
+    # Set any unspecified hyperparameters to default values
     if nu_0 is None:
         nu_0 = 10
     if psi_0 is None:
-        psi_0 = 1 / 10 * np.identity( num_groups * (num_candidates - 1) ) # relates to prior precision
+        psi_0 = (
+            1 / 10 * np.identity(num_groups * (num_candidates - 1))
+        )  # relates to prior precision
     if k_0_inv is None:
-        k_0_inv = 1/ (.5) * np.identity( num_groups * (num_candidates - 1) ) # same size as Sigma
+        k_0_inv = 1 / (0.5) * np.identity(num_groups * (num_candidates - 1))  # same size as Sigma
     if mu_0 is None:
         votes_all_precincts = vote_counts.sum(axis=0)
-        log_ratio_support = np.log(votes_all_precincts[0:-1] / votes_all_precincts[-1]) # assume each group supports according to the total vote split
-        mu_0 = np.tile(log_ratio_support, num_groups) # shape r * (c-1)
+        log_ratio_support = np.log(
+            votes_all_precincts[0:-1] / votes_all_precincts[-1]
+        )  # assume each group supports according to the total vote split
+        mu_0 = np.tile(log_ratio_support, num_groups)  # shape r * (c-1)
 
-    samples = greiner_quinn_gibbs_sample( 
-    group_counts, vote_counts, num_samples, nu_0, psi_0, k_0_inv, mu_0, gamma=gamma, burnin=burnin
+    samples = greiner_quinn_gibbs_sample(
+        group_counts,
+        vote_counts,
+        num_samples,
+        nu_0,
+        psi_0,
+        k_0_inv,
+        mu_0,
+        gamma=gamma,
+        burnin=burnin,
     )
     # convert to InferenceData object
-    for var_name in samples.keys():
-        samples[var_name] =  np.expand_dims(samples[var_name], 0) # add an axis for chain
-    samples["b"] = samples.pop("theta") # changing variable name for vote prefernces to match pyei
+    for var_name in samples.keys():  # pylint: disable=consider-iterating-dictionary
+        samples[var_name] = np.expand_dims(samples[var_name], 0)  # add an axis for chain
+    samples["b"] = samples.pop("theta")  # changing variable name for vote prefernces to match pyei
     idata = az.from_dict(samples)
 
     return idata
+
 
 def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
     group_counts, vote_counts, num_samples, nu_0, psi_0, k_0_inv, mu_0, gamma=0.1, burnin=0
@@ -147,9 +177,6 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
     Variable names follow those Greiner and Quinn, R x C ecological inference:
     bounds, correlations, flexibility and transparency of assumptions (2009)
     """
-    # TODO: add burn-in
-    # TODO: set default values of parameters
-    # TODO: validate parameters
     # TODO: gamma set in initial runs?
 
     num_precincts = group_counts.shape[0]
@@ -158,9 +185,7 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
             "group_counts and vote_counts must both have first dim of length num_precincts"
         )
     if burnin >= num_samples:
-        raise ValueError(
-            "num_samples is only {num_samples} but burn-in is {burnin}"
-        )
+        raise ValueError("num_samples is only {num_samples} but burn-in is {burnin}")
 
     precinct_pops = vote_counts.sum(axis=1)
     _, num_candidates = vote_counts.shape
@@ -178,36 +203,46 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
 
     # variables for storing all samples
     internal_cell_counts_samples = np.empty(
-        (num_samples, num_precincts, num_groups, num_candidates)
+        (num_samples - burnin, num_precincts, num_groups, num_candidates)
     )
-    theta_samples = np.empty((num_samples, num_precincts, num_groups, num_candidates))
-    mu_samples = np.empty((num_samples, num_groups * (num_candidates - 1)))
-    sigma_samples = np.empty((num_samples, num_groups * (num_candidates -1 ),  num_groups * (num_candidates -1 )))
+    theta_samples = np.empty((num_samples - burnin, num_precincts, num_groups, num_candidates))
+    mu_samples = np.empty((num_samples - burnin, num_groups * (num_candidates - 1)))
+    sigma_samples = np.empty(
+        (num_samples - burnin, num_groups * (num_candidates - 1), num_groups * (num_candidates - 1))
+    )
 
     for i in tqdm(range(num_samples)):
         # (a) sample internal cell counts
         internal_cell_counts_samp = sample_internal_cell_counts(
             theta_samp, internal_cell_counts_samp
         )
-        internal_cell_counts_samples[i, :, :, :] = internal_cell_counts_samp
 
         # (b) sample theta using Metropolis-Hastings
         theta_samp = sample_theta(
             internal_cell_counts_samp, theta_samp, omega_samp, mu_samp, Sigma_samp, gamma
         )
-        theta_samples[i, :, :, :] = theta_samp
 
         omega_samp = theta_to_omega(theta_samp)
-        #TODO: IS THE NEXT LINE UNNECESSARY?
+        # TODO: IS THE NEXT LINE UNNECESSARY?
         omega_samp = omega_samp.reshape((num_precincts, num_groups * (num_candidates - 1)))
 
         # (c) sample mu and sigma given omega (or, equivalently, given theta)
         mu_samp = sample_mu(omega_samp, Sigma_samp, k_0_inv, mu_0, num_precincts)
-        mu_samples[i, :] = mu_samp
         Sigma_samp = sample_Sigma(omega_samp, mu_samp, nu_0, psi_0)
-        sigma_samples[i,:,:] = Sigma_samp
 
-    return {"theta": theta_samples, "counts": internal_cell_counts_samples, "mu": mu_samples, "Sigma":sigma_samples}
+        # save samples after burn-in
+        if i >= burnin:
+            internal_cell_counts_samples[i - burnin, :, :, :] = internal_cell_counts_samp
+            theta_samples[i - burnin, :, :, :] = theta_samp
+            mu_samples[i - burnin, :] = mu_samp
+            sigma_samples[i - burnin, :, :] = Sigma_samp
+
+    return {
+        "theta": theta_samples,
+        "counts": internal_cell_counts_samples,
+        "mu": mu_samples,
+        "Sigma": sigma_samples,
+    }
 
 
 def sample_Sigma(omega, mu, nu_0, psi_0):
@@ -216,8 +251,16 @@ def sample_Sigma(omega, mu, nu_0, psi_0):
     -----------
     omega: ndarray
         num_precints x (r * (c - 1))
+        A transformation of the voting preferences given by theta,
+        omega(i, r', c') = log(theta(i,r',c')/theta(i,r, num_candidates)),
     mu: array
         vector of length r * (c - 1)
+        mean of the normal distribution that governs omega
+        omega | mu, Sigma ~ N(mu, Sigma)
+        where omega(i, r', c') = log(theta(i,r',c')/theta(i,r, c'')),
+        theta are the voting preferences of each group and candidate in
+        each precinct, and c'' is some reference column/candidate
+        (here the last column)
     nu_0: float
         hyperparameter (deg of freedom) - scalar
     psi_0: n
@@ -227,7 +270,7 @@ def sample_Sigma(omega, mu, nu_0, psi_0):
     Returns:
     --------
     Sigma: ndarray
-        square matrix r * (c - 1) x r * (c - 1)
+        square matrix r * (c - 1) x r * (c - 1), the covariance of omega
     """
     num_precincts = omega.shape[0]
     nu_n = nu_0 + num_precincts
@@ -240,9 +283,19 @@ def sample_Sigma(omega, mu, nu_0, psi_0):
 def sample_mu(omega, Sigma, k_0_inv, mu_0, num_precincts):
     """
     omega: num_precints x (r * (c - 1))
-    Sigma: square matrix r * (c - 1) x r * (c - 1)
+    Sigma: ndarray
+        square matrix r * (c - 1) x r * (c - 1), the covariance of omega
     k_0_inv is hyperparameter - square matrix r * (c - 1) x r * (c - 1)
-    mu_0 is hyperparameter - vector of length r * (c - 1)
+    mu_0 : array
+        vector of length r * (c - 1)
+        mean of the prior distribution for mu, mu the mean of of the normal
+        distribution that governs omega
+        mu | mu_0, k_0 ~ N(mu_0, k_0)
+        omega | mu, Sigma ~ N(mu, Sigma)
+        where omega(i, r', c') = log(theta(i,r',c')/theta(i,r, c'')),
+        theta are the voting preferences of each group and candidate in
+        each precinct, and c'' is some reference column/candidate
+        (here the last column)
     num_precincts: int
         The number of precincts
 
@@ -281,6 +334,8 @@ def log_unnormalized_pdf(theta, omega, internal_cell_counts_samp, mu_samp, Sigma
     """pdf proportional t to the product of lines (4)-(6) and (10) and (11) in G&Q
     0 if thetas don't sum to 1 across rows
 
+    Sigma_samp: ndarray
+        square matrix r * (c - 1) x r * (c - 1), a sample of the covariance of omega
     tol: float
         how far can the sum of theta be from 1
     theta: ndarray
@@ -320,6 +375,12 @@ def sample_theta(internal_cell_counts_samp, theta_prev, omega_prev, mu_samp, Sig
     """
     Use a Metropolis-Hastings step to sample theta
 
+    internal_cell_counts_samp: ndarray
+    theta_prev: ndarray
+    omega_prev: ndarray
+    mu_samp:
+    Sigma_samp: ndarray
+        square matrix r * (c - 1) x r * (c - 1), a sample of the covariance of omega
     gamma: float
         parameter of proposal dist in the Metropolis step
 
