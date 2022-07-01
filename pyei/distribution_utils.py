@@ -10,8 +10,8 @@ Used in Greiner-Quinn method Gibbs sampler
 """
 import math
 import numpy as np
-from numba import jit, int32, float32
-from numba.experimental import jitclass
+from numba import jit
+
 
 @jit
 def r_function(n1, n2, m1, psi, i):
@@ -20,14 +20,14 @@ def r_function(n1, n2, m1, psi, i):
     """
     return (n1 - i + 1) * (m1 - i + 1) / (i * (n2 - m1 + i)) * psi
 
+
 @jit
 def sample_low_to_high(lower, ran, pi, shift, uu):
     for i in range(lower, uu + 1):
         if ran <= pi[i + shift]:
             return i
         ran = ran - pi[i + shift]
-    return np.int64(uu)
-  
+
 
 @jit
 def sample_high_to_low(upper, ran, pi, shift, ll):
@@ -35,23 +35,10 @@ def sample_high_to_low(upper, ran, pi, shift, ll):
         if ran <= pi[i + shift]:
             return i
         ran = ran - pi[i + shift]
-    return np.int64(0)
-        
 
 
-spec = [
-    ('n1', int32),               # a simple scalar field
-    ('n2', int32), 
-    ('m1', int32),  
-    ('psi', float32), 
-    ('ll', int32),
-    ('uu', int32),
-    ('_mode', int32),
-    ('_density', float32[:]),
-]
-
-@jitclass(spec)
-class NonCentralHyperGeometric:
+@jit
+def non_central_hypergeometric_sample(n1, n2, m1, psi):
     """Allows for sampling from noncentralhypergeometric distribution
     Following the methods of Liao and Rosen, 2001
 
@@ -64,96 +51,65 @@ class NonCentralHyperGeometric:
     is the distribution for y1 | y1 + y2 = m1
     """
 
-    def __init__(self, n1, n2, m1, psi):
-        """
-        n1 : int
-            Num trials for the first binomial dist y1~binom(n1,pi1)
-        n2 : int
-            Num trials for the second binomial dist y2~binom(n2,pi12)
-        m1: int
-            NCHG gives distribution for y1 | y1 + y2 = m1
-        psi : float
-            (pi1 * (1-pi2)) / (pi2 * (1-p1)), where pi1, pi2 are the probs
-            of success in the two binomial distributions
-        """
-        self.n1 = n1
-        self.n2 = n2
-        self.m1 = m1
-        self.psi = psi
+    ll = max(0, m1 - n2)
+    uu = min(n1, m1)
 
-        self.ll = max(0, m1 - n2)
-        self.uu = min(n1, m1)
+    a = psi - 1
+    b = -((m1 + n1 + 2) * psi + n2 - m1)
+    c = psi * (n1 + 1) * (m1 + 1)
+    q = -(b + np.sign(b) * np.sqrt(b * b - 4 * a * c)) / 2
+    mode_candidate = math.trunc(c / q)
+    if (uu >= mode_candidate) and (ll <= mode_candidate):
+        mode = mode_candidate
+    else:
+        mode = math.trunc(q / a)
 
-        self._mode == -1  #using -1 instead of None for numba
-        
-        # calculate density
-        pi = np.ones(self.uu - self.ll + 1, dtype=np.float32)
+    # calculate density
+    pi = np.ones(uu - ll + 1, dtype=np.float32)
 
-        if self.mode < self.uu:
-            r = r_function(
-                self.n1, self.n2, self.m1, self.psi, np.arange(self.mode + 1, self.uu + 1)
-            )
-            pi[(self.mode + 1 - self.ll) : (self.uu - self.ll + 1)] = np.cumprod(r)
+    if mode < uu:
+        r = r_function(n1, n2, m1, psi, np.arange(mode + 1, uu + 1))
+        pi[(mode + 1 - ll) : (uu - ll + 1)] = np.cumprod(r)
 
-        if self.mode > self.ll:
-            r = 1 / r_function(
-                self.n1,
-                self.n2,
-                self.m1,
-                self.psi,
-                np.flip(np.arange(self.ll + 1, self.mode + 1)),
-            )
-            pi[0 : (self.mode - self.ll)] = np.flip(np.cumprod(r))
-        self._density = pi / pi.sum()
+    if mode > ll:
+        r = 1 / r_function(
+            n1,
+            n2,
+            m1,
+            psi,
+            np.flip(np.arange(ll + 1, mode + 1)),
+        )
+        pi[0 : (mode - ll)] = np.flip(np.cumprod(r))
+    density = pi / pi.sum()
 
+    ran = np.random.uniform(0, 1)
+    pi = density
 
-    @property
-    def mode(self):
-        """
-        Calculate distribution mode and set self._mode
-        """
-        if self._mode == -1: #using -1 instead of None for numba
-            a = self.psi - 1
-            b = -((self.m1 + self.n1 + 2) * self.psi + self.n2 - self.m1)
-            c = self.psi * (self.n1 + 1) * (self.m1 + 1)
-            q = -(b + np.sign(b) * np.sqrt(b * b - 4 * a * c)) / 2
-            mode = math.trunc(c / q)
-            if (self.uu >= mode) and (self.ll <= mode):
-                self._mode = mode
-            else:
-                self._mode = math.trunc(q / a)
-        return self._mode
+    if mode == ll:
+        return sample_low_to_high(ll, ran, pi, -ll, uu)
+    if mode == uu:
+        return sample_high_to_low(uu, ran, pi, -ll, ll)
+    if ran < pi[mode - ll]:
+        return mode
+    ran = ran - pi[mode - ll]
+    lower = mode - 1
+    upper = mode + 1
 
-    def get_sample(self):
-        
-        ran = np.random.uniform(0, 1)
-        pi = self._density
+    while True:
+        if pi[upper - ll] >= pi[lower - ll]:
+            if ran < pi[upper - ll]:
+                return upper
+            ran = ran - pi[upper - ll]
+            if upper == uu:
+                samp = sample_high_to_low(lower, ran, pi, -ll, ll)
+                return samp
+            upper = upper + 1
 
-        if self.mode == self.ll:
-            return sample_low_to_high(self.ll, ran, pi, -self.ll, self.uu)
-        if self.mode == self.uu:
-            return sample_high_to_low(self.uu, ran, pi, -self.ll, self.ll)
-        if ran < pi[self.mode - self.ll]:
-            return self.mode
-        ran = ran - pi[self.mode - self.ll]
-        lower = self.mode - 1
-        upper = self.mode + 1
-
-        while True:
-            if pi[upper - self.ll] >= pi[lower - self.ll]:
-                if ran < pi[upper - self.ll]:
-                    return upper
-                ran = ran - pi[upper - self.ll]
-                if upper == self.uu:
-                    samp = sample_high_to_low(lower, ran, pi, -self.ll, self.ll)
-                    return samp
-                upper = upper + 1
-
-            else:
-                if ran < pi[lower - self.ll]:
-                    return lower
-                ran = ran - pi[lower - self.ll]
-                if lower == self.ll:
-                    samp = sample_low_to_high(upper, ran, pi, -self.ll, self.uu)
-                    return samp
-                lower = lower - 1
+        else:
+            if ran < pi[lower - ll]:
+                return lower
+            ran = ran - pi[lower - ll]
+            if lower == ll:
+                samp = sample_low_to_high(upper, ran, pi, -ll, uu)
+                return samp
+            lower = lower - 1

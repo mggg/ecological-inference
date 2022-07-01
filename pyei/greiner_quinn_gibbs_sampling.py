@@ -11,8 +11,8 @@ import scipy.stats as st
 import numpy as np
 import arviz as az
 from tqdm import tqdm
-from pyei.distribution_utils import NonCentralHyperGeometric
 from numba import njit, prange
+from pyei.distribution_utils import non_central_hypergeometric_sample
 
 __all__ = ["pyei_greiner_quinn_sample", "greiner_quinn_gibbs_sample"]
 
@@ -431,6 +431,7 @@ def omega_to_theta(omega, r, c):
     theta_last_ext = np.expand_dims(theta_last, axis=2)
     return np.concatenate((theta_other, theta_last_ext), axis=2)
 
+
 @njit(parallel=True)
 def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     """
@@ -443,7 +444,7 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     """
     num_precincts, num_groups, num_candidates = prev_internal_counts_samp.shape
 
-    for i in prange(num_precincts):
+    for i in prange(num_precincts):  # pylint: disable=not-an-iterable
         for r in range(num_groups - 1):
             for r_prime in range(r + 1, num_groups):
                 for c in range(num_candidates - 1):
@@ -463,8 +464,9 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
                         pi1 = theta_samp[i, r, c]
                         pi2 = theta_samp[i, r_prime, c]
                         psi = (pi1 * (1 - pi2)) / (pi2 * (1 - pi1))
-                        nchg = NonCentralHyperGeometric(n1, n2, m1, psi)
-                        r_c_count = nchg.get_sample()  # sample for the r, c internal count
+                        r_c_count = non_central_hypergeometric_sample(
+                            n1, n2, m1, psi
+                        )  # sample for the r, c internal count
 
                         # update prev_internal counts in the 2 x 2 subarray
                         prev_internal_counts_samp[i, r, c] = r_c_count
@@ -519,7 +521,7 @@ def get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops):
     group_counts_remaining = group_counts.copy()
     vote_counts_remaining = vote_counts.copy()
 
-    for i in prange(num_precincts):
+    for i in prange(num_precincts):  # pylint: disable=not-an-iterable
         for r in range(num_groups - 1):
             for c in range(num_candidates - 1):
                 count_for_binom = np.round(
@@ -528,7 +530,7 @@ def get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops):
                     / precinct_pops[i]
                 )
                 prop_for_binom = vote_counts[i, c] / precinct_pops[i]
-                #samp = st.binom.rvs(count_for_binom, prop_for_binom)
+                # samp = st.binom.rvs(count_for_binom, prop_for_binom)
                 samp = np.random.binomial(count_for_binom, prop_for_binom)
 
                 samp = min(samp, vote_counts_remaining[i, c])
