@@ -230,202 +230,202 @@ def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
     return model
 
 
-def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, prev):
-    """
-    Helper function for computing log prob of convolution of binomial
+# def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, prev):
+#     """
+#     Helper function for computing log prob of convolution of binomial
 
-    Parameters
-    ----------
-    lower, upper : lower and upper bounds on the (unobserved) count of votes from given
-        deographic group for given candidate within precinct
-    n0_curr: the (current value for the) count of given demographic group in the precinct
-    n1_curr: the (current value for the)count of the complement of given demographic group
-         in the precinct
-    b_1_curr: corresponds to p0 in wakefield's notation, the probability that an individual
-        in the given demographic group votes for the given candidate
-    b_2_curr: corresponds to p1 in wakefield's notation, the probability that an individual
-        in the complement of the given demographic group votes for the given candidate
-    prev: the partial sum of the log prob of the convolution of binomials
+#     Parameters
+#     ----------
+#     lower, upper : lower and upper bounds on the (unobserved) count of votes from given
+#         deographic group for given candidate within precinct
+#     n0_curr: the (current value for the) count of given demographic group in the precinct
+#     n1_curr: the (current value for the)count of the complement of given demographic group
+#          in the precinct
+#     b_1_curr: corresponds to p0 in wakefield's notation, the probability that an individual
+#         in the given demographic group votes for the given candidate
+#     b_2_curr: corresponds to p1 in wakefield's notation, the probability that an individual
+#         in the complement of the given demographic group votes for the given candidate
+#     prev: the partial sum of the log prob of the convolution of binomials
 
-    Returns
-    -------
-    prev + component_for_current_precinct : sum of the previous value of the partial sum
-        for the log prob of the convolution of binomials and an additional term for one
-        precinct
+#     Returns
+#     -------
+#     prev + component_for_current_precinct : sum of the previous value of the partial sum
+#         for the log prob of the convolution of binomials and an additional term for one
+#         precinct
 
-    """
+#     """
 
-    # votes_within_group_count is y_0i in Wakefield's notation, the count of votes from
-    # given group for given candidate within precinct i (unobserved)
-    votes_within_group_count = at.arange(lower, upper)
-    component_for_current_precinct = pm.math.logsumexp(
-        # The `rv.logp(x)` method was removed. Instead use `pm.logp(rv, x)`.`
-        pm.logp(pm.Binomial.dist(n0_curr, b_1_curr), votes_within_group_count)
-        + pm.logp(pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count)
-    )
-    return prev + component_for_current_precinct
-
-
-def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
-    """
-    Log probability for convolution of binomials
-
-    Parameters
-    ----------
-    b_1: corresponds to p0 in wakefield's notation, the probability that an individual
-        in the given demographic group votes for the given candidate
-    b_2: corresponds to p1 in wakefield's notation, the probability that an individual
-        in the complement of the given demographic group votes for the given candidate
-
-    n_0: the count of given demographic group in the precinct
-    n_1: the count of the complement of given demographic group in the precinct
-
-    lower, upper : lower and upper bounds on the (unobserved) count of votes from given
-    deographic group for given candidate within precinct
-    (corresponds to votes_within_group_count in log_binom_sum and y_0i in Wakefield's)
-
-    Returns
-    -------
-    A theano tensor giving the log probability of b_1, b_2 (given the other parameters)
-
-    Notes
-    -----
-    See Wakefield 2004 equation 4
-    """
-
-    result, _ = aesara.scan(
-        fn=log_binom_sum,
-        outputs_info={"taps": [-1], "initial": at.as_tensor(np.array([0.0]))},
-        sequences=[
-            at.as_tensor(lower),
-            at.as_tensor(upper),
-            at.as_tensor(obs_votes),
-            at.as_tensor(n_0),
-            at.as_tensor(n_1),
-            at.as_tensor(b_1),
-            at.as_tensor(b_2),
-        ],
-    )
-    return result[-1]
+#     # votes_within_group_count is y_0i in Wakefield's notation, the count of votes from
+#     # given group for given candidate within precinct i (unobserved)
+#     votes_within_group_count = at.arange(lower, upper)
+#     component_for_current_precinct = pm.math.logsumexp(
+#         # The `rv.logp(x)` method was removed. Instead use `pm.logp(rv, x)`.`
+#         pm.logp(pm.Binomial.dist(n0_curr, b_1_curr), votes_within_group_count)
+#         + pm.logp(pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count)
+#     )
+#     return prev + component_for_current_precinct
 
 
-def wakefield_model_beta(
-    group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
-):
-    """
-    2 x 2 EI model based on Wakefield's, with pareto distributions in upper level of hierarchy
+# def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
+#     """
+#     Log probability for convolution of binomials
 
-    Parameters
-    ----------
-    group_fraction: Length-p (p=# of precincts) vector giving demographic information
-        as the fraction of precinct_pop in the demographic group of interest
-    votes_fraction: Length p vector giving the fraction of each precinct_pop that
-        votes for the candidate of interest
-    precinct_pops: Length-p vector giving size of each precinct population of interest
-         (e.g. voting population)
+#     Parameters
+#     ----------
+#     b_1: corresponds to p0 in wakefield's notation, the probability that an individual
+#         in the given demographic group votes for the given candidate
+#     b_2: corresponds to p1 in wakefield's notation, the probability that an individual
+#         in the complement of the given demographic group votes for the given candidate
 
-    Returns
-    -------
-    model: A pymc3 model
-    """
+#     n_0: the count of given demographic group in the precinct
+#     n_1: the count of the complement of given demographic group in the precinct
 
-    vote_count_obs = votes_fraction * precinct_pops
-    group_count_obs = group_fraction * precinct_pops
-    num_precincts = len(precinct_pops)
-    upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
-    lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
-    with pm.Model() as model:
-        phi_1 = pm.Uniform("phi_1", lower=0.0, upper=1.0)
-        kappa_1 = pm.Pareto("kappa_1", m=pareto_scale, alpha=pareto_shape)
+#     lower, upper : lower and upper bounds on the (unobserved) count of votes from given
+#     deographic group for given candidate within precinct
+#     (corresponds to votes_within_group_count in log_binom_sum and y_0i in Wakefield's)
 
-        phi_2 = pm.Uniform("phi_2", lower=0.0, upper=1.0)
-        kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
+#     Returns
+#     -------
+#     A theano tensor giving the log probability of b_1, b_2 (given the other parameters)
 
-        b_1 = pm.Beta(
-            "b_1",
-            alpha=phi_1 * kappa_1,
-            beta=(1.0 - phi_1) * kappa_1,
-            shape=num_precincts,
-        )
-        b_2 = pm.Beta(
-            "b_2",
-            alpha=phi_2 * kappa_2,
-            beta=(1.0 - phi_2) * kappa_2,
-            shape=num_precincts,
-        )
+#     Notes
+#     -----
+#     See Wakefield 2004 equation 4
+#     """
 
-        pm.DensityDist(
-            "votes_count_obs",
-            b_1,
-            b_2,
-            group_count_obs,
-            precinct_pops - group_count_obs,
-            upper,
-            lower,
-            observed=vote_count_obs,
-            logp=binom_conv_log_p,
-        )
-    return model
+#     result, _ = aesara.scan(
+#         fn=log_binom_sum,
+#         outputs_info={"taps": [-1], "initial": at.as_tensor(np.array([0.0]))},
+#         sequences=[
+#             at.as_tensor(lower),
+#             at.as_tensor(upper),
+#             at.as_tensor(obs_votes),
+#             at.as_tensor(n_0),
+#             at.as_tensor(n_1),
+#             at.as_tensor(b_1),
+#             at.as_tensor(b_2),
+#         ],
+#     )
+#     return result[-1]
 
 
-def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0):
-    """
-    2 x 2 EI model Wakefield with normal hyperpriors
+# def wakefield_model_beta(
+#     group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
+# ):
+#     """
+#     2 x 2 EI model based on Wakefield's, with pareto distributions in upper level of hierarchy
 
-    Note: Wakefield suggests adding another level of hierarchy, with a prior over mu0 and mu1,
-    sigma0, sigma1, but that is not yet implemented here
+#     Parameters
+#     ----------
+#     group_fraction: Length-p (p=# of precincts) vector giving demographic information
+#         as the fraction of precinct_pop in the demographic group of interest
+#     votes_fraction: Length p vector giving the fraction of each precinct_pop that
+#         votes for the candidate of interest
+#     precinct_pops: Length-p vector giving size of each precinct population of interest
+#          (e.g. voting population)
 
-    Parameters
-    ----------
-    group_fraction: Length-p (p=# of precincts) vector giving demographic information
-        as the fraction of precinct_pop in the demographic group of interest
-    votes_fraction: Length p vector giving the fraction of each precinct_pop that
-        votes for the candidate of interest
-    precinct_pops: Length-p vector giving size of each precinct population of interest
-         (e.g. voting population)
-    mu0: float
-        Mean of the normally distributed hyperparameter associated with the demographic
-        group of interest
-    m1: Mean of the normally distributed hyperparameter associated with the complement
-    of the demographic group of interest
+#     Returns
+#     -------
+#     model: A pymc3 model
+#     """
 
-    Returns
-    -------
-    model: A pymc3 model
+#     vote_count_obs = votes_fraction * precinct_pops
+#     group_count_obs = group_fraction * precinct_pops
+#     num_precincts = len(precinct_pops)
+#     upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
+#     lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
+#     with pm.Model() as model:
+#         phi_1 = pm.Uniform("phi_1", lower=0.0, upper=1.0)
+#         kappa_1 = pm.Pareto("kappa_1", m=pareto_scale, alpha=pareto_shape)
 
-    """
+#         phi_2 = pm.Uniform("phi_2", lower=0.0, upper=1.0)
+#         kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
 
-    vote_count_obs = votes_fraction * precinct_pops
-    group_count_obs = group_fraction * precinct_pops
-    num_precincts = len(precinct_pops)
-    upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
-    lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
-    with pm.Model() as model:
-        sigma_0 = pm.Gamma("sigma0", 1, 0.1)
-        sigma_1 = pm.Gamma("sigma1", 1, 0.1)
+#         b_1 = pm.Beta(
+#             "b_1",
+#             alpha=phi_1 * kappa_1,
+#             beta=(1.0 - phi_1) * kappa_1,
+#             shape=num_precincts,
+#         )
+#         b_2 = pm.Beta(
+#             "b_2",
+#             alpha=phi_2 * kappa_2,
+#             beta=(1.0 - phi_2) * kappa_2,
+#             shape=num_precincts,
+#         )
 
-        theta_0 = pm.Normal("theta0", mu0, sigma_0, shape=num_precincts)
-        theta_1 = pm.Normal("theta1", mu1, sigma_1, shape=num_precincts)
+#         pm.DensityDist(
+#             "votes_count_obs",
+#             b_1,
+#             b_2,
+#             group_count_obs,
+#             precinct_pops - group_count_obs,
+#             upper,
+#             lower,
+#             observed=vote_count_obs,
+#             logp=binom_conv_log_p,
+#         )
+#     return model
 
-        b_1 = pm.Deterministic(
-            "b_1", at.exp(theta_0) / (1 + at.exp(theta_0))
-        )  # vector of length num_precincts
-        b_2 = pm.Deterministic(
-            "b_2", at.exp(theta_1) / (1 + at.exp(theta_1))
-        )  # vector of length num_precincts
 
-        pm.DensityDist(
-            "votes_count_obs",
-            b_1,
-            b_2,
-            group_count_obs,  # n_0
-            precinct_pops - group_count_obs,  # n_1
-            upper,
-            lower,
-            observed=vote_count_obs,  # obs_votes
-            logp=binom_conv_log_p,
-        )
-    return model
+# def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0):
+#     """
+#     2 x 2 EI model Wakefield with normal hyperpriors
+
+#     Note: Wakefield suggests adding another level of hierarchy, with a prior over mu0 and mu1,
+#     sigma0, sigma1, but that is not yet implemented here
+
+#     Parameters
+#     ----------
+#     group_fraction: Length-p (p=# of precincts) vector giving demographic information
+#         as the fraction of precinct_pop in the demographic group of interest
+#     votes_fraction: Length p vector giving the fraction of each precinct_pop that
+#         votes for the candidate of interest
+#     precinct_pops: Length-p vector giving size of each precinct population of interest
+#          (e.g. voting population)
+#     mu0: float
+#         Mean of the normally distributed hyperparameter associated with the demographic
+#         group of interest
+#     m1: Mean of the normally distributed hyperparameter associated with the complement
+#     of the demographic group of interest
+
+#     Returns
+#     -------
+#     model: A pymc3 model
+
+#     """
+
+#     vote_count_obs = votes_fraction * precinct_pops
+#     group_count_obs = group_fraction * precinct_pops
+#     num_precincts = len(precinct_pops)
+#     upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
+#     lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
+#     with pm.Model() as model:
+#         sigma_0 = pm.Gamma("sigma0", 1, 0.1)
+#         sigma_1 = pm.Gamma("sigma1", 1, 0.1)
+
+#         theta_0 = pm.Normal("theta0", mu0, sigma_0, shape=num_precincts)
+#         theta_1 = pm.Normal("theta1", mu1, sigma_1, shape=num_precincts)
+
+#         b_1 = pm.Deterministic(
+#             "b_1", at.exp(theta_0) / (1 + at.exp(theta_0))
+#         )  # vector of length num_precincts
+#         b_2 = pm.Deterministic(
+#             "b_2", at.exp(theta_1) / (1 + at.exp(theta_1))
+#         )  # vector of length num_precincts
+
+#         pm.DensityDist(
+#             "votes_count_obs",
+#             b_1,
+#             b_2,
+#             group_count_obs,  # n_0
+#             precinct_pops - group_count_obs,  # n_1
+#             upper,
+#             lower,
+#             observed=vote_count_obs,  # obs_votes
+#             logp=binom_conv_log_p,
+#         )
+#     return model
 
 
 class TwoByTwoEIBaseBayes:
@@ -444,7 +444,7 @@ class TwoByTwoEIBaseBayes:
         """
         model_name: str
             The name of one of the models ( "king99", "king99_pareto_modification",
-            "wakefield_beta", "wakefield_normal", "truncated_normal",
+             "truncated_normal",
             "goodman_er_bayes")
         additional_model_params
             Hyperparameters to pass to model, if changing default parameters

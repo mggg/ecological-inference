@@ -79,9 +79,9 @@ def pyei_greiner_quinn_sample(  # pylint: disable=too-many-locals
     populations, the difference is subtracted from a *random* group or column
     """
     if num_samples is None:
-        num_samples = 10000
+        num_samples = 500_000
     if burnin is None:
-        burnin = 1000
+        burnin = 100_000
 
     # covert fractions to counts
     # and make counts match precinct_pops (for example)
