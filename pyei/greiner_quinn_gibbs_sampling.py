@@ -12,6 +12,7 @@ import numpy as np
 import arviz as az
 from tqdm import tqdm
 from pyei.distribution_utils import NonCentralHyperGeometric
+from numba import njit, prange
 
 __all__ = ["pyei_greiner_quinn_sample", "greiner_quinn_gibbs_sample"]
 
@@ -185,7 +186,7 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
             "group_counts and vote_counts must both have first dim of length num_precincts"
         )
     if burnin >= num_samples:
-        raise ValueError("num_samples is only {num_samples} but burn-in is {burnin}")
+        raise ValueError(f"num_samples is only {num_samples} but burn-in is {burnin}")
 
     precinct_pops = vote_counts.sum(axis=1)
     _, num_candidates = vote_counts.shape
@@ -430,7 +431,7 @@ def omega_to_theta(omega, r, c):
     theta_last_ext = np.expand_dims(theta_last, axis=2)
     return np.concatenate((theta_other, theta_last_ext), axis=2)
 
-
+@njit(parallel=True)
 def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     """
     group_counts: num_precincts x r
@@ -442,7 +443,7 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     """
     num_precincts, num_groups, num_candidates = prev_internal_counts_samp.shape
 
-    for i in range(num_precincts):
+    for i in prange(num_precincts):
         for r in range(num_groups - 1):
             for r_prime in range(r + 1, num_groups):
                 for c in range(num_candidates - 1):
@@ -475,6 +476,7 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     return prev_internal_counts_samp
 
 
+@njit(parallel=True)
 def get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops):
     """
     Sets an initial value of internal counts that is compatible with the
@@ -517,16 +519,17 @@ def get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops):
     group_counts_remaining = group_counts.copy()
     vote_counts_remaining = vote_counts.copy()
 
-    for i in range(num_precincts):
+    for i in prange(num_precincts):
         for r in range(num_groups - 1):
             for c in range(num_candidates - 1):
                 count_for_binom = np.round(
                     group_counts[i, r]
                     * (vote_counts[i, c] + vote_counts[i, c + 1])
                     / precinct_pops[i]
-                ).astype(int)
+                )
                 prop_for_binom = vote_counts[i, c] / precinct_pops[i]
-                samp = st.binom.rvs(count_for_binom, prop_for_binom)
+                #samp = st.binom.rvs(count_for_binom, prop_for_binom)
+                samp = np.random.binomial(count_for_binom, prop_for_binom)
 
                 samp = min(samp, vote_counts_remaining[i, c])
                 samp = min(samp, group_counts_remaining[i, r])

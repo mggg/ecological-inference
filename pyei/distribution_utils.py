@@ -8,32 +8,49 @@ Statistician 55, 366-369.
 
 Used in Greiner-Quinn method Gibbs sampler
 """
-# TODO: lint or replace with scipy implementation
 import math
 import numpy as np
+from numba import jit, int32, float32
+from numba.experimental import jitclass
 
-
+@jit
 def r_function(n1, n2, m1, psi, i):
     """
     The function r defined in Liao and Rosen 2001
     """
     return (n1 - i + 1) * (m1 - i + 1) / (i * (n2 - m1 + i)) * psi
 
-
+@jit
 def sample_low_to_high(lower, ran, pi, shift, uu):
     for i in range(lower, uu + 1):
         if ran <= pi[i + shift]:
             return i
         ran = ran - pi[i + shift]
+    return np.int64(uu)
+  
 
-
+@jit
 def sample_high_to_low(upper, ran, pi, shift, ll):
     for i in range(upper, ll - 1, -1):
         if ran <= pi[i + shift]:
             return i
         ran = ran - pi[i + shift]
+    return np.int64(0)
+        
 
 
+spec = [
+    ('n1', int32),               # a simple scalar field
+    ('n2', int32), 
+    ('m1', int32),  
+    ('psi', float32), 
+    ('ll', int32),
+    ('uu', int32),
+    ('_mode', int32),
+    ('_density', float32[:]),
+]
+
+@jitclass(spec)
 class NonCentralHyperGeometric:
     """Allows for sampling from noncentralhypergeometric distribution
     Following the methods of Liao and Rosen, 2001
@@ -67,15 +84,35 @@ class NonCentralHyperGeometric:
         self.ll = max(0, m1 - n2)
         self.uu = min(n1, m1)
 
-        self._mode = None
-        self._density = None  # vector of p_i in Liao and Rosen notation
+        self._mode == -1  #using -1 instead of None for numba
+        
+        # calculate density
+        pi = np.ones(self.uu - self.ll + 1, dtype=np.float32)
+
+        if self.mode < self.uu:
+            r = r_function(
+                self.n1, self.n2, self.m1, self.psi, np.arange(self.mode + 1, self.uu + 1)
+            )
+            pi[(self.mode + 1 - self.ll) : (self.uu - self.ll + 1)] = np.cumprod(r)
+
+        if self.mode > self.ll:
+            r = 1 / r_function(
+                self.n1,
+                self.n2,
+                self.m1,
+                self.psi,
+                np.flip(np.arange(self.ll + 1, self.mode + 1)),
+            )
+            pi[0 : (self.mode - self.ll)] = np.flip(np.cumprod(r))
+        self._density = pi / pi.sum()
+
 
     @property
     def mode(self):
         """
         Calculate distribution mode and set self._mode
         """
-        if self._mode is None:
+        if self._mode == -1: #using -1 instead of None for numba
             a = self.psi - 1
             b = -((self.m1 + self.n1 + 2) * self.psi + self.n2 - self.m1)
             c = self.psi * (self.n1 + 1) * (self.m1 + 1)
@@ -87,33 +124,10 @@ class NonCentralHyperGeometric:
                 self._mode = math.trunc(q / a)
         return self._mode
 
-    @property
-    def density(self):
-        if self._density is None:
-            pi = np.ones(self.uu - self.ll + 1)
-
-            if self.mode < self.uu:
-                r = r_function(
-                    self.n1, self.n2, self.m1, self.psi, np.arange(self.mode + 1, self.uu + 1)
-                )
-                pi[(self.mode + 1 - self.ll) : (self.uu - self.ll + 1)] = np.cumprod(r)
-
-            if self.mode > self.ll:
-                r = 1 / r_function(
-                    self.n1,
-                    self.n2,
-                    self.m1,
-                    self.psi,
-                    np.flip(np.arange(self.ll + 1, self.mode + 1)),
-                )
-                pi[0 : (self.mode - self.ll)] = np.flip(np.cumprod(r))
-            self._density = pi / sum(pi)
-
-        return self._density
-
     def get_sample(self):
-        ran = np.random.uniform()
-        pi = self.density
+        
+        ran = np.random.uniform(0, 1)
+        pi = self._density
 
         if self.mode == self.ll:
             return sample_low_to_high(self.ll, ran, pi, -self.ll, self.uu)
