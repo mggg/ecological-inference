@@ -9,3 +9,4 @@ numpy
 jax
 numpyro
 jaxlib
+numba
