@@ -230,83 +230,83 @@ def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
     return model
 
 
-# def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, prev):
-#     """
-#     Helper function for computing log prob of convolution of binomial
+def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, prev):
+    """
+    Helper function for computing log prob of convolution of binomial
 
-#     Parameters
-#     ----------
-#     lower, upper : lower and upper bounds on the (unobserved) count of votes from given
-#         deographic group for given candidate within precinct
-#     n0_curr: the (current value for the) count of given demographic group in the precinct
-#     n1_curr: the (current value for the)count of the complement of given demographic group
-#          in the precinct
-#     b_1_curr: corresponds to p0 in wakefield's notation, the probability that an individual
-#         in the given demographic group votes for the given candidate
-#     b_2_curr: corresponds to p1 in wakefield's notation, the probability that an individual
-#         in the complement of the given demographic group votes for the given candidate
-#     prev: the partial sum of the log prob of the convolution of binomials
+    Parameters
+    ----------
+    lower, upper : lower and upper bounds on the (unobserved) count of votes from given
+        deographic group for given candidate within precinct
+    n0_curr: the (current value for the) count of given demographic group in the precinct
+    n1_curr: the (current value for the)count of the complement of given demographic group
+         in the precinct
+    b_1_curr: corresponds to p0 in wakefield's notation, the probability that an individual
+        in the given demographic group votes for the given candidate
+    b_2_curr: corresponds to p1 in wakefield's notation, the probability that an individual
+        in the complement of the given demographic group votes for the given candidate
+    prev: the partial sum of the log prob of the convolution of binomials
 
-#     Returns
-#     -------
-#     prev + component_for_current_precinct : sum of the previous value of the partial sum
-#         for the log prob of the convolution of binomials and an additional term for one
-#         precinct
+    Returns
+    -------
+    prev + component_for_current_precinct : sum of the previous value of the partial sum
+        for the log prob of the convolution of binomials and an additional term for one
+        precinct
 
-#     """
+    """
 
-#     # votes_within_group_count is y_0i in Wakefield's notation, the count of votes from
-#     # given group for given candidate within precinct i (unobserved)
-#     votes_within_group_count = at.arange(lower, upper)
-#     component_for_current_precinct = pm.math.logsumexp(
-#         # The `rv.logp(x)` method was removed. Instead use `pm.logp(rv, x)`.`
-#         pm.logp(pm.Binomial.dist(n0_curr, b_1_curr), votes_within_group_count)
-#         + pm.logp(pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count)
-#     )
-#     return prev + component_for_current_precinct
+    # votes_within_group_count is y_0i in Wakefield's notation, the count of votes from
+    # given group for given candidate within precinct i (unobserved)
+    votes_within_group_count = at.arange(lower, upper)
+    component_for_current_precinct = pm.math.logsumexp(
+        # The `rv.logp(x)` method was removed. Instead use `pm.logp(rv, x)`.`
+        pm.logp(pm.Binomial.dist(n0_curr, b_1_curr), votes_within_group_count)
+        + pm.logp(pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count)
+    )
+    return prev + component_for_current_precinct
 
 
-# def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
-#     """
-#     Log probability for convolution of binomials
+def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
+    """
+    Log probability for convolution of binomials
 
-#     Parameters
-#     ----------
-#     b_1: corresponds to p0 in wakefield's notation, the probability that an individual
-#         in the given demographic group votes for the given candidate
-#     b_2: corresponds to p1 in wakefield's notation, the probability that an individual
-#         in the complement of the given demographic group votes for the given candidate
+    Parameters
+    ----------
+    b_1: corresponds to p0 in wakefield's notation, the probability that an individual
+        in the given demographic group votes for the given candidate
+    b_2: corresponds to p1 in wakefield's notation, the probability that an individual
+        in the complement of the given demographic group votes for the given candidate
 
-#     n_0: the count of given demographic group in the precinct
-#     n_1: the count of the complement of given demographic group in the precinct
+    n_0: the count of given demographic group in the precinct
+    n_1: the count of the complement of given demographic group in the precinct
 
-#     lower, upper : lower and upper bounds on the (unobserved) count of votes from given
-#     deographic group for given candidate within precinct
-#     (corresponds to votes_within_group_count in log_binom_sum and y_0i in Wakefield's)
+    lower, upper : lower and upper bounds on the (unobserved) count of votes from given
+    deographic group for given candidate within precinct
+    (corresponds to votes_within_group_count in log_binom_sum and y_0i in Wakefield's)
 
-#     Returns
-#     -------
-#     A theano tensor giving the log probability of b_1, b_2 (given the other parameters)
+    Returns
+    -------
+    A theano tensor giving the log probability of b_1, b_2 (given the other parameters)
 
-#     Notes
-#     -----
-#     See Wakefield 2004 equation 4
-#     """
+    Notes
+    -----
+    See Wakefield 2004 equation 4
+    """
 
-#     result, _ = aesara.scan(
-#         fn=log_binom_sum,
-#         outputs_info={"taps": [-1], "initial": at.as_tensor(np.array([0.0]))},
-#         sequences=[
-#             at.as_tensor(lower),
-#             at.as_tensor(upper),
-#             at.as_tensor(obs_votes),
-#             at.as_tensor(n_0),
-#             at.as_tensor(n_1),
-#             at.as_tensor(b_1),
-#             at.as_tensor(b_2),
-#         ],
-#     )
-#     return result[-1]
+    result, _ = aesara.scan(
+        fn=log_binom_sum,
+        outputs_info={"taps": [-1], "initial": at.as_tensor(np.array([0.0]))},
+        sequences=[
+            at.as_tensor(lower),
+            at.as_tensor(upper),
+            at.as_tensor(obs_votes),
+            at.as_tensor(n_0),
+            at.as_tensor(n_1),
+            at.as_tensor(b_1),
+            at.as_tensor(b_2),
+        ],
+    )
+    return result[-1]
 
 
 # def wakefield_model_beta(
@@ -818,12 +818,6 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         elif self.model_name == "king99_pareto_modification":
             model_function = ei_beta_binom_model_modified
 
-        elif self.model_name == "wakefield_beta":
-            model_function = wakefield_model_beta
-
-        elif self.model_name == "wakefield_normal":
-            model_function = wakefield_normal
-
         elif self.model_name == "truncated_normal":
             model_function = truncated_normal_asym
 
@@ -835,12 +829,14 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         )
 
         if draw_samples:
-            with self.sim_model:
+            with self.sim_model:  # pylint: disable=not-context-manager
                 # this "if" is a workaround until jax.scipy.special.erfcx is
                 # implemented https://github.com/google/jax/issues/1987
                 # (when that's implemented, trunc-normal can use jax sampling
                 # as well) @TODO: check on this in a little while
-                if self.model_name in ["truncated_normal", "wakefield_normal", "wakefield_beta"]:
+                if self.model_name in [
+                    "truncated_normal"
+                ]:  # , "wakefield_normal", "wakefield_beta"]:
                     self.sim_trace = pm.sample(
                         target_accept=target_accept,
                         tune=tune,
