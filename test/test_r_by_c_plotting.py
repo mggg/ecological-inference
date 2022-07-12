@@ -4,6 +4,7 @@ import numpy as np
 from pyei import data
 from pyei.plot_utils import plot_precinct_scatterplot
 from pyei.r_by_c import RowByColumnEI
+from pyei.io_utils import to_netcdf, from_netcdf
 
 
 @pytest.fixture(scope="session")
@@ -78,6 +79,15 @@ def test_ei_r_by_c_summary(two_r_by_c_ei_runs):  # pylint: disable=redefined-out
     assert isinstance(example_r_by_c_ei.summary(), str)
 
 
+def test_io_utils(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    model_name_orig = example_r_by_c_ei.model_name
+    to_netcdf(example_r_by_c_ei, "example.nc")
+    reloaded_ei = from_netcdf("example.nc")
+    assert isinstance(reloaded_ei.summary(), str)  # check that summary string is there
+    assert model_name_orig == reloaded_ei.model_name  # check that model data came with
+
+
 def test_ei_calculate_turnout_adjusted_samples(
     two_r_by_c_ei_runs,
 ):  # pylint: disable=redefined-outer-name
@@ -103,7 +113,10 @@ def test_ei_calculate_turnout_adjusted_samples(
         return turnout_adjusted_samples
 
     example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
-    non_adjusted_samples = example_r_by_c_ei.sim_trace.get_values("b")
+    non_adjusted_samples = np.transpose(
+        example_r_by_c_ei.sim_trace["posterior"]["b"].stack(all_draws=["chain", "draw"]).values,
+        axes=(3, 0, 1, 2),
+    )
     test_adj_samples = calculate_turnout_adjust_samples_basic(
         non_adjusted_samples, "Hardy", example_r_by_c_ei.candidate_names
     )
@@ -137,7 +150,12 @@ def test_computation_of_districtwide_samples(
         return districtwide_prefs
 
     test_districtwide_prefs = calculate_districtwide_samples_basic(
-        ei_ex.sim_trace.get_values("b"), ei_ex.demographic_group_fractions, ei_ex.precinct_pops
+        np.transpose(
+            ei_ex.sim_trace["posterior"]["b"].stack(all_draws=["chain", "draw"]).values,
+            axes=(3, 0, 1, 2),
+        ),
+        ei_ex.demographic_group_fractions,
+        ei_ex.precinct_pops,
     )
     np.all(np.isclose(test_districtwide_prefs, ei_ex.sampled_voting_prefs))
 

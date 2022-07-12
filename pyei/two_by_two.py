@@ -3,14 +3,14 @@ Models and fitting for 2x2 methods
 
 TODO: Checks for wakefield model
 TODO: Wakefield model with normal prior
-TODO: Truncated normal model
 """
 
 import warnings
-import pymc3 as pm
+import pymc as pm
+from pymc import sampling_jax
 import numpy as np
-import theano.tensor as tt
-import theano
+import aesara.tensor as at
+import aesara
 from .plot_utils import (
     plot_conf_or_credible_interval,
     plot_boxplots,
@@ -77,10 +77,10 @@ def truncated_normal_asym(
 
     with pm.Model() as model:
         sigma_upper = pm.HalfNormal(
-            upper_level_sigma_name, sd=0.707
+            upper_level_sigma_name, sigma=0.707
         )  # chosen to match King 97 #sigma11
         sigma_lower = pm.HalfNormal(
-            lower_level_sigma_name, sd=0.707
+            lower_level_sigma_name, sigma=0.707
         )  # chosen to match king 97 #sigma22
         rho = pm.Uniform("rho", -0.5, 0.5)  # TODO: revisit
         sigma_12 = sigma_upper * sigma_lower * rho
@@ -257,10 +257,11 @@ def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, 
 
     # votes_within_group_count is y_0i in Wakefield's notation, the count of votes from
     # given group for given candidate within precinct i (unobserved)
-    votes_within_group_count = tt.arange(lower, upper)
+    votes_within_group_count = at.arange(lower, upper)
     component_for_current_precinct = pm.math.logsumexp(
-        pm.Binomial.dist(n0_curr, b_1_curr).logp(votes_within_group_count)
-        + pm.Binomial.dist(n1_curr, b_2_curr).logp(obs_vote - votes_within_group_count)
+        # The `rv.logp(x)` method was removed. Instead use `pm.logp(rv, x)`.`
+        pm.logp(pm.Binomial.dist(n0_curr, b_1_curr), votes_within_group_count)
+        + pm.logp(pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count)
     )
     return prev + component_for_current_precinct
 
@@ -292,143 +293,139 @@ def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
     See Wakefield 2004 equation 4
     """
 
-    result, _ = theano.scan(
+    result, _ = aesara.scan(
         fn=log_binom_sum,
-        outputs_info={"taps": [-1], "initial": tt.as_tensor(np.array([0.0]))},
+        outputs_info={"taps": [-1], "initial": at.as_tensor(np.array([0.0]))},
         sequences=[
-            tt.as_tensor(lower),
-            tt.as_tensor(upper),
-            tt.as_tensor(obs_votes),
-            tt.as_tensor(n_0),
-            tt.as_tensor(n_1),
-            tt.as_tensor(b_1),
-            tt.as_tensor(b_2),
+            at.as_tensor(lower),
+            at.as_tensor(upper),
+            at.as_tensor(obs_votes),
+            at.as_tensor(n_0),
+            at.as_tensor(n_1),
+            at.as_tensor(b_1),
+            at.as_tensor(b_2),
         ],
     )
     return result[-1]
 
 
-def wakefield_model_beta(
-    group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
-):
-    """
-    2 x 2 EI model based on Wakefield's, with pareto distributions in upper level of hierarchy
+# def wakefield_model_beta(
+#     group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
+# ):
+#     """
+#     2 x 2 EI model based on Wakefield's, with pareto distributions in upper level of hierarchy
 
-    Parameters
-    ----------
-    group_fraction: Length-p (p=# of precincts) vector giving demographic information
-        as the fraction of precinct_pop in the demographic group of interest
-    votes_fraction: Length p vector giving the fraction of each precinct_pop that
-        votes for the candidate of interest
-    precinct_pops: Length-p vector giving size of each precinct population of interest
-         (e.g. voting population)
+#     Parameters
+#     ----------
+#     group_fraction: Length-p (p=# of precincts) vector giving demographic information
+#         as the fraction of precinct_pop in the demographic group of interest
+#     votes_fraction: Length p vector giving the fraction of each precinct_pop that
+#         votes for the candidate of interest
+#     precinct_pops: Length-p vector giving size of each precinct population of interest
+#          (e.g. voting population)
 
-    Returns
-    -------
-    model: A pymc3 model
-    """
+#     Returns
+#     -------
+#     model: A pymc3 model
+#     """
 
-    vote_count_obs = votes_fraction * precinct_pops
-    group_count_obs = group_fraction * precinct_pops
-    num_precincts = len(precinct_pops)
-    upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
-    lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
-    with pm.Model() as model:
-        phi_1 = pm.Uniform("phi_1", lower=0.0, upper=1.0)
-        kappa_1 = pm.Pareto("kappa_1", m=pareto_scale, alpha=pareto_shape)
+#     vote_count_obs = votes_fraction * precinct_pops
+#     group_count_obs = group_fraction * precinct_pops
+#     num_precincts = len(precinct_pops)
+#     upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
+#     lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
+#     with pm.Model() as model:
+#         phi_1 = pm.Uniform("phi_1", lower=0.0, upper=1.0)
+#         kappa_1 = pm.Pareto("kappa_1", m=pareto_scale, alpha=pareto_shape)
 
-        phi_2 = pm.Uniform("phi_2", lower=0.0, upper=1.0)
-        kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
+#         phi_2 = pm.Uniform("phi_2", lower=0.0, upper=1.0)
+#         kappa_2 = pm.Pareto("kappa_2", m=pareto_scale, alpha=pareto_shape)
 
-        b_1 = pm.Beta(
-            "b_1",
-            alpha=phi_1 * kappa_1,
-            beta=(1.0 - phi_1) * kappa_1,
-            shape=num_precincts,
-        )
-        b_2 = pm.Beta(
-            "b_2",
-            alpha=phi_2 * kappa_2,
-            beta=(1.0 - phi_2) * kappa_2,
-            shape=num_precincts,
-        )
+#         b_1 = pm.Beta(
+#             "b_1",
+#             alpha=phi_1 * kappa_1,
+#             beta=(1.0 - phi_1) * kappa_1,
+#             shape=num_precincts,
+#         )
+#         b_2 = pm.Beta(
+#             "b_2",
+#             alpha=phi_2 * kappa_2,
+#             beta=(1.0 - phi_2) * kappa_2,
+#             shape=num_precincts,
+#         )
 
-        pm.DensityDist(
-            "votes_count_obs",
-            binom_conv_log_p,
-            observed={
-                "b_1": b_1,
-                "b_2": b_2,
-                "n_0": group_count_obs,
-                "n_1": precinct_pops - group_count_obs,
-                "upper": upper,
-                "lower": lower,
-                "obs_votes": vote_count_obs,
-            },
-        )
-    return model
+#         pm.DensityDist(
+#             "votes_count_obs",
+#             b_1,
+#             b_2,
+#             group_count_obs,
+#             precinct_pops - group_count_obs,
+#             upper,
+#             lower,
+#             observed=vote_count_obs,
+#             logp=binom_conv_log_p,
+#         )
+#     return model
 
 
-def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0):
-    """
-    2 x 2 EI model Wakefield with normal hyperpriors
+# def wakefield_normal(group_fraction, votes_fraction, precinct_pops, mu0=0, mu1=0):
+#     """
+#     2 x 2 EI model Wakefield with normal hyperpriors
 
-    Note: Wakefield suggests adding another level of hierarchy, with a prior over mu0 and mu1,
-    sigma0, sigma1, but that is not yet implemented here
+#     Note: Wakefield suggests adding another level of hierarchy, with a prior over mu0 and mu1,
+#     sigma0, sigma1, but that is not yet implemented here
 
-    Parameters
-    ----------
-    group_fraction: Length-p (p=# of precincts) vector giving demographic information
-        as the fraction of precinct_pop in the demographic group of interest
-    votes_fraction: Length p vector giving the fraction of each precinct_pop that
-        votes for the candidate of interest
-    precinct_pops: Length-p vector giving size of each precinct population of interest
-         (e.g. voting population)
-    mu0: float
-        Mean of the normally distributed hyperparameter associated with the demographic
-        group of interest
-    m1: Mean of the normally distributed hyperparameter associated with the complement
-    of the demographic group of interest
+#     Parameters
+#     ----------
+#     group_fraction: Length-p (p=# of precincts) vector giving demographic information
+#         as the fraction of precinct_pop in the demographic group of interest
+#     votes_fraction: Length p vector giving the fraction of each precinct_pop that
+#         votes for the candidate of interest
+#     precinct_pops: Length-p vector giving size of each precinct population of interest
+#          (e.g. voting population)
+#     mu0: float
+#         Mean of the normally distributed hyperparameter associated with the demographic
+#         group of interest
+#     m1: Mean of the normally distributed hyperparameter associated with the complement
+#     of the demographic group of interest
 
-    Returns
-    -------
-    model: A pymc3 model
+#     Returns
+#     -------
+#     model: A pymc3 model
 
-    """
+#     """
 
-    vote_count_obs = votes_fraction * precinct_pops
-    group_count_obs = group_fraction * precinct_pops
-    num_precincts = len(precinct_pops)
-    upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
-    lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
-    with pm.Model() as model:
-        sigma_0 = pm.Gamma("sigma0", 1, 0.1)
-        sigma_1 = pm.Gamma("sigma1", 1, 0.1)
+#     vote_count_obs = votes_fraction * precinct_pops
+#     group_count_obs = group_fraction * precinct_pops
+#     num_precincts = len(precinct_pops)
+#     upper = np.minimum(group_count_obs, vote_count_obs)  # upper bound on y
+#     lower = np.maximum(0.0, vote_count_obs - precinct_pops + group_count_obs)  # lower bound on y
+#     with pm.Model() as model:
+#         sigma_0 = pm.Gamma("sigma0", 1, 0.1)
+#         sigma_1 = pm.Gamma("sigma1", 1, 0.1)
 
-        theta_0 = pm.Normal("theta0", mu0, sigma_0, shape=num_precincts)
-        theta_1 = pm.Normal("theta1", mu1, sigma_1, shape=num_precincts)
+#         theta_0 = pm.Normal("theta0", mu0, sigma_0, shape=num_precincts)
+#         theta_1 = pm.Normal("theta1", mu1, sigma_1, shape=num_precincts)
 
-        b_1 = pm.Deterministic(
-            "b_1", tt.exp(theta_0) / (1 + tt.exp(theta_0))
-        )  # vector of length num_precincts
-        b_2 = pm.Deterministic(
-            "b_2", tt.exp(theta_1) / (1 + tt.exp(theta_1))
-        )  # vector of length num_precincts
+#         b_1 = pm.Deterministic(
+#             "b_1", at.exp(theta_0) / (1 + at.exp(theta_0))
+#         )  # vector of length num_precincts
+#         b_2 = pm.Deterministic(
+#             "b_2", at.exp(theta_1) / (1 + at.exp(theta_1))
+#         )  # vector of length num_precincts
 
-        pm.DensityDist(
-            "votes_count_obs",
-            binom_conv_log_p,
-            observed={
-                "b_1": b_1,
-                "b_2": b_2,
-                "n_0": group_count_obs,
-                "n_1": precinct_pops - group_count_obs,
-                "upper": upper,
-                "lower": lower,
-                "obs_votes": vote_count_obs,
-            },
-        )
-    return model
+#         pm.DensityDist(
+#             "votes_count_obs",
+#             b_1,
+#             b_2,
+#             group_count_obs,  # n_0
+#             precinct_pops - group_count_obs,  # n_1
+#             upper,
+#             lower,
+#             observed=vote_count_obs,  # obs_votes
+#             logp=binom_conv_log_p,
+#         )
+#     return model
 
 
 class TwoByTwoEIBaseBayes:
@@ -447,7 +444,7 @@ class TwoByTwoEIBaseBayes:
         """
         model_name: str
             The name of one of the models ( "king99", "king99_pareto_modification",
-            "wakefield_beta", "wakefield_normal", "truncated_normal",
+             "truncated_normal",
             "goodman_er_bayes")
         additional_model_params
             Hyperparameters to pass to model, if changing default parameters
@@ -821,12 +818,6 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         elif self.model_name == "king99_pareto_modification":
             model_function = ei_beta_binom_model_modified
 
-        elif self.model_name == "wakefield_beta":
-            model_function = wakefield_model_beta
-
-        elif self.model_name == "wakefield_normal":
-            model_function = wakefield_normal
-
         elif self.model_name == "truncated_normal":
             model_function = truncated_normal_asym
 
@@ -838,21 +829,25 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         )
 
         if draw_samples:
-            # TODO: this workaround shouldn't be necessary. Modify the model so that the checks
-            # can run without error
-            if self.model_name in ("wakefield_beta", "wakefield_normal"):
-                compute_convergence_checks = False
-                print("WARNING: some convergence checks currently disabled for wakefield model")
-            else:
-                compute_convergence_checks = True
-
-            with self.sim_model:
-                self.sim_trace = pm.sample(
-                    target_accept=target_accept,
-                    tune=tune,
-                    compute_convergence_checks=compute_convergence_checks,
-                    **other_sampling_args,
-                )
+            with self.sim_model:  # pylint: disable=not-context-manager
+                # this "if" is a workaround until jax.scipy.special.erfcx is
+                # implemented https://github.com/google/jax/issues/1987
+                # (when that's implemented, trunc-normal can use jax sampling
+                # as well) @TODO: check on this in a little while
+                if self.model_name in [
+                    "truncated_normal"
+                ]:  # , "wakefield_normal", "wakefield_beta"]:
+                    self.sim_trace = pm.sample(
+                        target_accept=target_accept,
+                        tune=tune,
+                        **other_sampling_args,
+                    )
+                else:
+                    self.sim_trace = sampling_jax.sample_numpyro_nuts(
+                        target_accept=target_accept,
+                        tune=tune,
+                        **other_sampling_args,
+                    )
 
             self.calculate_sampled_voting_prefs()
             super().calculate_summary()
@@ -863,10 +858,12 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         # number of voters the demographic group who voted for the candidate
         # in each precinct
         samples_converted_to_pops_gp1 = (
-            self.sim_trace.get_values("b_1") * self.precinct_pops
+            self.sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
+            * self.precinct_pops
         )  # shape: num_samples x num_precincts
         samples_converted_to_pops_gp2 = (
-            self.sim_trace.get_values("b_2") * self.precinct_pops
+            self.sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
+            * self.precinct_pops
         )  # shape: num_samples x num_precincts
 
         # obtain samples of total votes summed across all precinct for the candidate for each group
@@ -891,13 +888,19 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         percentiles = [2.5, 97.5]
         num_precincts = len(self.precinct_pops)
 
-        precinct_level_samples_gp1 = self.sim_trace.get_values("b_1")
+        # The stracking on the next line convers to a num_samples x num_precincts array
+        precinct_level_samples_gp1 = (
+            self.sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
+        )
         precinct_posterior_means_gp1 = precinct_level_samples_gp1.mean(axis=0)
         precinct_credible_intervals_gp1 = np.percentile(
             precinct_level_samples_gp1, percentiles, axis=0
         ).T
 
-        precinct_level_samples_gp2 = self.sim_trace.get_values("b_2")
+        # The stracking on the next line convers to a num_samples x num_precincts array
+        precinct_level_samples_gp2 = (
+            self.sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
+        )
         precinct_posterior_means_gp2 = precinct_level_samples_gp2.mean(axis=0)
         precinct_credible_intervals_gp2 = np.percentile(
             precinct_level_samples_gp2, percentiles, axis=0
@@ -981,8 +984,12 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         plot_as_histograms : bool, optional. Default is false. If true, plot
                                 with histograms instead of kdes
         """
-        voting_prefs_group1 = self.sim_trace.get_values("b_1")
-        voting_prefs_group2 = self.sim_trace.get_values("b_2")
+        voting_prefs_group1 = (
+            self.sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
+        )
+        voting_prefs_group2 = (
+            self.sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
+        )
         group_names = self.group_names_for_display()
         if precinct_names is not None:
             precinct_idxs = [self.precinct_names.index(name) for name in precinct_names]

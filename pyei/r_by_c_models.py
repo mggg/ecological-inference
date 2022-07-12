@@ -2,8 +2,8 @@
 Functions that return pymc models for RowByColumnEI
 """
 
-import pymc3 as pm
-import theano.tensor as tt
+import pymc as pm
+import aesara.tensor as at
 import numpy as np
 
 __all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet"]
@@ -106,7 +106,7 @@ def ei_multinom_dirichlet_modified(
         # TODO: make b vs. beta naming consistent
         kappa = pm.Pareto("kappa", alpha=pareto_shape, m=pareto_scale, shape=num_rows)  # size r
         phi = pm.Dirichlet("phi", a=np.ones(num_cols), shape=(num_rows, num_cols))  # r x c
-        phi_kappa = pm.Deterministic("phi_kappa", tt.transpose(kappa * tt.transpose(phi)))
+        phi_kappa = pm.Deterministic("phi_kappa", at.transpose(kappa * at.transpose(phi)))
         beta = pm.Dirichlet("b", a=phi_kappa, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)  # sum across num_rows

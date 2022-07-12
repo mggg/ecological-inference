@@ -62,7 +62,8 @@ confidence=
 # --disable=W".
 disable=bad-continuation,
         fixme,
-        no-else-return
+        no-else-return,
+        too-many-lines
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -245,7 +246,13 @@ good-names=i,
            x,
            r,
            c,
+           mu,
            Run,
+           Sigma,
+           Sigma_inv,
+           Sigma_samp,
+           sample_Sigma,
+           Sigma_n_inv,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,
