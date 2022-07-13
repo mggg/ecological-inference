@@ -530,7 +530,6 @@ def get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops):
                     / precinct_pops[i]
                 )
                 prop_for_binom = vote_counts[i, c] / precinct_pops[i]
-                # samp = st.binom.rvs(count_for_binom, prop_for_binom)
                 samp = np.random.binomial(count_for_binom, prop_for_binom)
 
                 samp = min(samp, vote_counts_remaining[i, c])
