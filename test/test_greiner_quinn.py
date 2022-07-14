@@ -5,6 +5,7 @@ import pytest
 import numpy as np
 import scipy.stats as st
 
+
 from pyei import data
 from pyei.r_by_c import RowByColumnEI
 from pyei.greiner_quinn_gibbs_sampling import (
@@ -12,6 +13,7 @@ from pyei.greiner_quinn_gibbs_sampling import (
     theta_to_omega,
     greiner_quinn_gibbs_sample,
 )
+from pyei.distribution_utils import non_central_hypergeometric_sample
 
 
 @pytest.fixture(scope="session")
@@ -59,9 +61,12 @@ def test_get_initial_internal_count_sample(
     group_counts = example_r_by_c_data_asym["group_counts"]
     precinct_pops = example_r_by_c_data_asym["precinct_pops"]
     samp = get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops)
+    samp_py = get_initial_internal_count_sample.py_func(group_counts, vote_counts, precinct_pops)
 
     assert np.all(samp.sum(axis=2) - group_counts == 0)  # sample respects given group counts
     assert np.all(samp.sum(axis=1) - vote_counts == 0)  # sample respects given vote counts
+    assert np.all(samp_py.sum(axis=2) - group_counts == 0)  # sample respects given group counts
+    assert np.all(samp_py.sum(axis=1) - vote_counts == 0)  # sample respects given vote counts
 
 
 def test_theta_to_omega():
@@ -119,3 +124,11 @@ def test_pyei_greiner_quinn_gibbs(
         num_samples=5,
         burnin=1,
     )
+
+
+def test_non_central_hypergeometric_sample():
+    samp = non_central_hypergeometric_sample.py_func(10, 5, 7, 1)
+    assert samp >= 2
+    assert samp <= 10
+    samp2 = non_central_hypergeometric_sample.py_func(10, 10, 7, 1)
+    assert samp2 <= 10

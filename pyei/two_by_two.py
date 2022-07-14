@@ -1,8 +1,6 @@
 """
 Models and fitting for 2x2 methods
 
-TODO: Checks for wakefield model
-TODO: Wakefield model with normal prior
 """
 
 import warnings
@@ -186,8 +184,6 @@ def ei_beta_binom_model_modified(
 
         theta = group_fraction * b_1 + (1 - group_fraction) * b_2
         pm.Binomial("votes_count", n=precinct_pops, p=theta, observed=votes_count_obs)
-        # pm.Deterministic("voting_prefs_gp1", (b_1 * precinct_pops).sum() / tot_pop)
-        # pm.Deterministic("voting_prefs_gp2", (b_2 * precinct_pops).sum() / tot_pop)
 
     return model
 
@@ -259,7 +255,6 @@ def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, 
     # given group for given candidate within precinct i (unobserved)
     votes_within_group_count = at.arange(lower, upper)
     component_for_current_precinct = pm.math.logsumexp(
-        # The `rv.logp(x)` method was removed. Instead use `pm.logp(rv, x)`.`
         pm.logp(pm.Binomial.dist(n0_curr, b_1_curr), votes_within_group_count)
         + pm.logp(pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count)
     )

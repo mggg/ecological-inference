@@ -256,3 +256,8 @@ def test_plot_polarization_kde(two_r_by_c_ei_runs):  # pylint: disable=redefined
             groups, candidate, threshold=0.4, percentile=95, show_threshold=True
         )
     print("done")
+
+
+def test_plot_margin_kde(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+    example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
+    example_r_by_c_ei.plot_margin_kde("ind", ["Hardy", "Nadeem"], threshold=0.1)

@@ -722,7 +722,7 @@ def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candi
         axes[middle_plot].legend(bbox_to_anchor=(1, 1), loc="upper left", prop={"size": 12})
     else:
         ax.legend(prop={"size": 12})
-    return ax
+    return axes
 
 
 def plot_conf_or_credible_interval(intervals, group_names, candidate_name, title, ax=None):
