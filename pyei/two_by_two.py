@@ -805,7 +805,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
                     "Precinct names are not unique. This may interfere with "
                     "passing precinct names to precinct_level_plot()."
                 )
-            self.precinct_names = precinct_names
+            self.precinct_names = np.array(precinct_names)
 
         if self.model_name == "king99":
             model_function = ei_beta_binom_model
@@ -987,7 +987,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         )
         group_names = self.group_names_for_display()
         if precinct_names is not None:
-            precinct_idxs = [self.precinct_names.index(name) for name in precinct_names]
+            precinct_idxs = np.arange(len(self.precinct_names))
             voting_prefs_group1 = voting_prefs_group1[:, precinct_idxs]
             voting_prefs_group2 = voting_prefs_group2[:, precinct_idxs]
         return plot_precincts(
