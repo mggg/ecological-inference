@@ -153,7 +153,7 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
                     "Precinct names are not unique. This may interfere with "
                     "passing precinct names to precinct_level_plot()."
                 )
-            self.precinct_names = precinct_names
+            self.precinct_names = np.array(precinct_names)
 
         self.num_groups_and_num_candidates = [
             group_fractions.shape[0],
