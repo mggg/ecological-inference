@@ -38,7 +38,7 @@ that shows how to run and adjust the various models in PyEI on datesets.
 
 If you are new to ecological inference generally, start with `intro_notebooks/Introduction_toEI.ipynb`.
 
-If you are familiar with ecological inference and want an overview of PyEI and how to use it, with examples start with `intro_notebooks/PyEI_overview.ipynb`.
+If you are familiar with ecological inference and want an overview of PyEI and how to use it (with examples), then start with `intro_notebooks/PyEI_overview.ipynb`.
 
 To explore EI's plotting functionality, check out `intro_notebooks/Plotting_with_PyEI.ipynb`.
 
@@ -46,7 +46,7 @@ For more work with two-by-two examples, see in `examples/santa_clara_demo.ipynb`
 
 For more work with r-by-c examples, see `examples/santa_clara_demo_r_by_c.ipynb`.
 
-For examples of depth model comparison and checking steps with PyEI, see `examples/model_eval_and_comparison_demo.ipynb`.
+For examples of model comparison and checking steps with PyEI, see `examples/model_eval_and_comparison_demo.ipynb`.
 
 ### Issues
 
