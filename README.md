@@ -28,7 +28,7 @@ Or, install directly from GitHub for the most up-to-date (but potentially less s
 pip install git+https://github.com/mggg/ecological-inference.git
  ```
  
-If you would like to explore PyEI without installation, you can explore this [interactive Colab notebook](https://colab.research.google.com/drive/1w4vWJBMEY_ULal9LWTOa_TrimPVWfum0#scrollTo=tLPaJ279zsG_) (just note that inference might be slow!)
+If you would like to explore PyEI without installation, you can explore this [interactive Colab notebook](https://colab.research.google.com/drive/1Vr1kKAAHgdcUhPrpFsYc1Kz31nbcpZjP#scrollTo=_ASEm5L3UUAS) (just note that inference might be slow!)
 
 
 ### Example notebooks
