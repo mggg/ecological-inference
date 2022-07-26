@@ -100,7 +100,7 @@ class GoodmansER:
         """Plot the linear regression with confidence interval"""
         fig, ax = plt.subplots()
         ax.axis("square")
-        ax.grid(b=True, which="major")
+        ax.grid(visible=True, which="major")
         ax.set_ylim((0, 1))
         ax.set_xlim((0, 1))
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
