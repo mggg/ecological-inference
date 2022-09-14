@@ -9,7 +9,7 @@ import numpy as np
 __all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet"]
 
 
-def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda1=4, lmbda2=2):
+def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda1=4, lmbda2=2, overwrite_conc=False):
     """
     An implementation of the r x c dirichlet/multinomial EI model
 
@@ -24,6 +24,8 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
         (e.g. voting population) (sometimes denoted N)
     lmbda1: float parameter passed to the Gamma(lmbda, 1/lmbda2) distribution
     lmbda2: float parameter passed to the Gamma(lmbda, 1/lmbda2) distribution
+    overwrite_conc: rather than pulling from a gamma distribution for concentration params,
+    	set them manually. defaults to False.
 
     Returns
     -------
@@ -47,9 +49,11 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
         # TODO: are the prior conc_params what is in the literature? is it a good choice?
         # TODO: make b vs. beta naming consistent
         # conc_params = pm.Exponential("conc_params", lam=lmbda, shape=(num_rows, num_cols))
-        conc_params = pm.Gamma(
-            "conc_params", alpha=lmbda1, beta=1 / lmbda2, shape=(num_rows, num_cols)
-        )  # chosen to match eiPack
+        if not overwrite_conc:
+          conc_params = pm.Gamma(
+              "conc_params", alpha=lmbda1, beta=1 / lmbda2, shape=(num_rows, num_cols)
+          )  # chosen to match eiPack
+          print(conc_params)
         beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)
