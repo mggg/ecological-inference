@@ -53,9 +53,9 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
           conc_params = pm.Gamma(
               "conc_params", alpha=lmbda1, beta=1 / lmbda2, shape=(num_rows, num_cols)
           )  # chosen to match eiPack
-          print(conc_params.TensorConstant)
+          print(conc_params.TensorConstant())
         beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
-        print(beta.TensorConstant)
+        print(beta.TensorConstant())
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)
         pm.Multinomial(
