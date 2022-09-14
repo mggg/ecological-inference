@@ -9,7 +9,7 @@ import numpy as np
 __all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet"]
 
 
-def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda1=4, lmbda2=2, overwrite_conc=False):
+def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda1=4, lmbda2=2, overwrite_conc=False, conc_matrix=None):
     """
     An implementation of the r x c dirichlet/multinomial EI model
 
@@ -26,7 +26,7 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
     lmbda2: float parameter passed to the Gamma(lmbda, 1/lmbda2) distribution
     overwrite_conc: rather than pulling from a gamma distribution for concentration params,
     	set them manually. defaults to False.
-
+    conc_matrix: if overwrite_conc is true, an rxc matrix must be passed for the initial values
     Returns
     -------
     model: A pymc3 model
@@ -53,7 +53,8 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
           conc_params = pm.Gamma(
               "conc_params", alpha=lmbda1, beta=1 / lmbda2, shape=(num_rows, num_cols)
           )  # chosen to match eiPack
-          print(conc_params.TensorConstant())
+        else:
+          conc_params = conc_matrix
         beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
         print(beta.TensorConstant())
         # num_precincts x r x c
