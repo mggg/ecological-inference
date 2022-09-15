@@ -9,7 +9,7 @@ import numpy as np
 __all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet"]
 
 
-def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda1=4, lmbda2=2, overwrite_conc=False, conc_matrix=None):
+def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda1=4, lmbda2=2):
     """
     An implementation of the r x c dirichlet/multinomial EI model
 
@@ -49,14 +49,12 @@ def ei_multinom_dirichlet(group_fractions, votes_fractions, precinct_pops, lmbda
         # TODO: are the prior conc_params what is in the literature? is it a good choice?
         # TODO: make b vs. beta naming consistent
         # conc_params = pm.Exponential("conc_params", lam=lmbda, shape=(num_rows, num_cols))
-        if not overwrite_conc:
-          conc_params = pm.Gamma(
-              "conc_params", alpha=lmbda1, beta=1 / lmbda2, shape=(num_rows, num_cols)
-          )  # chosen to match eiPack
-        else:
-          conc_params = conc_matrix
+        conc_params = pm.Gamma(
+            "conc_params", alpha=lmbda1, beta=1 / lmbda2, shape=(num_rows, num_cols)
+        )  # chosen to match eiPack
+        
         beta = pm.Dirichlet("b", a=conc_params, shape=(num_precincts, num_rows, num_cols))
-        print(beta.TensorConstant())
+        
         # num_precincts x r x c
         theta = (group_fractions_extended * beta).sum(axis=1)
         pm.Multinomial(
