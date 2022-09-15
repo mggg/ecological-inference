@@ -195,7 +195,14 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
                 "multinomial-dirichlet",
             ]:  # for models whose sampling is w/ pycm
                 with self.sim_model:  # pylint: disable=not-context-manager
-                    print(**other_sampling_args)
+                    try:
+                       print(other_sampling_args)
+                    except:
+                       print("couldn't print, no pointer")
+                    try: 
+                       print(*other_sampling_args)
+                    except:
+                       print("couldn't print, one pointer")
                     self.sim_trace = sampling_jax.sample_numpyro_nuts(
                         target_accept=target_accept, tune=tune, **other_sampling_args
                     )
