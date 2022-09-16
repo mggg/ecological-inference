@@ -432,7 +432,7 @@ def omega_to_theta(omega, r, c):
     return np.concatenate((theta_other, theta_last_ext), axis=2)
 
 
-@njit(parallel=True)
+#@njit(parallel=True)
 def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     """
     group_counts: num_precincts x r
@@ -444,14 +444,11 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     """
     num_precincts, num_groups, num_candidates = prev_internal_counts_samp.shape
 
-    for i in prange(num_precincts):  # pylint: disable=not-an-iterable
+    for i in range(num_precincts):  # pylint: disable=not-an-iterable
         for r in range(num_groups - 1):
             for r_prime in range(r + 1, num_groups):
                 for c in range(num_candidates - 1):
                     for c_prime in range(c + 1, num_candidates):
-                        for var in [int(r), int(r_prime), int(c), int(c_prime)]: 
-                          if var < 0:  
-                             print(f"i: {i}, r: {r}, r_prime: {r_prime}, c: {c}, c_prime: {c_prime}")
                         n1 = (  # pylint: disable=invalid-name
                             prev_internal_counts_samp[i, r, c]
                             + prev_internal_counts_samp[i, r, c_prime]
