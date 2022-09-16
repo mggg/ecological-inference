@@ -467,7 +467,7 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
                         r_c_count = non_central_hypergeometric_sample(
                             n1, n2, m1, psi
                         )  # sample for the r, c internal count
-                        print(f"n1: {n1}, n2: {n2}, m1: {m1}, psi1: {psi1}")
+                        print(f"n1: {n1}, n2: {n2}, m1: {m1}, psi: {psi}")
                         # update prev_internal counts in the 2 x 2 subarray
                         prev_internal_counts_samp[i, r, c] = r_c_count
                         prev_internal_counts_samp[i, r, c_prime] = n1 - r_c_count
