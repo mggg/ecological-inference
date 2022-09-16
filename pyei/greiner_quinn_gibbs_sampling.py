@@ -443,7 +443,7 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     @TODO VECTORIZE
     """
     num_precincts, num_groups, num_candidates = prev_internal_counts_samp.shape
-    print(f"precincts: {num_precincts}, groups: {num_groups}, candidates: {num_candidates}")
+
     for i in prange(num_precincts):  # pylint: disable=not-an-iterable
         for r in range(num_groups - 1):
             for r_prime in range(r + 1, num_groups):
@@ -469,7 +469,6 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
                             n1, n2, m1, psi
                         )  # sample for the r, c internal count
 
-                        print(f"r_c_count: {r_c_count}")
                         # update prev_internal counts in the 2 x 2 subarray
                         prev_internal_counts_samp[i, r, c] = r_c_count
                         prev_internal_counts_samp[i, r, c_prime] = n1 - r_c_count
