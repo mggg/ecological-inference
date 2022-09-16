@@ -449,7 +449,7 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
             for r_prime in range(r + 1, num_groups):
                 for c in range(num_candidates - 1):
                     for c_prime in range(c + 1, num_candidates):
-                        for var in [int(i), int(r), int(r_prime), int(c), int(c_prime)]: 
+                        for var in [int(r), int(r_prime), int(c), int(c_prime)]: 
                           if var < 0:  
                              print(f"i: {i}, r: {r}, r_prime: {r_prime}, c: {c}, c_prime: {c_prime}")
                         n1 = (  # pylint: disable=invalid-name
