@@ -1,3 +1,4 @@
+import traceback
 """
 Functionality for Gibbs sampler to generate posterior samples
 from model from James Greiner, D. and Quinn, K.M., 2009.
@@ -214,9 +215,12 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
 
     for i in tqdm(range(num_samples)):
         # (a) sample internal cell counts
-        internal_cell_counts_samp = sample_internal_cell_counts(
-            theta_samp, internal_cell_counts_samp
-        )
+        try:
+            internal_cell_counts_samp = sample_internal_cell_counts(
+                theta_samp, internal_cell_counts_samp
+            )
+        except:
+            traceback.print_exec()
 
         # (b) sample theta using Metropolis-Hastings
         theta_samp = sample_theta(
@@ -467,7 +471,6 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
                         r_c_count = non_central_hypergeometric_sample(
                             n1, n2, m1, psi
                         )  # sample for the r, c internal count
-                        print(f"n1: {n1}, n2: {n2}, m1: {m1}, psi: {psi}")
                         # update prev_internal counts in the 2 x 2 subarray
                         prev_internal_counts_samp[i, r, c] = r_c_count
                         prev_internal_counts_samp[i, r, c_prime] = n1 - r_c_count
