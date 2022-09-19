@@ -86,10 +86,13 @@ def non_central_hypergeometric_sample(n1, n2, m1, psi):
     pi = density
 
     if mode == ll:
+        print(f"sample_low_to_high: {sample_low_to_high(ll, ran, pi, -ll, uu)}")
         return sample_low_to_high(ll, ran, pi, -ll, uu)
     if mode == uu:
+        print(f"sample_high_to_low: {sample_high_to_low(uu, ran, pi, -ll, ll)}")
         return sample_high_to_low(uu, ran, pi, -ll, ll)
     if ran < pi[mode - ll]:
+        print(f"mode: {mode}")
         return mode
     ran = ran - pi[mode - ll]
     lower = mode - 1
@@ -98,18 +101,22 @@ def non_central_hypergeometric_sample(n1, n2, m1, psi):
     while True:
         if pi[upper - ll] >= pi[lower - ll]:
             if ran < pi[upper - ll]:
+                print(f"upper: {upper}")
                 return upper
             ran = ran - pi[upper - ll]
             if upper == uu:
                 samp = sample_high_to_low(lower, ran, pi, -ll, ll)
+                print(f"samp: {samp}")
                 return samp
             upper = upper + 1
 
         else:
             if ran < pi[lower - ll]:
+                print(f"lower: {lower}")
                 return lower
             ran = ran - pi[lower - ll]
             if lower == ll:
                 samp = sample_low_to_high(upper, ran, pi, -ll, uu)
+                print(f"samp: {samp}")
                 return samp
             lower = lower - 1
