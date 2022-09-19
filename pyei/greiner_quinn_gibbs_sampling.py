@@ -470,6 +470,7 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
                              n1, n2, m1, psi
                	          )  # sample for the r, c internal count
                         except:
+                          r_c_count = 0
                           print("hyper geom")
                         # update prev_internal counts in the 2 x 2 subarray
                         prev_internal_counts_samp[i, r, c] = r_c_count
