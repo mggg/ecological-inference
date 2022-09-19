@@ -66,11 +66,17 @@ def non_central_hypergeometric_sample(n1, n2, m1, psi):
 
     # calculate density
     pi = np.ones(uu - ll + 1, dtype=np.float32)
-
+    if mode+1-ll < 0: 
+      print(f"mode: {mode}, ll: {ll}, n1: {n1}, n2: {n2}, m1: {m1}, psi: {psi}")
+    if uu-ll+1 < 0: 
+       print(f"mode: {mode}, ll: {ll}, uu: {uu}, n1: {n1}, n2: {n2}, m1: {m1}, psi: {psi}")
+    if mode-11 <0: 
+       print(f"mode: {mode}, ll: {ll}, uu: {uu}, n1: {n1}, n2: {n2}, m1: {m1}, psi: {psi}")
+    
     if mode < uu:
         r = r_function(n1, n2, m1, psi, np.arange(mode + 1, uu + 1))
         pi[(mode + 1 - ll) : (uu - ll + 1)] = np.cumprod(r)
-
+    
     if mode > ll:
         r = 1 / r_function(
             n1,
