@@ -215,12 +215,9 @@ def greiner_quinn_gibbs_sample(  # pylint: disable=too-many-locals
 
     for i in tqdm(range(num_samples)):
         # (a) sample internal cell counts
-        try:
-            internal_cell_counts_samp = sample_internal_cell_counts(
-                theta_samp, internal_cell_counts_samp
-            )
-        except:
-            traceback.print_exec()
+        internal_cell_counts_samp = sample_internal_cell_counts(
+            theta_samp, internal_cell_counts_samp
+        )
 
         # (b) sample theta using Metropolis-Hastings
         theta_samp = sample_theta(
@@ -468,9 +465,12 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
                         pi1 = theta_samp[i, r, c]
                         pi2 = theta_samp[i, r_prime, c]
                         psi = (pi1 * (1 - pi2)) / (pi2 * (1 - pi1))
-                        r_c_count = non_central_hypergeometric_sample(
+                        try:
+                          r_c_count = non_central_hypergeometric_sample(
                              n1, n2, m1, psi
-               	        )  # sample for the r, c internal count
+               	          )  # sample for the r, c internal count
+                        except:
+                          print("hyper geom")
                         # update prev_internal counts in the 2 x 2 subarray
                         prev_internal_counts_samp[i, r, c] = r_c_count
                         prev_internal_counts_samp[i, r, c_prime] = n1 - r_c_count
