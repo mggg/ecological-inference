@@ -468,12 +468,9 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
                         pi1 = theta_samp[i, r, c]
                         pi2 = theta_samp[i, r_prime, c]
                         psi = (pi1 * (1 - pi2)) / (pi2 * (1 - pi1))
-                        try:
-                            r_c_count = non_central_hypergeometric_sample(
-       	                        n1, n2, m1, psi
-                	        )  # sample for the r, c internal count
-                        except:
-                            print("hyper geom")
+                        r_c_count = non_central_hypergeometric_sample(
+                             n1, n2, m1, psi
+               	        )  # sample for the r, c internal count
                         # update prev_internal counts in the 2 x 2 subarray
                         prev_internal_counts_samp[i, r, c] = r_c_count
                         prev_internal_counts_samp[i, r, c_prime] = n1 - r_c_count
