@@ -85,7 +85,6 @@ def test_theta_to_omega():
 def test_greiner_quinn_gibbs_sample(
     example_r_by_c_data_asym,
 ):  # pylint: disable=redefined-outer-name
-
     r = example_r_by_c_data_asym["group_counts"].shape[1]
     c = example_r_by_c_data_asym["vote_counts"].shape[1]
     print(r, c)

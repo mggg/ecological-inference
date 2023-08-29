@@ -330,7 +330,6 @@ def plot_boxplots(
     fig.subplots_adjust(hspace=1)
 
     for plot_idx in range(num_plots):
-
         samples_df = pd.DataFrame(
             {legend[i]: sampled_voting_prefs[:, i, plot_idx] for i in range(num_boxes_per_plot)}
         )
@@ -391,9 +390,9 @@ def plot_summary(
     sns.despine(ax=ax_hist)
     sns.despine(ax=ax_box, left=True)
     # plot custom boxplot, with two boxplots in the same row
-    plot_props = dict(fliersize=5, linewidth=2, whis=[2.5, 97.5])
-    flier1_props = dict(marker="o", markerfacecolor=colors[0], alpha=0.5)
-    flier2_props = dict(marker="d", markerfacecolor=colors[1], alpha=0.5)
+    plot_props = {"fliersize": 5, "linewidth": 2, "whis": [2.5, 97.5]}
+    flier1_props = {"marker": "o", "markerfacecolor": colors[0], "alpha": 0.5}
+    flier2_props = {"marker": "d", "markerfacecolor": colors[1], "alpha": 0.5}
     sns.boxplot(
         x=sampled_voting_prefs[:, 0, 0],
         orient="h",

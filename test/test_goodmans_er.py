@@ -152,6 +152,5 @@ def test_goodman_er_bayes_bounds(goodmans_er_bayes_examples):
 
 
 def test_goodman_er_bayes_plot(goodmans_er_bayes_examples):
-
     ax = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"].plot()
     assert ax is not None
