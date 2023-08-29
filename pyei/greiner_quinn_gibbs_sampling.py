@@ -409,7 +409,6 @@ def sample_theta(internal_cell_counts_samp, theta_prev, omega_prev, mu_samp, Sig
 
     unif_samp = st.uniform.rvs(size=1)
     if unif_samp < acc_prob:
-
         return theta_proposed
     else:
         return theta_prev
@@ -478,7 +477,7 @@ def sample_internal_cell_counts(theta_samp, prev_internal_counts_samp):
     return prev_internal_counts_samp
 
 
-@njit(parallel=True)
+@njit(parallel=True, nopython=False)
 def get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops):
     """
     Sets an initial value of internal counts that is compatible with the
@@ -530,7 +529,7 @@ def get_initial_internal_count_sample(group_counts, vote_counts, precinct_pops):
                     / precinct_pops[i]
                 )
                 prop_for_binom = vote_counts[i, c] / precinct_pops[i]
-                samp = np.random.binomial(count_for_binom, prop_for_binom)
+                samp = np.random.binomial(n=int(count_for_binom), p=int(prop_for_binom))
 
                 samp = min(samp, vote_counts_remaining[i, c])
                 samp = min(samp, group_counts_remaining[i, r])

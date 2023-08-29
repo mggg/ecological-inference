@@ -65,7 +65,7 @@ def to_netcdf(ei_object, filepath):
         mode = "a"
         for attr in ["demographic_group_fractions", "votes_fractions"]:  # array atts
             data = xr.DataArray(getattr(ei_object, attr), name=attr)
-            data.to_netcdf(filepath, mode=mode, group=attr)
+            data.to_netcdf(filepath, mode=mode, group=attr, engine="netcdf4")
             data.close()
 
 
