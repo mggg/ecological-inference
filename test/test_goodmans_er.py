@@ -1,4 +1,5 @@
 """Test Goodmans Ecological Regression."""
+
 # pylint:disable=redefined-outer-name
 import numpy as np
 import pytest

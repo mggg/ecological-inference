@@ -3,7 +3,7 @@ Functions that return pymc models for RowByColumnEI
 """
 
 import pymc as pm
-import aesara.tensor as at
+import pytensor.tensor as at
 import numpy as np
 
 __all__ = ["ei_multinom_dirichlet_modified", "ei_multinom_dirichlet"]

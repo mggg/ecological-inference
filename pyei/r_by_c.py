@@ -8,7 +8,6 @@ TODO: Greiner-Quinn Model
 TODO: Refactor to integrate with two_by_two
 """
 
-
 import warnings
 from pymc import sampling_jax
 import numpy as np
@@ -303,10 +302,10 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         )
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1] - 1):
-                self.turnout_adjusted_credible_interval_95_mean_voting_prefs[row][col][
-                    :
-                ] = np.percentile(
-                    self.turnout_adjusted_sampled_voting_prefs[:, row, col], percentiles
+                self.turnout_adjusted_credible_interval_95_mean_voting_prefs[row][col][:] = (
+                    np.percentile(
+                        self.turnout_adjusted_sampled_voting_prefs[:, row, col], percentiles
+                    )
                 )
 
     def calculate_summary(self):

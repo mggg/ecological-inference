@@ -7,8 +7,8 @@ import warnings
 import pymc as pm
 from pymc import sampling_jax
 import numpy as np
-import aesara.tensor as at
-import aesara
+import pytensor.tensor as at
+import pytensor
 from .plot_utils import (
     plot_conf_or_credible_interval,
     plot_boxplots,
@@ -107,9 +107,7 @@ def truncated_normal_asym(
         )
 
         votes_frac_mean = mu_i + w_i * (upper_b - tn_mean_upper) / (sigma_upper**2)
-        votes_frac_var = pm.Deterministic(
-            "votes_frac_var", sigma_i_sq - w_i**2 / (sigma_upper**2)
-        )
+        votes_frac_var = pm.Deterministic("votes_frac_var", sigma_i_sq - w_i**2 / (sigma_upper**2))
 
         votes_frac_l_bound = group_fraction * upper_b
         votes_frac_u_bound = (1 - group_fraction) + group_fraction * upper_b
@@ -288,7 +286,7 @@ def binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
     See Wakefield 2004 equation 4
     """
 
-    result, _ = aesara.scan(
+    result, _ = pytensor.scan(
         fn=log_binom_sum,
         outputs_info={"taps": [-1], "initial": at.as_tensor(np.array([0.0]))},
         sequences=[

@@ -1,4 +1,5 @@
 """Test two by two ecological inference."""
+
 import pytest
 import numpy as np
 import scipy.stats as st

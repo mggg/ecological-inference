@@ -57,7 +57,7 @@ Feel free to file an issue if you are running into trouble or if there is a feat
 
 Contributions are welcome! 
 
-Uses Python>=3.7. After cloning the environment, you should be able to use either `virtualenv` or `conda` to run the code. The second (`conda`) is probably easier for development, but `virtualenv` is used for the project's CI.
+Uses Python 3.10. After cloning the environment, you should be able to use either `virtualenv` or `conda` to run the code. The second (`conda`) is probably easier for development, but `virtualenv` is used for the project's CI.
 
 Here is how to create and activate each environment. See the docs for more elaborate details:
 
@@ -74,7 +74,8 @@ python -m pip install -r requirements-dev.txt  # install dev requirements
 ### Install with conda
 
 ```bash
-conda create --name pyei --channel conda-forge python=3.8 --file requirements.txt --file requirements-dev.txt # create conda environment and install requirements
+conda create --name pyei --channel conda-forge python=3.10 --file requirements.txt --file requirements-dev.txt # create conda environment and install requirements
+conda activate pyei
 pip install -e . #install project locally
 ```
 

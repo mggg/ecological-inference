@@ -2,6 +2,7 @@
 Plotting functions for visualizing ei outputs
 
 """
+
 import warnings
 import seaborn as sns
 import pandas as pd
