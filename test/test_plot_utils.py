@@ -1,4 +1,5 @@
 """Test plot utils."""
+
 import pytest
 import numpy as np
 

@@ -1,4 +1,5 @@
 """Tests for data.py"""
+
 import pytest
 
 from pyei import data

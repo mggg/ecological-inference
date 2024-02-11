@@ -1,4 +1,4 @@
-pymc == 4.0.0b5
+pymc >= 5.10.0
 arviz
 scikit-learn
 matplotlib

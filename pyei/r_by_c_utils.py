@@ -1,6 +1,7 @@
 """
 Utilities for RowByColumnEI
 """
+
 import warnings
 
 

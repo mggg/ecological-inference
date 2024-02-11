@@ -1,4 +1,5 @@
 """Test Greiner Quinn Gibbs sampler."""
+
 # pylint: disable=duplicate-code
 import random
 import pytest

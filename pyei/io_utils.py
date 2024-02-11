@@ -38,9 +38,9 @@ def to_netcdf(ei_object, filepath):
             "demographic_group_fraction",
             "votes_fraction",
         ]
-        ei_object.sim_trace.posterior.attrs[
-            "is_two_by_two"
-        ] = "true"  # store whether 2 by 2 or r by c
+        ei_object.sim_trace.posterior.attrs["is_two_by_two"] = (
+            "true"  # store whether 2 by 2 or r by c
+        )
 
     else:  # r by c
         # attr_list=[]
