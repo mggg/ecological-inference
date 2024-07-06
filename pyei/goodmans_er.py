@@ -96,8 +96,16 @@ class GoodmansER:
         {self.voting_prefs_complement_est_:.3f}
         """
 
-    def plot(self):
-        """Plot the linear regression with confidence interval"""
+    def plot(self, **sns_regplot_args):
+        """Plot the linear regression with 95% confidence interval
+
+        Notes:
+        ------
+        Can pass additional plot arguments through to seaborn.regplot, e.g.
+        to change the line color:
+            line_kws=dict(color="red")
+            scatter_kws={"s": 50}
+        """
         fig, ax = plt.subplots()
         ax.axis("square")
         ax.grid(visible=True, which="major")
@@ -111,6 +119,7 @@ class GoodmansER:
             ax=ax,
             ci=95,
             truncate=False,
+            **sns_regplot_args,
         )
         return fig, ax
 
@@ -121,7 +130,10 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
     """
 
     def __init__(
-        self, model_name="goodman_er_bayes", weighted_by_pop=False, **additional_model_params
+        self,
+        model_name="goodman_er_bayes",
+        weighted_by_pop=False,
+        **additional_model_params,
     ):
         """
         Optional arguments:
@@ -202,11 +214,15 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         """Sets sampled_voting_prefs"""
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
         self.sampled_voting_prefs[0] = (
-            self.sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
+            self.sim_trace["posterior"]["b_1"]
+            .stack(all_draws=["chain", "draw"])
+            .values.T
         )
         # sampled voted prefs across precincts
         self.sampled_voting_prefs[1] = (
-            self.sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
+            self.sim_trace["posterior"]["b_2"]
+            .stack(all_draws=["chain", "draw"])
+            .values.T
         )
         # sampled voted prefs across precincts
 
@@ -238,9 +254,17 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
         return x_vals, means, lower_bounds, upper_bounds
 
-    def plot(self):
+    def plot(self, linecolor="steelblue", **scatter_kwargs):
         """Plot regression line of votes_fraction vs. group_fraction, with scatter plot and
-        equal-tailed 95% credible interval for the line"""
+        equal-tailed 95% credible interval for the line"
+        Parameters:
+        -----------
+        linecolor : the color of the line and shaded credible interval for the plot
+
+        Notes:
+        ------
+        Additional keywork arguments can be passed to matplotlib.scatter (e.g. c=[list of colors for scatter points])
+        """
         # TODO: consider renaming these plots for goodman, to disambiguate with TwoByTwoEI.plot()
         # TODO: accept axis argument
         x_vals, means, lower_bounds, upper_bounds = self.compute_credible_int_for_line()
@@ -248,9 +272,14 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         ax.axis("square")
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
-        ax.scatter(self.demographic_group_fraction, self.votes_fraction, alpha=0.8)
-        ax.plot(x_vals, means)
-        ax.fill_between(x_vals, lower_bounds, upper_bounds, color="steelblue", alpha=0.2)
+        ax.scatter(
+            self.demographic_group_fraction,
+            self.votes_fraction,
+            alpha=0.8,
+            **scatter_kwargs,
+        )
+        ax.plot(x_vals, means, color=linecolor)
+        ax.fill_between(x_vals, lower_bounds, upper_bounds, color=linecolor, alpha=0.2)
         ax.grid()
         ax.set_xlim((0, 1))
         ax.set_ylim((0, 1))
@@ -290,7 +319,9 @@ def goodmans_er_bayes_model(group_fraction, votes_fraction, sigma=1):
     return bayes_er_model
 
 
-def goodmans_er_bayes_pop_weighted_model(group_fraction, votes_fraction, precinct_pops, sigma=1):
+def goodmans_er_bayes_pop_weighted_model(
+    group_fraction, votes_fraction, precinct_pops, sigma=1
+):
     """Ecological regression with variance of modeled vote fraction inversely proportional to
     precinct population.
 
