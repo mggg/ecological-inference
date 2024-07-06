@@ -713,13 +713,13 @@ class TwoByTwoEIBaseBayes:
             threshold, percentile, samples, groups = self._calculate_polarization(
                 threshold, percentile, reference_group
             )
-            thresholds = [threshold]
+            thresholds = [threshold]  # pylint: disable=duplicate-code
 
         return plot_polarization_kde(
             samples,
             thresholds,
             percentile,
-            groups,
+            groups,  # pylint: disable=duplicate-code
             self.candidate_name,
             show_threshold,
             ax,
@@ -825,7 +825,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         elif self.model_name == "truncated_normal":
             model_function = truncated_normal_asym
 
-        self.sim_model = model_function(
+        self.sim_model = model_function(  # pylint: disable=possibly-used-before-assignment
             group_fraction,
             votes_fraction,
             precinct_pops,

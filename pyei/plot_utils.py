@@ -132,7 +132,7 @@ def plot_single_ridgeplot(
 def plot_single_histogram(
     ax,
     group_prefs,
-    colors,
+    colors,  # pylint: disable=redefined-outer-name
     alpha,
     z_init,
     trans,  # pylint: disable=redefined-outer-name
@@ -320,7 +320,7 @@ def plot_boxplots(
         legend = group_names
         support = "for"
         if axes is None:
-            fig, axes = plt.subplots(num_candidates, figsize=FIGSIZE)
+            _, axes = plt.subplots(num_candidates, figsize=FIGSIZE)
 
     elif plot_by == "group":
         num_plots = num_groups
@@ -330,10 +330,10 @@ def plot_boxplots(
         legend = candidate_names
         support = "among"
         if axes is None:
-            fig, axes = plt.subplots(num_groups, figsize=FIGSIZE)
+            _, axes = plt.subplots(num_groups, figsize=FIGSIZE)
     else:
         raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
-    fig.subplots_adjust(hspace=1)
+    plt.gcf().subplots_adjust(hspace=1)
 
     for plot_idx in range(num_plots):
         samples_df = pd.DataFrame(

@@ -259,7 +259,8 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
         Notes:
         ------
-        Additional keywork arguments can be passed to matplotlib.scatter (e.g. c=[list of colors for scatter points])
+        Additional keywork arguments can be passed to matplotlib.scatter
+        (e.g. c=[list of colors for scatter points])
         """
         # TODO: consider renaming these plots for goodman, to disambiguate with TwoByTwoEI.plot()
         # TODO: accept axis argument
