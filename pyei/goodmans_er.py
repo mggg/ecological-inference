@@ -214,15 +214,11 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         """Sets sampled_voting_prefs"""
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
         self.sampled_voting_prefs[0] = (
-            self.sim_trace["posterior"]["b_1"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            self.sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
         )
         # sampled voted prefs across precincts
         self.sampled_voting_prefs[1] = (
-            self.sim_trace["posterior"]["b_2"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            self.sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
         )
         # sampled voted prefs across precincts
 
@@ -319,9 +315,7 @@ def goodmans_er_bayes_model(group_fraction, votes_fraction, sigma=1):
     return bayes_er_model
 
 
-def goodmans_er_bayes_pop_weighted_model(
-    group_fraction, votes_fraction, precinct_pops, sigma=1
-):
+def goodmans_er_bayes_pop_weighted_model(group_fraction, votes_fraction, precinct_pops, sigma=1):
     """Ecological regression with variance of modeled vote fraction inversely proportional to
     precinct population.
 

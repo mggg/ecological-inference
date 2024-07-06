@@ -254,9 +254,7 @@ def plot_precincts(
 
     # replace y-axis ticks with precinct labels
     ax.set_yticks(np.arange(len(precinct_labels)))
-    ax.yaxis.set_major_formatter(
-        mticker.FuncFormatter(replace_ticks_with_precinct_labels)
-    )
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(replace_ticks_with_precinct_labels))
     ax.set_title("Precinct level estimates of voting preferences", fontsize=TITLESIZE)
     ax.set_xlabel(f"Percent vote for {candidate}", fontsize=FONTSIZE)
     ax.set_ylabel("Precinct", fontsize=FONTSIZE)
@@ -334,25 +332,18 @@ def plot_boxplots(
         if axes is None:
             fig, axes = plt.subplots(num_groups, figsize=FIGSIZE)
     else:
-        raise ValueError(
-            "plot_by must be 'group' or 'candidate' (default: 'candidate')"
-        )
+        raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
     fig.subplots_adjust(hspace=1)
 
     for plot_idx in range(num_plots):
         samples_df = pd.DataFrame(
-            {
-                legend[i]: sampled_voting_prefs[:, i, plot_idx]
-                for i in range(num_boxes_per_plot)
-            }
+            {legend[i]: sampled_voting_prefs[:, i, plot_idx] for i in range(num_boxes_per_plot)}
         )
         if num_plots > 1:
             ax = axes[plot_idx]
         else:
             ax = axes
-        sns.boxplot(
-            data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax, palette=colors
-        )
+        sns.boxplot(data=samples_df, orient="h", whis=[2.5, 97.5], ax=ax, palette=colors)
         ax.set_title(f"Support {support} {titles[plot_idx]}", fontsize=TITLESIZE)
         ax.tick_params(axis="y", left=False)  # remove y axis ticks
         size_ticks(ax, "x")
@@ -427,17 +418,13 @@ def plot_summary(
     ax_box.tick_params(axis="y", left=False)  # remove y axis ticks
 
     # plot distribution
-    plot_kdes(
-        sampled_voting_prefs, [group1_name, group2_name], [candidate_name], axes=ax_hist
-    )
+    plot_kdes(sampled_voting_prefs, [group1_name, group2_name], [candidate_name], axes=ax_hist)
     ax_hist.set_title("EI Summary", fontsize=TITLESIZE)
     plt.subplots_adjust(hspace=0.005)
     return (ax_box, ax_hist)
 
 
-def plot_precinct_scatterplot(
-    ei_runs, run_names, candidate, demographic_group="all", ax=None
-):
+def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="all", ax=None):
     """
     Given two RxC EI runs, plot precinct-by-precinct comparison of preferences
     for a given candidate from a given demographic group.
@@ -489,9 +476,7 @@ def plot_precinct_scatterplot(
         demographic_group_names2 = ei_runs[1].demographic_group_names
         candidate_names2 = ei_runs[1].candidate_names
 
-    common_groups = [
-        g for g in demographic_group_names1 if g in demographic_group_names2
-    ]
+    common_groups = [g for g in demographic_group_names1 if g in demographic_group_names2]
 
     group_dict = {}
     for group in common_groups:
@@ -531,9 +516,7 @@ def plot_precinct_scatterplot(
     return ax
 
 
-def plot_margin_kde(
-    group, candidates, samples, thresholds, percentile, show_threshold, ax
-):
+def plot_margin_kde(group, candidates, samples, thresholds, percentile, show_threshold, ax):
     """
     Plots a kde for the margin between two candidates among a given demographic group
 
@@ -585,12 +568,8 @@ def plot_margin_kde(
             fontsize=FONTSIZE,
         )
 
-    ax.set_title(
-        f"{candidates[0]} - {candidates[1]} margin among {group}", fontsize=TITLESIZE
-    )
-    ax.set_xlabel(
-        f"{group} support for {candidates[0]} - {candidates[1]}", fontsize=FONTSIZE
-    )
+    ax.set_title(f"{candidates[0]} - {candidates[1]} margin among {group}", fontsize=TITLESIZE)
+    ax.set_xlabel(f"{group} support for {candidates[0]} - {candidates[1]}", fontsize=FONTSIZE)
     ax.set_xlim((-1, 1))
     xticks = ax.get_xticks()
     ax.set_xticks(xticks)
@@ -666,9 +645,7 @@ def plot_polarization_kde(
         )
 
     ax.set_title(f"Polarization KDE for {candidate_name}", fontsize=TITLESIZE)
-    ax.set_xlabel(
-        f"({groups[0]} - {groups[1]}) support for {candidate_name}", fontsize=FONTSIZE
-    )
+    ax.set_xlabel(f"({groups[0]} - {groups[1]}) support for {candidate_name}", fontsize=FONTSIZE)
     ax.set_xlim((-1, 1))
     xticks = ax.get_xticks()
     ax.set_xticks(xticks)
@@ -677,9 +654,7 @@ def plot_polarization_kde(
     return ax
 
 
-def plot_kdes(
-    sampled_voting_prefs, group_names, candidate_names, plot_by="candidate", axes=None
-):
+def plot_kdes(sampled_voting_prefs, group_names, candidate_names, plot_by="candidate", axes=None):
     """
     Plot a kernel density plot for prefs of voting groups for each candidate
 
@@ -731,9 +706,7 @@ def plot_kdes(
             _, axes = plt.subplots(num_groups, figsize=FIGSIZE, sharex=True)
             plt.subplots_adjust(hspace=0.5)
     else:
-        raise ValueError(
-            "plot_by must be 'group' or 'candidate' (default: 'candidate')"
-        )
+        raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
 
     middle_plot = int(np.floor(num_plots / 2))
     for plot_idx in range(num_plots):
@@ -761,17 +734,13 @@ def plot_kdes(
             ax.set_ylabel("")
 
     if num_plots > 1:
-        axes[middle_plot].legend(
-            bbox_to_anchor=(1, 1), loc="upper left", prop={"size": 12}
-        )
+        axes[middle_plot].legend(bbox_to_anchor=(1, 1), loc="upper left", prop={"size": 12})
     else:
         ax.legend(prop={"size": 12})
     return axes
 
 
-def plot_conf_or_credible_interval(
-    intervals, group_names, candidate_name, title, ax=None
-):
+def plot_conf_or_credible_interval(intervals, group_names, candidate_name, title, ax=None):
     """
     Plot confidence of credible interval for two different groups
 

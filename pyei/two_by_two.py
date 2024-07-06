@@ -46,9 +46,7 @@ def truncated_normal_asym(
     num_precincts = len(precinct_pops)
     b_1_l_bound = np.maximum(0, (votes_fraction - 1 + group_fraction) / group_fraction)
     b_1_u_bound = np.minimum(1, votes_fraction / group_fraction)
-    b_2_l_bound = np.maximum(
-        0, (votes_fraction - group_fraction) / (1 - group_fraction)
-    )
+    b_2_l_bound = np.maximum(0, (votes_fraction - group_fraction) / (1 - group_fraction))
     b_2_u_bound = np.minimum(1, (votes_fraction) / (1 - group_fraction))
 
     # For stability, use whichever of b_1 and b_2 has the broader width between bounds as
@@ -109,9 +107,7 @@ def truncated_normal_asym(
         )
 
         votes_frac_mean = mu_i + w_i * (upper_b - tn_mean_upper) / (sigma_upper**2)
-        votes_frac_var = pm.Deterministic(
-            "votes_frac_var", sigma_i_sq - w_i**2 / (sigma_upper**2)
-        )
+        votes_frac_var = pm.Deterministic("votes_frac_var", sigma_i_sq - w_i**2 / (sigma_upper**2))
 
         votes_frac_l_bound = group_fraction * upper_b
         votes_frac_u_bound = (1 - group_fraction) + group_fraction * upper_b
@@ -259,9 +255,7 @@ def log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, 
     votes_within_group_count = at.arange(lower, upper)
     component_for_current_precinct = pm.math.logsumexp(
         pm.logp(pm.Binomial.dist(n0_curr, b_1_curr), votes_within_group_count)
-        + pm.logp(
-            pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count
-        )
+        + pm.logp(pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count)
     )
     return prev + component_for_current_precinct
 
@@ -497,9 +491,7 @@ class TwoByTwoEIBaseBayes:
             self.sampled_voting_prefs[1], percentiles
         )
 
-    def _calculate_polarization(
-        self, threshold=None, percentile=None, reference_group=0
-    ):
+    def _calculate_polarization(self, threshold=None, percentile=None, reference_group=0):
         """calculate percentile given a threshold, or threshold if given a percentile
         exactly one of percentile and threshold must be null
 
@@ -532,9 +524,7 @@ class TwoByTwoEIBaseBayes:
             group_complement = self.demographic_group_name
 
         if percentile is None and threshold is not None:
-            percentile = (
-                100 * (samples > threshold).sum() / len(self.sampled_voting_prefs[0])
-            )
+            percentile = 100 * (samples > threshold).sum() / len(self.sampled_voting_prefs[0])
         elif threshold is None and percentile is not None:
             threshold = np.percentile(samples, 100 - percentile)
         else:
@@ -546,9 +536,7 @@ class TwoByTwoEIBaseBayes:
             )
         return threshold, percentile, samples, [group, group_complement]
 
-    def polarization_report(
-        self, threshold=None, percentile=None, reference_group=0, verbose=True
-    ):
+    def polarization_report(self, threshold=None, percentile=None, reference_group=0, verbose=True):
         """
         For a given threshold, return the probability that difference between the group's
         preferences for the given candidate is more than threshold
@@ -807,8 +795,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         # check that lengths of group_fraction, votes_fraction, precinct_pops match
         if not (
-            len(group_fraction) == len(votes_fraction)
-            and len(votes_fraction) == len(precinct_pops)
+            len(group_fraction) == len(votes_fraction) and len(votes_fraction) == len(precinct_pops)
         ):
             raise ValueError(
                 """Mismatching num_precincts in inputs. \n
@@ -875,25 +862,17 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         # number of voters the demographic group who voted for the candidate
         # in each precinct
         samples_converted_to_pops_gp1 = (
-            self.sim_trace["posterior"]["b_1"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            self.sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
             * self.precinct_pops
         )  # shape: num_samples x num_precincts
         samples_converted_to_pops_gp2 = (
-            self.sim_trace["posterior"]["b_2"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            self.sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
             * self.precinct_pops
         )  # shape: num_samples x num_precincts
 
         # obtain samples of total votes summed across all precinct for the candidate for each group
-        samples_of_votes_summed_across_district_gp1 = samples_converted_to_pops_gp1.sum(
-            axis=1
-        )
-        samples_of_votes_summed_across_district_gp2 = samples_converted_to_pops_gp2.sum(
-            axis=1
-        )
+        samples_of_votes_summed_across_district_gp1 = samples_converted_to_pops_gp1.sum(axis=1)
+        samples_of_votes_summed_across_district_gp2 = samples_converted_to_pops_gp2.sum(axis=1)
 
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
         self.sampled_voting_prefs[0] = (
@@ -915,9 +894,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         # The stracking on the next line convers to a num_samples x num_precincts array
         precinct_level_samples_gp1 = (
-            self.sim_trace["posterior"]["b_1"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            self.sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
         )
         precinct_posterior_means_gp1 = precinct_level_samples_gp1.mean(axis=0)
         precinct_credible_intervals_gp1 = np.percentile(
@@ -926,9 +903,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         # The stracking on the next line convers to a num_samples x num_precincts array
         precinct_level_samples_gp2 = (
-            self.sim_trace["posterior"]["b_2"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            self.sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
         )
         precinct_posterior_means_gp2 = precinct_level_samples_gp2.mean(axis=0)
         precinct_credible_intervals_gp2 = np.percentile(
@@ -953,9 +928,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         """Plot of point estimates and credible intervals for each precinct"""
         # TODO: Fix use of axes
 
-        precinct_posterior_means, precinct_credible_intervals = (
-            self.precinct_level_estimates()
-        )
+        precinct_posterior_means, precinct_credible_intervals = self.precinct_level_estimates()
         precinct_posterior_means_gp1 = precinct_posterior_means[:, 0, 0]
         precinct_posterior_means_gp2 = precinct_posterior_means[:, 1, 0]
         precinct_credible_intervals_gp1 = precinct_credible_intervals[:, 0, 0, :]
@@ -1016,14 +989,10 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
                                 with histograms instead of kdes
         """
         voting_prefs_group1 = (
-            self.sim_trace["posterior"]["b_1"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            self.sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
         )
         voting_prefs_group2 = (
-            self.sim_trace["posterior"]["b_2"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            self.sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
         )
         group_names = self.group_names_for_display()
         if precinct_names is not None:
