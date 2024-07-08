@@ -5,8 +5,6 @@ name: Python package
 
 on: [push, pull_request]
 
-env:
-  HDF5_USE_FILE_LOCKING: FALSE
 
 jobs:
   build:
