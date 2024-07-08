@@ -15,8 +15,25 @@ VERSION_FILE = os.path.join(PROJECT_ROOT, "pyei", "__init__.py")
 
 
 def get_requirements():
-    with codecs.open(REQUIREMENTS_FILE) as buff:
-        return buff.read().splitlines()
+    # TODO: The gh-action to upload to PyPI doesn't include the requirements.txt
+    # so we're just copying them here as a backup. This is super brittle!
+    try:
+        with codecs.open(REQUIREMENTS_FILE) as buff:
+            return buff.read().splitlines()
+    except:
+        return """pymc >= 5.10.0
+arviz
+scikit-learn
+matplotlib
+pandas
+seaborn
+graphviz
+numpy
+jax
+numpyro
+jaxlib
+numba
+netCDF4""".splitlines()
 
 
 def get_long_description():
