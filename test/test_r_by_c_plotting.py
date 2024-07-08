@@ -1,5 +1,6 @@
 """test r-by-c specific plotting"""
 
+import time
 import pytest
 import numpy as np
 from pyei import data
@@ -84,6 +85,7 @@ def test_io_utils(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
     example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
     model_name_orig = example_r_by_c_ei.model_name
     to_netcdf(example_r_by_c_ei, "example.nc")
+    time.sleep(10)
     reloaded_ei = from_netcdf("example.nc")
     assert isinstance(reloaded_ei.summary(), str)  # check that summary string is there
     assert model_name_orig == reloaded_ei.model_name  # check that model data came with
@@ -161,7 +163,9 @@ def test_computation_of_districtwide_samples(
     np.all(np.isclose(test_districtwide_prefs, ei_ex.sampled_voting_prefs))
 
 
-def test_candidate_of_choice_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+def test_candidate_of_choice_report(
+    two_r_by_c_ei_runs,
+):  # pylint: disable=redefined-outer-name
     example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
     candidate_preference_rate_dict = example_r_by_c_ei.candidate_of_choice_report(
         verbose=True, non_candidate_names=None
@@ -179,7 +183,9 @@ def test_candidate_of_choice_polarization_report(
     assert candidate_differ_rate_dict["non_asian", "e_asian"] > 0.4
 
 
-def test_polarization_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+def test_polarization_report(
+    two_r_by_c_ei_runs,
+):  # pylint: disable=redefined-outer-name
     example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
     groups = ["e_asian", "non_asian"]
     candidate = "Kolstad"
@@ -196,7 +202,9 @@ def test_polarization_report(two_r_by_c_ei_runs):  # pylint: disable=redefined-o
 # TEST PLOTTING
 
 
-def test_ei_r_by_c_precinct_scatterplot(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+def test_ei_r_by_c_precinct_scatterplot(
+    two_r_by_c_ei_runs,
+):  # pylint: disable=redefined-outer-name
     all_demographics_ax = plot_precinct_scatterplot(
         two_r_by_c_ei_runs, ["Run 1", "Run 2"], "Kolstad"
     )
@@ -233,7 +241,9 @@ def test_ei_r_by_c_intervals_by_precinct(
         example_r_by_c_ei.plot_intervals_by_precinct("ibnd", "Hardy")
 
 
-def test_plot_polarization_kde(two_r_by_c_ei_runs):  # pylint: disable=redefined-outer-name
+def test_plot_polarization_kde(
+    two_r_by_c_ei_runs,
+):  # pylint: disable=redefined-outer-name
     example_r_by_c_ei = two_r_by_c_ei_runs[0]  # pylint: disable=redefined-outer-name
     groups = ["ind", "e_asian"]
     candidate = "Kolstad"
