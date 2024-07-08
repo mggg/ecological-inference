@@ -26,6 +26,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
           pip install -r requirements-dev.txt
+          pip freeze
       - name: Run linters
         run: |
           ./scripts/lint.sh
