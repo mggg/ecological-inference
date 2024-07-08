@@ -96,8 +96,16 @@ class GoodmansER:
         {self.voting_prefs_complement_est_:.3f}
         """
 
-    def plot(self):
-        """Plot the linear regression with confidence interval"""
+    def plot(self, **sns_regplot_args):
+        """Plot the linear regression with 95% confidence interval
+
+        Notes:
+        ------
+        Can pass additional plot arguments through to seaborn.regplot, e.g.
+        to change the line color:
+            line_kws=dict(color="red")
+            scatter_kws={"s": 50}
+        """
         fig, ax = plt.subplots()
         ax.axis("square")
         ax.grid(visible=True, which="major")
@@ -111,6 +119,7 @@ class GoodmansER:
             ax=ax,
             ci=95,
             truncate=False,
+            **sns_regplot_args,
         )
         return fig, ax
 
@@ -121,7 +130,10 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
     """
 
     def __init__(
-        self, model_name="goodman_er_bayes", weighted_by_pop=False, **additional_model_params
+        self,
+        model_name="goodman_er_bayes",
+        weighted_by_pop=False,
+        **additional_model_params,
     ):
         """
         Optional arguments:
@@ -238,19 +250,47 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
         return x_vals, means, lower_bounds, upper_bounds
 
-    def plot(self):
+    def plot(self, scatter_kws=None, line_kws=None):
         """Plot regression line of votes_fraction vs. group_fraction, with scatter plot and
-        equal-tailed 95% credible interval for the line"""
+        equal-tailed 95% credible interval for the line"
+        Parameters:
+        -----------
+        scatter_kws : dict (None)
+            Keyword arguments to be passed to matplotlib.Axes.scatter
+        line_kws : dict (None)
+            Keyword arguments to be passed to matplotlib.Axes.plot.
+            Note that the color of the ccredible interval shading is set to match
+            the color of the line itself (but the shading has higher alpha)
+
+        Notes:
+        ------
+        Examples of additional kwargs. Scatter_colors is list of colors of length num_precincts
+        scatter_kws={"c": scatter_colors, "color": None, "s": 20},
+        line_kws={"color":"black", "lw": 1}
+        """
         # TODO: consider renaming these plots for goodman, to disambiguate with TwoByTwoEI.plot()
         # TODO: accept axis argument
         x_vals, means, lower_bounds, upper_bounds = self.compute_credible_int_for_line()
         _, ax = plt.subplots()
+
+        if scatter_kws is None:
+            scatter_kws = {}
+        if line_kws is None:
+            line_kws = {}
+        scatter_kws.setdefault("color", "steelblue")
+        scatter_kws.setdefault("alpha", 0.8)
+        line_kws.setdefault("color", "steelblue")
+
         ax.axis("square")
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
-        ax.scatter(self.demographic_group_fraction, self.votes_fraction, alpha=0.8)
-        ax.plot(x_vals, means)
-        ax.fill_between(x_vals, lower_bounds, upper_bounds, color="steelblue", alpha=0.2)
+        ax.scatter(
+            self.demographic_group_fraction,
+            self.votes_fraction,
+            **scatter_kws,
+        )
+        ax.plot(x_vals, means, **line_kws)
+        ax.fill_between(x_vals, lower_bounds, upper_bounds, alpha=0.2, color=line_kws["color"])
         ax.grid()
         ax.set_xlim((0, 1))
         ax.set_ylim((0, 1))

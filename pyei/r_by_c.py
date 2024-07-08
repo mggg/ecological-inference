@@ -170,12 +170,18 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
 
         if self.model_name == "multinomial-dirichlet":
             self.sim_model = ei_multinom_dirichlet(
-                group_fractions, votes_fractions, precinct_pops, **self.additional_model_params
+                group_fractions,
+                votes_fractions,
+                precinct_pops,
+                **self.additional_model_params,
             )
 
         elif self.model_name == "multinomial-dirichlet-modified":
             self.sim_model = ei_multinom_dirichlet_modified(
-                group_fractions, votes_fractions, precinct_pops, **self.additional_model_params
+                group_fractions,
+                votes_fractions,
+                precinct_pops,
+                **self.additional_model_params,
             )
 
         elif self.model_name == "greiner-quinn":
@@ -199,7 +205,10 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
                     )
             elif self.model_name == "greiner-quinn":
                 self.sim_trace = pyei_greiner_quinn_sample(
-                    group_fractions, votes_fractions, precinct_pops, **other_sampling_args
+                    group_fractions,
+                    votes_fractions,
+                    precinct_pops,
+                    **other_sampling_args,
                 )  #
 
             self.calculate_summary()
@@ -298,7 +307,11 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         # # compute credible intervals
         percentiles = [2.5, 97.5]
         self.turnout_adjusted_credible_interval_95_mean_voting_prefs = np.zeros(
-            (self.num_groups_and_num_candidates[0], self.num_groups_and_num_candidates[1] - 1, 2)
+            (
+                self.num_groups_and_num_candidates[0],
+                self.num_groups_and_num_candidates[1] - 1,
+                2,
+            )
         )
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1] - 1):
@@ -350,7 +363,11 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         # compute credible intervals
         percentiles = [2.5, 97.5]
         self.credible_interval_95_mean_voting_prefs = np.zeros(
-            (self.num_groups_and_num_candidates[0], self.num_groups_and_num_candidates[1], 2)
+            (
+                self.num_groups_and_num_candidates[0],
+                self.num_groups_and_num_candidates[1],
+                2,
+            )
         )
         for row in range(self.num_groups_and_num_candidates[0]):
             for col in range(self.num_groups_and_num_candidates[1]):
@@ -768,10 +785,16 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
                         f"{self.demographic_group_names[dem2]} voters differ."
                     )
                 candidate_differ_rate_dict[
-                    (self.demographic_group_names[dem1], self.demographic_group_names[dem2])
+                    (
+                        self.demographic_group_names[dem1],
+                        self.demographic_group_names[dem2],
+                    )
                 ] = differ_frac
                 candidate_differ_rate_dict[
-                    (self.demographic_group_names[dem2], self.demographic_group_names[dem1])
+                    (
+                        self.demographic_group_names[dem2],
+                        self.demographic_group_names[dem1],
+                    )
                 ] = differ_frac
         return candidate_differ_rate_dict
 
@@ -844,7 +867,13 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         )
 
     def plot_margin_kde(
-        self, group, candidates, threshold=None, percentile=None, show_threshold=False, ax=None
+        self,
+        group,
+        candidates,
+        threshold=None,
+        percentile=None,
+        show_threshold=False,
+        ax=None,
     ):
         """
         Plot kde of the margin between two candidates among the given demographic group.
@@ -886,7 +915,14 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
         )
 
     def plot_polarization_kde(
-        self, groups, candidate, threshold=None, percentile=None, show_threshold=False, ax=None
+        self,
+        groups,
+        candidate,
+        threshold=None,
+        percentile=None,
+        show_threshold=False,
+        ax=None,
+        color="steelblue",
     ):
         """Plot kde of differences between voting preferences
 
@@ -907,9 +943,12 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             must be None
         show_threshold: bool
         ax : matplotlib Axis object
+        color : str (optional)
+            Specifies a color for matplotlib to be used in the histogram/kde.
+            default="steelblue"
 
         Returns:
-        --------ß
+        --------
         matplotlib axis object
         """
         return_interval = threshold is None
@@ -931,7 +970,14 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
             thresholds = [threshold]
 
         return plot_polarization_kde(
-            samples, thresholds, percentile, groups, candidate, show_threshold, ax
+            samples,
+            thresholds,
+            percentile,
+            groups,
+            candidate,
+            show_threshold,
+            ax,
+            color=color,
         )
 
     def plot_intervals_by_precinct(self, group_name, candidate_name):

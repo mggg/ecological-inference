@@ -130,7 +130,12 @@ def plot_single_ridgeplot(
 
 
 def plot_single_histogram(
-    ax, group_prefs, colors, alpha, z_init, trans  # pylint: disable=redefined-outer-name
+    ax,
+    group_prefs,
+    colors,  # pylint: disable=redefined-outer-name
+    alpha,
+    z_init,
+    trans,  # pylint: disable=redefined-outer-name
 ):
     """Helper function for plot_precincts that plots a single precinct histogram(s)
        (i.e.,for a single precinct for a given candidate.)
@@ -315,7 +320,7 @@ def plot_boxplots(
         legend = group_names
         support = "for"
         if axes is None:
-            fig, axes = plt.subplots(num_candidates, figsize=FIGSIZE)
+            _, axes = plt.subplots(num_candidates, figsize=FIGSIZE)
 
     elif plot_by == "group":
         num_plots = num_groups
@@ -325,10 +330,10 @@ def plot_boxplots(
         legend = candidate_names
         support = "among"
         if axes is None:
-            fig, axes = plt.subplots(num_groups, figsize=FIGSIZE)
+            _, axes = plt.subplots(num_groups, figsize=FIGSIZE)
     else:
         raise ValueError("plot_by must be 'group' or 'candidate' (default: 'candidate')")
-    fig.subplots_adjust(hspace=1)
+    plt.gcf().subplots_adjust(hspace=1)
 
     for plot_idx in range(num_plots):
         samples_df = pd.DataFrame(
@@ -454,13 +459,19 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="
     # Set group names and candidates in case runs are TwoByTwoEI
     if not hasattr(ei_runs[0], "demographic_group_names"):  # then is TwoByTwoEI
         demographic_group_names1 = list(ei_runs[0].group_names_for_display())
-        candidate_names1 = [ei_runs[0].candidate_name, "not " + ei_runs[0].candidate_name]
+        candidate_names1 = [
+            ei_runs[0].candidate_name,
+            "not " + ei_runs[0].candidate_name,
+        ]
     else:
         demographic_group_names1 = ei_runs[0].demographic_group_names
         candidate_names1 = ei_runs[0].candidate_names
     if not hasattr(ei_runs[1], "demographic_group_names"):  # then it is TwoByTwoEI
         demographic_group_names2 = list(ei_runs[1].group_names_for_display())
-        candidate_names2 = [ei_runs[1].candidate_name, "not " + ei_runs[1].candidate_name]
+        candidate_names2 = [
+            ei_runs[1].candidate_name,
+            "not " + ei_runs[1].candidate_name,
+        ]
     else:
         demographic_group_names2 = ei_runs[1].demographic_group_names
         candidate_names2 = ei_runs[1].candidate_names
@@ -493,7 +504,8 @@ def plot_precinct_scatterplot(ei_runs, run_names, candidate, demographic_group="
         )
     sns.lineplot(x=[0, 1], y=[0, 1], alpha=0.5, color="grey")
     ax.set_title(
-        f"{run_names[0]} vs. {run_names[1]}\n Predicted support for {candidate}", fontsize=TITLESIZE
+        f"{run_names[0]} vs. {run_names[1]}\n Predicted support for {candidate}",
+        fontsize=TITLESIZE,
     )
     ax.set_xlabel(f"Support for {candidate} (from {run_names[0]})", fontsize=FONTSIZE)
     ax.set_ylabel(f"Support for {candidate} (from {run_names[1]})", fontsize=FONTSIZE)
@@ -572,6 +584,7 @@ def plot_polarization_kde(
     candidate_name,
     show_threshold=False,
     ax=None,
+    color="steelblue",
 ):
     """
     Plots a kde for the differences in voting preferences between two groups
@@ -591,6 +604,8 @@ def plot_polarization_kde(
     show_threshold: bool
         if true, add a vertical line at the threshold on the plot and display the associated
         tail probability
+    color: str
+        specifies a color for matplotlib to be used in the histogram/kde
 
     Returns
     -------
@@ -607,7 +622,7 @@ def plot_polarization_kde(
         element="step",
         stat="density",
         label=groups[0] + " - " + groups[1],
-        color="steelblue",
+        color=color,
         linewidth=0,
     )
     ax.set_ylabel("Density", fontsize=FONTSIZE)
@@ -875,7 +890,13 @@ def plot_intervals_all_precincts(
 
 
 def tomography_plot(
-    group_fraction, votes_fraction, demographic_group_name, candidate_name, ax=None
+    group_fraction,
+    votes_fraction,
+    demographic_group_name,
+    candidate_name,
+    ax=None,
+    c="b",
+    **plot_kwargs,
 ):
     """Tomography plot (basic), applicable for 2x2 ei
 
@@ -893,6 +914,10 @@ def tomography_plot(
         Name of candidate or voting outcome of interest
     ax : Matplotlib axis object or None, optional
         Default=None
+    c : specifies a color for Matplotlib, optional
+        Default="b"
+    **plot_kwargs
+        Additional keyword arguments to be passed to matplotlib.Axes.plot()
 
     Returns
     -------
@@ -911,5 +936,5 @@ def tomography_plot(
     ax.set_ylabel(f"voter pref of non-{demographic_group_name} for {candidate_name}")
     for i in range(num_precincts):
         b_2 = (votes_fraction[i] - b_1 * group_fraction[i]) / (1 - group_fraction[i])
-        ax.plot(b_1, b_2, c="b")
+        ax.plot(b_1, b_2, c=c, **plot_kwargs)
     return ax

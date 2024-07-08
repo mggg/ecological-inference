@@ -65,6 +65,7 @@ def to_netcdf(ei_object, filepath):
         mode = "a"
         for attr in ["demographic_group_fractions", "votes_fractions"]:  # array atts
             data = xr.DataArray(getattr(ei_object, attr), name=attr)
+            data.load()
             data.to_netcdf(filepath, mode=mode, group=attr, engine="netcdf4")
             data.close()
 
@@ -83,7 +84,7 @@ def from_netcdf(filepath):
     with sim_trace and most other atrributes set as they would
     be when fit. Note sim_model is not saved/loaded
     """
-    idata = az.from_netcdf(filepath)
+    idata = az.from_netcdf(filepath, engine="netcdf4")
 
     attrs_dict = idata.posterior.attrs  # pylint: disable=no-member
     attr_list = list(idata.posterior.attrs.keys())  # pylint: disable=no-member

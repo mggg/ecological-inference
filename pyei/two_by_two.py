@@ -122,7 +122,8 @@ def truncated_normal_asym(
             observed=votes_fraction,
         )
         pm.Deterministic(
-            lower_level_b_name, (votes_fraction - upper_b * group_fraction) / (1 - group_fraction)
+            lower_level_b_name,
+            (votes_fraction - upper_b * group_fraction) / (1 - group_fraction),
         )
     return model
 
@@ -658,7 +659,13 @@ class TwoByTwoEIBaseBayes:
         )
 
     def plot_polarization_kde(
-        self, threshold=None, percentile=None, reference_group=0, show_threshold=False, ax=None
+        self,
+        threshold=None,
+        percentile=None,
+        reference_group=0,
+        show_threshold=False,
+        ax=None,
+        color="steelblue",
     ):
         """
         Plot kde of differences between voting preferences
@@ -681,6 +688,9 @@ class TwoByTwoEIBaseBayes:
             Default: False. If true, add a vertical line at the threshold on the plot
             and display the associated tail probability
         ax: matplotlib axis object (optional)
+        color : str (optional)
+            Specifies a color for matplotlib to be used in the histogram/kde.
+            default="steelblue"
 
         Returns
         -------
@@ -703,16 +713,17 @@ class TwoByTwoEIBaseBayes:
             threshold, percentile, samples, groups = self._calculate_polarization(
                 threshold, percentile, reference_group
             )
-            thresholds = [threshold]
+            thresholds = [threshold]  # pylint: disable=duplicate-code
 
         return plot_polarization_kde(
             samples,
             thresholds,
             percentile,
-            groups,
+            groups,  # pylint: disable=duplicate-code
             self.candidate_name,
             show_threshold,
             ax,
+            color=color,
         )
 
 
@@ -814,7 +825,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         elif self.model_name == "truncated_normal":
             model_function = truncated_normal_asym
 
-        self.sim_model = model_function(
+        self.sim_model = model_function(  # pylint: disable=possibly-used-before-assignment
             group_fraction,
             votes_fraction,
             precinct_pops,
