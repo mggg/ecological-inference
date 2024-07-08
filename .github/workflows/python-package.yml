@@ -1,33 +1,49 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
-name: Python package
-
-on: [push, pull_request]
-
-
+name: unittests & auto-publish
+on: [push, workflow_dispatch]
 jobs:
-  build:
+  pytest-job:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10']
+    timeout-minutes: 30
+
+    concurrency: ${{ github.workflow }}-${{ github.ref }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - run: pip --version
+    - run: pip install .
+    - run: pip install -r requirements-dev.txt
+    - run: pip freeze
+    - name: Run linters
+      run: |
+        ./scripts/lint.sh
+    - name: Test with pytest
+      run: |
+        ./scripts/test.sh
+
+
+  # Auto-publish when version is increased
+  publish-job:
+    # Only try to publish if:
+    # * Repo is self (prevents running from forks)
+    # * Branch is `main`
+    if: |
+      github.repository == 'mggg/ecological-inference'
+      && github.ref == 'refs/heads/main'
+    needs: pytest-job  # Only publish after tests are successful
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-          pip install -r requirements-dev.txt
-          pip freeze
-      - name: Run linters
-        run: |
-          ./scripts/lint.sh
-      - name: Test with pytest
-        run: |
-          ./scripts/test.sh
+    # Publish the package (if local `__version__` > pip version)
+    - uses: etils-actions/pypi-auto-publish@v1
+      with:
+        pypi-token: ${{ secrets.PYPI_API_TOKEN }}
+        gh-token: ${{ secrets.GITHUB_TOKEN }}
+        parse-changelog: false
+        pkg-name: pyei
