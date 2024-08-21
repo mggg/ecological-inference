@@ -18,7 +18,7 @@ def get_requirements():
     # TODO: The gh-action to upload to PyPI doesn't include the requirements.txt
     # so we're just copying them here as a backup. This is super brittle!
     try:
-        with codecs.open(REQUIREMENTS_FILE) as buff:
+        with codecs.open(REQUIREMENTS_FILE, "r", encoding="utf-8") as buff:
             return buff.read().splitlines()
     except:
         return """pymc >= 5.10.0
@@ -37,12 +37,12 @@ netCDF4""".splitlines()
 
 
 def get_long_description():
-    with codecs.open(README_FILE, "rt") as buff:
+    with codecs.open(README_FILE, "r", encoding="utf-8") as buff:
         return buff.read()
 
 
 def get_version():
-    lines = open(VERSION_FILE, "rt").readlines()
+    lines = open(VERSION_FILE, "r", encoding="utf-8").readlines()
     version_regex = r"^__version__ = ['\"]([^'\"]*)['\"]"
     for line in lines:
         mo = re.search(version_regex, line, re.M)
