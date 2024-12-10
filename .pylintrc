@@ -62,7 +62,8 @@ confidence=
 # --disable=W".
 disable=fixme,
         no-else-return,
-        too-many-lines
+        too-many-lines,
+        similarities
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -483,6 +484,9 @@ preferred-modules=
 
 
 [DESIGN]
+
+# Maximum number of positional arguments for function / method.
+max-positional-arguments=10
 
 # Maximum number of arguments for function / method.
 max-args=10

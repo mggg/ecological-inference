@@ -5,7 +5,6 @@ Models and fitting for 2x2 methods
 
 import warnings
 import pymc as pm
-from pymc import sampling_jax
 import numpy as np
 import pytensor.tensor as at
 import pytensor
@@ -847,9 +846,10 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
                         **other_sampling_args,
                     )
                 else:
-                    self.sim_trace = sampling_jax.sample_numpyro_nuts(
+                    self.sim_trace = pm.sample(
                         target_accept=target_accept,
                         tune=tune,
+                        nuts_sampler="numpyro",
                         **other_sampling_args,
                     )
 
