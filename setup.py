@@ -21,7 +21,7 @@ def get_requirements():
         with codecs.open(REQUIREMENTS_FILE, "r", encoding="utf-8") as buff:
             return buff.read().splitlines()
     except:
-        return """pymc >= 5.10.0
+        return """pymc >= 5.18.0
 arviz
 scikit-learn
 matplotlib

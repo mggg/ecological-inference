@@ -9,7 +9,7 @@ TODO: Refactor to integrate with two_by_two
 """
 
 import warnings
-from pymc import sampling_jax
+import pymc as pm
 import numpy as np
 from .plot_utils import (
     plot_boxplots,
@@ -200,8 +200,11 @@ class RowByColumnEI:  # pylint: disable=too-many-instance-attributes
                 "multinomial-dirichlet",
             ]:  # for models whose sampling is w/ pycm
                 with self.sim_model:  # pylint: disable=not-context-manager
-                    self.sim_trace = sampling_jax.sample_numpyro_nuts(
-                        target_accept=target_accept, tune=tune, **other_sampling_args
+                    self.sim_trace = pm.sample(
+                        target_accept=target_accept,
+                        tune=tune,
+                        nuts_sampler="numpyro",
+                        **other_sampling_args,
                     )
             elif self.model_name == "greiner-quinn":
                 self.sim_trace = pyei_greiner_quinn_sample(
