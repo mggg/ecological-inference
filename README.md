@@ -57,7 +57,7 @@ Feel free to file an issue if you are running into trouble or if there is a feat
 
 Contributions are welcome! 
 
-Uses Python 3.10. After cloning the environment, you should be able to use either `virtualenv` or `conda` to run the code. The second (`conda`) is probably easier for development, but `virtualenv` is used for the project's CI.
+Uses Python 3.10. After cloning the repository, you should be able to use either `virtualenv` or `conda` to set up your environment. The second (`conda`) is probably easier for development, but `virtualenv` is used for the project's CI.
 
 Here is how to create and activate each environment. See the docs for more elaborate details:
 
