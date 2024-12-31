@@ -4,9 +4,11 @@ Goodman's ecological regression
 
 from matplotlib import pyplot as plt
 import numpy as np
-import seaborn as sns
 import pymc as pm
 from sklearn.linear_model import LinearRegression
+import seaborn as sns
+import seaborn.algorithms as sns_algo
+import seaborn.utils as sns_utils
 
 from .two_by_two import TwoByTwoEIBaseBayes
 
@@ -35,6 +37,7 @@ class GoodmansER:
         self.slope_ = None
         self.voting_prefs_est_ = None
         self.voting_prefs_complement_est_ = None
+        self.precinct_pops = None
         self.is_weighted_regression = is_weighted_regression
 
     def fit(
@@ -56,6 +59,8 @@ class GoodmansER:
                             that votes for the candidate of interest (T)
         precinct_pops   :   Length-p vector giving size of each precinct population
                             of interest (e.g. voting population) (N)
+                            Used for weighting the regression if the GoodmansER
+                            object has is_weighted_regression True
         demographic_group_name  :   Name of the demographic group of interest,
                                     where results are computed for the
                                     demographic group and its complement
@@ -64,6 +69,7 @@ class GoodmansER:
         """
         self.demographic_group_fraction = group_fraction
         self.vote_fraction = vote_fraction
+        self.precinct_pops = precinct_pops
         self.demographic_group_name = demographic_group_name
         self.candidate_name = candidate_name
         if self.is_weighted_regression:
@@ -76,7 +82,7 @@ class GoodmansER:
             reg = LinearRegression().fit(group_fraction.reshape(-1, 1), vote_fraction)
 
         self.intercept_ = reg.intercept_
-        self.slope_ = reg.coef_
+        self.slope_ = reg.coef_[0]
         self.voting_prefs_est_ = reg.predict(np.array([1]).reshape(-1, 1))[0]
         self.voting_prefs_complement_est_ = reg.intercept_
         return self
@@ -96,7 +102,12 @@ class GoodmansER:
         {self.voting_prefs_complement_est_:.3f}
         """
 
-    def plot(self, **sns_regplot_args):
+    def plot(
+        self,
+        line_kws=None,
+        scatter_kws=None,
+        **sns_regplot_args,
+    ):
         """Plot the linear regression with 95% confidence interval
 
         Notes:
@@ -113,14 +124,66 @@ class GoodmansER:
         ax.set_xlim((0, 1))
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
-        sns.regplot(
-            x=self.demographic_group_fraction,
-            y=self.vote_fraction,
-            ax=ax,
-            ci=95,
-            truncate=False,
-            **sns_regplot_args,
-        )
+
+        if self.is_weighted_regression:
+            if line_kws is None:
+                line_kws = {}
+            line_kws.setdefault("linewidth", 2.5)
+            if scatter_kws is None:
+                scatter_kws = {}
+            scatter_kws.setdefault("s", 50)
+            scatter_kws.setdefault("linewidths", 0)
+            scatter_kws.setdefault("alpha", 0.8)
+            sns.lineplot(
+                x=[0, 1], y=[self.intercept_, self.intercept_ + self.slope_], ax=ax, **line_kws
+            )
+            sns.scatterplot(
+                x=self.demographic_group_fraction, y=self.vote_fraction, ax=ax, **scatter_kws
+            )
+            xgrid = np.linspace(0, 1, 101)
+
+            def fit_fast(xgrid, x, y, w):
+                """
+                Modifying this function from sns to accomodate weighted regression
+                in CI computation
+                """
+
+                def weighted_reg_func(_x, _y, _w):
+                    """Low-level regression and prediction using linear algebra."""
+                    _w_sqrt = np.sqrt(_w)
+                    x_weighted = np.diag(_w_sqrt).dot(_x)
+                    y_weighted = np.diag(_w_sqrt).dot(_y)
+                    return np.linalg.pinv(x_weighted).dot(y_weighted)
+
+                x_with_ones = np.c_[np.ones(len(x)), x]
+                grid = np.c_[np.ones(len(xgrid)), xgrid]  # append ones for intercept
+                yhat = grid.dot(weighted_reg_func(x_with_ones, y, w))
+                beta_boots = sns_algo.bootstrap(
+                    x_with_ones, y, w, func=weighted_reg_func, n_boot=1000, units=None, seed=None
+                ).T
+                yhat_boots = grid.dot(beta_boots).T
+                return yhat, yhat_boots
+
+            _, yhat_boots = fit_fast(
+                xgrid,
+                self.demographic_group_fraction,
+                self.vote_fraction,
+                self.precinct_pops,
+            )
+            # CIs at each grid point
+            err_bands = sns_utils.ci(yhat_boots, which=95, axis=0)
+            ax.fill_between(
+                xgrid, *err_bands, alpha=0.15, color=plt.gca().lines[-1].get_color()
+            )  # match color of plot
+        else:
+            sns.regplot(
+                x=self.demographic_group_fraction,
+                y=self.vote_fraction,
+                ax=ax,
+                ci=95,
+                truncate=False,
+                **sns_regplot_args,
+            )
         return fig, ax
 
 
