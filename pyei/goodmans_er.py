@@ -102,7 +102,12 @@ class GoodmansER:
         {self.voting_prefs_complement_est_:.3f}
         """
 
-    def plot(self, **sns_regplot_args):
+    def plot(
+        self,
+        line_kws=None,
+        scatter_kws=None,
+        **sns_regplot_args,
+    ):
         """Plot the linear regression with 95% confidence interval
 
         Notes:
@@ -119,10 +124,22 @@ class GoodmansER:
         ax.set_xlim((0, 1))
         ax.set_xlabel(f"Fraction in group {self.demographic_group_name}")
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
-        sns.lineplot(x=[0, 1], y=[self.intercept_, self.intercept_ + self.slope_], ax=ax)
-        sns.scatterplot(x=self.demographic_group_fraction, y=self.vote_fraction, ax=ax)
 
         if self.is_weighted_regression:
+            if line_kws is None:
+                line_kws = {}
+            line_kws.setdefault("linewidth", 2.5)
+            if scatter_kws is None:
+                scatter_kws = {}
+            scatter_kws.setdefault("s", 50)
+            scatter_kws.setdefault("linewidths", 0)
+            scatter_kws.setdefault("alpha", 0.8)
+            sns.lineplot(
+                x=[0, 1], y=[self.intercept_, self.intercept_ + self.slope_], ax=ax, **line_kws
+            )
+            sns.scatterplot(
+                x=self.demographic_group_fraction, y=self.vote_fraction, ax=ax, **scatter_kws
+            )
             xgrid = np.linspace(0, 1, 101)
 
             def fit_fast(xgrid, x, y, w):
