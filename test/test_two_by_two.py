@@ -10,7 +10,7 @@ from pyei.two_by_two import TwoByTwoEI
 
 
 @pytest.fixture(scope="session")
-def example_two_by_two_data():
+def example_two_by_two_data():  # noqa: ANN201
     """Load santa clara data to test two by two ei and plots"""  #
     sc_data = data.Datasets.Santa_Clara.to_dataframe()
     group_fractions = np.array(sc_data["pct_e_asian_vote"])
@@ -30,7 +30,7 @@ def example_two_by_two_data():
 
 
 @pytest.fixture(scope="session")
-def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined-outer-name
+def example_two_by_two_ei(example_two_by_two_data):  # noqa: ANN001,ANN201
     """Run example two by two ei method - can use to test plotting"""
     ei_ex = TwoByTwoEI(
         model_name="king99_pareto_modification", pareto_scale=8, pareto_shape=2
@@ -48,7 +48,7 @@ def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined
     return ei_ex
 
 
-def generate_kwargs_for_log_binom_sum():
+def generate_kwargs_for_log_binom_sum():  # noqa: ANN201
     """Randomly generate inputs for log_binom_sum.
 
     Note that these should probably _not_ be random eventually, but should deterministically
@@ -71,8 +71,15 @@ def generate_kwargs_for_log_binom_sum():
     return kwargs
 
 
-def log_binom_sum_in_scipy(
-    lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, prev
+def log_binom_sum_in_scipy(  # noqa: ANN201
+    lower,  # noqa: ANN001
+    upper,  # noqa: ANN001
+    obs_vote,  # noqa: ANN001
+    n0_curr,  # noqa: ANN001
+    n1_curr,  # noqa: ANN001
+    b_1_curr,  # noqa: ANN001
+    b_2_curr,  # noqa: ANN001
+    prev,  # noqa: ANN001
 ):
     """Reimplement theano logic in scipy to make sure it matches."""
     votes_withing_group_count = np.arange(lower, upper)
@@ -85,7 +92,7 @@ def log_binom_sum_in_scipy(
     )
 
 
-def test_log_binom_sum():
+def test_log_binom_sum():  # noqa: ANN201,D103
     kwargs = generate_kwargs_for_log_binom_sum()
     np.testing.assert_almost_equal(
         two_by_two._log_binom_sum(**kwargs).eval(),
@@ -94,7 +101,7 @@ def test_log_binom_sum():
     )
 
 
-def test_binom_conv_log_p():
+def test_binom_conv_log_p():  # noqa: ANN201,D103
     # Randomly generate a dataset of 5 precincts
     sample_data = []
     for _ in range(5):
@@ -133,7 +140,7 @@ def test_binom_conv_log_p():
     np.testing.assert_allclose(theano_result, prev)
 
 
-def test_polarization_report(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
+def test_polarization_report(example_two_by_two_ei):  # noqa: ANN001,ANN201,D103
     prob_20 = example_two_by_two_ei.polarization_report(threshold=0.2)
     prob_40 = example_two_by_two_ei.polarization_report(threshold=0.4)
     thresh_95_range = example_two_by_two_ei.polarization_report(percentile=95)

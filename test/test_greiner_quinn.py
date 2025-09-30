@@ -18,7 +18,7 @@ from pyei.r_by_c import RowByColumnEI
 
 
 @pytest.fixture(scope="session")
-def example_r_by_c_data_asym():
+def example_r_by_c_data_asym():  # noqa: ANN201
     """Trimmed santa clara dataset with r not equal to c"""
     sc_data = data.Datasets.Santa_Clara.to_dataframe()
     sc_data = sc_data.iloc[:10, :]
@@ -36,12 +36,12 @@ def example_r_by_c_data_asym():
 
     group_diff = group_counts.sum(axis=0) - precinct_pops
     for idx_of_mismatch in np.where(group_diff != 0):
-        group_to_adjust = random.randint(0, num_groups - 1)
+        group_to_adjust = random.randint(0, num_groups - 1)  # noqa: S311
         group_counts[group_to_adjust, idx_of_mismatch] -= group_diff[idx_of_mismatch]
 
     vote_diff = vote_counts.sum(axis=0) - precinct_pops
     for idx_of_mismatch in np.where(vote_diff != 0):
-        candidate_to_adjust = random.randint(0, num_candidates - 1)
+        candidate_to_adjust = random.randint(0, num_candidates - 1)  # noqa: S311
         vote_counts[candidate_to_adjust, idx_of_mismatch] -= vote_diff[idx_of_mismatch]
 
     group_counts = group_counts.T
@@ -57,9 +57,9 @@ def example_r_by_c_data_asym():
     }
 
 
-def test_get_initial_internal_count_sample(
-    example_r_by_c_data_asym,
-):  # pylint: disable=redefined-outer-name:
+def test_get_initial_internal_count_sample(  # noqa: ANN201,D103
+    example_r_by_c_data_asym,  # noqa: ANN001
+):
     vote_counts = example_r_by_c_data_asym["vote_counts"]
     group_counts = example_r_by_c_data_asym["group_counts"]
     precinct_pops = example_r_by_c_data_asym["precinct_pops"]
@@ -82,7 +82,7 @@ def test_get_initial_internal_count_sample(
     )  # sample respects given vote counts
 
 
-def test_theta_to_omega():
+def test_theta_to_omega():  # noqa: ANN201,D103
     num_precincts = 8
     r = 3
     c = 4
@@ -95,9 +95,9 @@ def test_theta_to_omega():
     )
 
 
-def test_greiner_quinn_gibbs_sample(
-    example_r_by_c_data_asym,
-):  # pylint: disable=redefined-outer-name
+def test_greiner_quinn_gibbs_sample(  # noqa: ANN201,D103
+    example_r_by_c_data_asym,  # noqa: ANN001
+):
     r = example_r_by_c_data_asym["group_counts"].shape[1]
     c = example_r_by_c_data_asym["vote_counts"].shape[1]
     print(r, c)
@@ -125,9 +125,9 @@ def test_greiner_quinn_gibbs_sample(
     )
 
 
-def test_pyei_greiner_quinn_gibbs(
-    example_r_by_c_data_asym,
-):  # pylint: disable=redefined-outer-name
+def test_pyei_greiner_quinn_gibbs(  # noqa: ANN201,D103
+    example_r_by_c_data_asym,  # noqa: ANN001
+):
     ei_greiner_quinn = RowByColumnEI(model_name="greiner-quinn")
     ei_greiner_quinn.fit(
         example_r_by_c_data_asym["group_fractions"],
@@ -138,9 +138,9 @@ def test_pyei_greiner_quinn_gibbs(
     )
 
 
-def test_non_central_hypergeometric_sample():
+def test_non_central_hypergeometric_sample():  # noqa: ANN201,D103
     samp = non_central_hypergeometric_sample.py_func(10, 5, 7, 1)
-    assert samp >= 2
-    assert samp <= 10
+    assert samp >= 2  # noqa: PLR2004
+    assert samp <= 10  # noqa: PLR2004
     samp2 = non_central_hypergeometric_sample.py_func(10, 10, 7, 1)
-    assert samp2 <= 10
+    assert samp2 <= 10  # noqa: PLR2004
