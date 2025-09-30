@@ -1,6 +1,12 @@
 """Plotting functions for visualizing ei outputs"""
 
+from __future__ import annotations
+
 import warnings
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pyei.r_by_c import RowByColumnEI
 
 import matplotlib.patches as mpatches
 import numpy as np
@@ -9,10 +15,17 @@ import scipy.stats as st
 import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib import ticker as mticker
+from matplotlib.axes import Axes
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
+from matplotlib.transforms import Transform
+
+# from pyei.r_by_c import RowByColumnEI  # Avoid circular import
 
 PALETTE = "Dark2"  # set library-wide color palette
+FIGSIZE = (6, 4)
+MAX_PRECINCTS_DEFAULT = 50
+TWO_THRESHOLDS = 2
 FONTSIZE = 20
 TITLESIZE = 24
 TICKSIZE = 15
@@ -20,7 +33,7 @@ FIGSIZE = (10, 5)
 colors = sns.color_palette(PALETTE)
 
 
-def _size_ticks(ax, axis="x"):
+def _size_ticks(ax: Axes, axis: str = "x") -> None:
     """Helper function to size the x- or ytick (numbers) of a matplotlib Axis
 
     Parameters
@@ -43,7 +56,7 @@ def _size_ticks(ax, axis="x"):
         raise ValueError("You need to specify an 'x' or 'y' axis!")
 
 
-def _size_yticklabels(ax):
+def _size_yticklabels(ax: Axes) -> None:
     """Helper function to size the ytick labels of a matplotlib Axis
 
     Parameters
@@ -54,17 +67,18 @@ def _size_yticklabels(ax):
 
 
 def _plot_single_ridgeplot(
-    ax,
-    group_prefs,
-    colors,  # pylint: disable=redefined-outer-name
-    alpha,
-    z_init,
-    trans,
-    overlap=1.3,
-    num_points=500,
-):
-    """Helper function for plot_precincts that plots a single ridgeplot (e.g.,
-    for a single precinct for a given candidate.)
+    ax: Axes,
+    group_prefs: np.ndarray,
+    colors: list[tuple[float, float, float]],
+    alpha: float,
+    z_init: float,
+    trans: Transform,
+    overlap: float = 1.3,
+    num_points: int = 500,
+) -> None:
+    """Helper function for plot_precincts that plots a single ridgeplot.
+
+    For example, for a single precinct for a given candidate.
 
     Parameters
     ----------
@@ -114,15 +128,16 @@ def _plot_single_ridgeplot(
 
 
 def _plot_single_histogram(
-    ax,
-    group_prefs,
-    colors,  # pylint: disable=redefined-outer-name
-    alpha,
-    z_init,
-    trans,  # pylint: disable=redefined-outer-name
-):
-    """Helper function for plot_precincts that plots a single precinct histogram(s)
-       (i.e.,for a single precinct for a given candidate.)
+    ax: Axes,
+    group_prefs: np.ndarray,
+    colors: list[tuple[float, float, float]],
+    alpha: float,
+    z_init: float,
+    trans: Transform,
+) -> None:
+    """Helper function for plot_precincts that plots a single precinct histogram.
+
+    For example, for a single precinct for a given candidate.
 
     Parameters
     ----------
@@ -144,7 +159,7 @@ def _plot_single_histogram(
         weights = weights / weights.max()
         ax.hist(
             bins[:-1],
-            bins=bins,
+            bins=bins.tolist(),
             weights=weights,
             bottom=trans,
             zorder=z_init + 1,
@@ -155,15 +170,15 @@ def _plot_single_histogram(
 
 
 def plot_precincts(
-    voting_prefs,
-    group_names,
-    candidate,
-    alpha=1,
-    precinct_labels=None,
-    show_all_precincts=False,
-    plot_as_histograms=False,
-    ax=None,
-):
+    voting_prefs: list[np.ndarray],
+    group_names: list[str],
+    candidate: str,
+    alpha: float = 1,
+    precinct_labels: list[str] | None = None,
+    show_all_precincts: bool = False,
+    plot_as_histograms: bool = False,
+    ax: Axes | None = None,
+) -> Axes:
     """Ridgeplots of sampled voting preferences for each precinct
 
     Parameters
@@ -195,18 +210,19 @@ def plot_precincts(
     ax: Matplotlib axis object
     """
     N = voting_prefs[0].shape[1]
-    if N > 50 and not show_all_precincts:
+    if N > MAX_PRECINCTS_DEFAULT and not show_all_precincts:
         warnings.warn(
             f"User attempted to plot {N} precinct-level voting preference "
             f"ridgeplots. Automatically restricting to first 50 precincts "
-            f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)"
+            f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)",
+            stacklevel=2,
         )
         voting_prefs = [prefs[:, :50] for prefs in voting_prefs]
         if precinct_labels is not None:
             precinct_labels = precinct_labels[:50]
         N = 50
     if precinct_labels is None:
-        precinct_labels = range(1, N + 1)
+        precinct_labels = [f"Precinct {i}" for i in range(1, N + 1)]
 
     legend_space = len(group_names) + 2
     if ax is None:
@@ -220,20 +236,23 @@ def plot_precincts(
         ax.plot([0], [idx])
         trans = ax.convert_yunits(idx)
         if plot_as_histograms:
-            _plot_single_histogram(ax, group_prefs, colors, alpha, 4 * (N - idx), trans)
+            _plot_single_histogram(
+                ax, np.array(group_prefs), colors, alpha, 4 * (N - idx), trans
+            )
         else:
-            _plot_single_ridgeplot(ax, group_prefs, colors, alpha, 4 * (N - idx), trans)
+            _plot_single_ridgeplot(
+                ax, np.array(group_prefs), colors, alpha, 4 * (N - idx), trans
+            )
     for i in range(legend_space):
         # add `legend_space` number of lines to the top of the plot for legend
         ax.plot([0], [N + i])
 
-    def replace_ticks_with_precinct_labels(value, pos):
-        # pylint: disable=unused-argument
+    def replace_ticks_with_precinct_labels(value: float, pos: int) -> str:
         # matplotlib axis tick formatter function
         idx = int(value)
         if idx < len(precinct_labels):
             return precinct_labels[idx]
-        return value
+        return str(value)
 
     # replace y-axis ticks with precinct labels
     ax.set_yticks(np.arange(len(precinct_labels)))
@@ -255,8 +274,12 @@ def plot_precincts(
 
 
 def plot_boxplots(
-    sampled_voting_prefs, group_names, candidate_names, plot_by="candidate", axes=None
-):
+    sampled_voting_prefs: np.ndarray,
+    group_names: list[str],
+    candidate_names: list[str],
+    plot_by: str = "candidate",
+    axes: Axes | None = None,
+) -> Axes:
     """Horizontal boxplots for r x c sets of samples between 0 and 1
 
     Parameters
@@ -304,6 +327,8 @@ def plot_boxplots(
         support = "for"
         if axes is None:
             _, axes = plt.subplots(num_candidates, figsize=FIGSIZE)
+            if num_candidates > 1:
+                axes = list(axes)  # type: ignore[assignment,arg-type]
 
     elif plot_by == "group":
         num_plots = num_groups
@@ -314,6 +339,8 @@ def plot_boxplots(
         support = "among"
         if axes is None:
             _, axes = plt.subplots(num_groups, figsize=FIGSIZE)
+            if num_groups > 1:
+                axes = list(axes)  # type: ignore[assignment,arg-type]
     else:
         raise ValueError(
             "plot_by must be 'group' or 'candidate' (default: 'candidate')"
@@ -327,7 +354,7 @@ def plot_boxplots(
                 for i in range(num_boxes_per_plot)
             }
         )
-        if num_plots > 1:
+        if num_plots > 1 and isinstance(axes, list):
             ax = axes[plot_idx]
         else:
             ax = axes
@@ -343,12 +370,12 @@ def plot_boxplots(
 
 
 def plot_summary(
-    sampled_voting_prefs,
-    group1_name,
-    group2_name,
-    candidate_name,
-    axes=None,
-):
+    sampled_voting_prefs: np.ndarray,
+    group1_name: str,
+    group2_name: str,
+    candidate_name: str,
+    axes: list[Axes] | None = None,
+) -> tuple[Axes, Axes]:
     """Plot KDE, histogram, and boxplot for 2x2 case
 
     Parameters
@@ -417,9 +444,15 @@ def plot_summary(
 
 
 def plot_precinct_scatterplot(
-    ei_runs, run_names, candidate, demographic_group="all", ax=None
-):
-    """Given two RxC EI runs, plot precinct-by-precinct comparison of preferences
+    ei_runs: list[RowByColumnEI],
+    run_names: list[str],
+    candidate: str,
+    demographic_group: str = "all",
+    ax: Axes | None = None,
+) -> Axes:
+    """Plot precinct-by-precinct comparison of preferences for a given candidate from a given demographic group.
+
+    Given two RxC EI runs, plot precinct-by-precinct comparison of preferences
     for a given candidate from a given demographic group.
 
     Parameters
@@ -451,23 +484,23 @@ def plot_precinct_scatterplot(
 
     # Set group names and candidates in case runs are TwoByTwoEI
     if not hasattr(ei_runs[0], "demographic_group_names"):  # then is TwoByTwoEI
-        demographic_group_names1 = list(ei_runs[0].group_names_for_display())
+        demographic_group_names1 = list(ei_runs[0].group_names_for_display())  # type: ignore[attr-defined]
         candidate_names1 = [
-            ei_runs[0].candidate_name,
-            "not " + ei_runs[0].candidate_name,
+            ei_runs[0].candidate_name,  # type: ignore[attr-defined]
+            "not " + ei_runs[0].candidate_name,  # type: ignore[attr-defined]
         ]
     else:
-        demographic_group_names1 = ei_runs[0].demographic_group_names
-        candidate_names1 = ei_runs[0].candidate_names
+        demographic_group_names1 = ei_runs[0].demographic_group_names  # type: ignore[assignment]
+        candidate_names1 = ei_runs[0].candidate_names  # type: ignore[assignment]
     if not hasattr(ei_runs[1], "demographic_group_names"):  # then it is TwoByTwoEI
-        demographic_group_names2 = list(ei_runs[1].group_names_for_display())
+        demographic_group_names2 = list(ei_runs[1].group_names_for_display())  # type: ignore[attr-defined]
         candidate_names2 = [
-            ei_runs[1].candidate_name,
-            "not " + ei_runs[1].candidate_name,
+            ei_runs[1].candidate_name,  # type: ignore[attr-defined]
+            "not " + ei_runs[1].candidate_name,  # type: ignore[attr-defined]
         ]
     else:
-        demographic_group_names2 = ei_runs[1].demographic_group_names
-        candidate_names2 = ei_runs[1].candidate_names
+        demographic_group_names2 = ei_runs[1].demographic_group_names  # type: ignore[assignment]
+        candidate_names2 = ei_runs[1].candidate_names  # type: ignore[assignment]
 
     common_groups = [
         g for g in demographic_group_names1 if g in demographic_group_names2
@@ -512,8 +545,14 @@ def plot_precinct_scatterplot(
 
 
 def plot_margin_kde(
-    group, candidates, samples, thresholds, percentile, show_threshold, ax
-):
+    group: str,
+    candidates: list[str],
+    samples: np.ndarray,
+    thresholds: list[float],
+    percentile: float,
+    show_threshold: bool,
+    ax: Axes,
+) -> Axes:
     """Plots a kde for the margin between two candidates among a given demographic group
 
     Parameters:
@@ -553,7 +592,7 @@ def plot_margin_kde(
     if show_threshold:
         for threshold in thresholds:
             ax.axvline(threshold, c="gray")
-        if len(thresholds) == 2:
+        if len(thresholds) == TWO_THRESHOLDS:
             ax.axvspan(thresholds[0], thresholds[1], facecolor="gray", alpha=0.2)
         else:
             ax.axvspan(thresholds[0], 1, facecolor="gray", alpha=0.2)
@@ -575,17 +614,19 @@ def plot_margin_kde(
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticks, size=TICKSIZE)
 
+    return ax
+
 
 def plot_polarization_kde(
-    diff_samples,
-    thresholds,
-    probability,
-    groups,
-    candidate_name,
-    show_threshold=False,
-    ax=None,
-    color="steelblue",
-):
+    diff_samples: np.ndarray,
+    thresholds: list[float],
+    probability: float,
+    groups: list[str],
+    candidate_name: str,
+    show_threshold: bool = False,
+    ax: Axes | None = None,
+    color: str = "steelblue",
+) -> Axes:
     """Plots a kde for the differences in voting preferences between two groups
 
     Parameters:
@@ -631,7 +672,7 @@ def plot_polarization_kde(
     if show_threshold:
         for threshold in thresholds:
             ax.axvline(threshold, c="gray")
-        if len(thresholds) == 2:
+        if len(thresholds) == TWO_THRESHOLDS:
             ax.axvspan(thresholds[0], thresholds[1], facecolor="gray", alpha=0.2)
         else:
             ax.axvspan(thresholds[0], 1, facecolor="gray", alpha=0.2)
@@ -655,8 +696,12 @@ def plot_polarization_kde(
 
 
 def plot_kdes(
-    sampled_voting_prefs, group_names, candidate_names, plot_by="candidate", axes=None
-):
+    sampled_voting_prefs: np.ndarray,
+    group_names: list[str],
+    candidate_names: list[str],
+    plot_by: str = "candidate",
+    axes: Axes | None = None,
+) -> Axes:
     """Plot a kernel density plot for prefs of voting groups for each candidate
 
     Parameters
@@ -694,6 +739,8 @@ def plot_kdes(
         support = "for"
         if axes is None:
             _, axes = plt.subplots(num_candidates, figsize=FIGSIZE, sharex=True)
+            if num_candidates > 1:
+                axes = list(axes)  # type: ignore[assignment,arg-type]
             plt.subplots_adjust(hspace=0.5)
     elif plot_by == "group":
         num_plots = num_groups
@@ -704,6 +751,8 @@ def plot_kdes(
         support = "among"
         if axes is None:
             _, axes = plt.subplots(num_groups, figsize=FIGSIZE, sharex=True)
+            if num_groups > 1:
+                axes = list(axes)  # type: ignore[assignment,arg-type]
             plt.subplots_adjust(hspace=0.5)
     else:
         raise ValueError(
@@ -712,12 +761,13 @@ def plot_kdes(
 
     middle_plot = int(np.floor(num_plots / 2))
     for plot_idx in range(num_plots):
-        if num_plots > 1:
+        if num_plots > 1 and isinstance(axes, list):
             ax = axes[plot_idx]
             axes[middle_plot].set_ylabel("Probability Density", fontsize=FONTSIZE)
         else:
             ax = axes
-            axes.set_ylabel("Probability Density", fontsize=FONTSIZE)
+            if isinstance(axes, Axes):
+                axes.set_ylabel("Probability Density", fontsize=FONTSIZE)
         ax.set_title(f"Support {support} " + titles[plot_idx], fontsize=TITLESIZE)
         ax.set_xlim((0, 1))
         _size_ticks(ax, "x")
@@ -735,7 +785,7 @@ def plot_kdes(
             )
             ax.set_ylabel("")
 
-    if num_plots > 1:
+    if num_plots > 1 and isinstance(axes, list):
         axes[middle_plot].legend(
             bbox_to_anchor=(1, 1), loc="upper left", prop={"size": 12}
         )
@@ -745,8 +795,12 @@ def plot_kdes(
 
 
 def plot_conf_or_credible_interval(
-    intervals, group_names, candidate_name, title, ax=None
-):
+    intervals: list[tuple[float, float]],
+    group_names: list[str],
+    candidate_name: str,
+    title: str,
+    ax: Axes | None = None,
+) -> Axes:
     """Plot confidence of credible interval for two different groups
 
     Parameters
@@ -783,7 +837,8 @@ def plot_conf_or_credible_interval(
     )
 
     ax.get_xaxis().tick_bottom()
-    ax.axes.get_yaxis().set_visible(False)
+    if ax.axes is not None:
+        ax.axes.get_yaxis().set_visible(False)
     ax.grid()
     for idx, group_name in enumerate(group_names):
         ax.text(1, int_heights[idx], f" {group_name}", fontsize=FONTSIZE)
@@ -800,14 +855,14 @@ def plot_conf_or_credible_interval(
 
 
 def plot_intervals_all_precincts(
-    point_estimates,
-    intervals,
-    candidate_name,
-    precinct_labels,
-    title,
-    ax=None,
-    show_all_precincts=False,
-):
+    point_estimates: np.ndarray,
+    intervals: np.ndarray,
+    candidate_name: str,
+    precinct_labels: list[str],
+    title: str,
+    ax: Axes | None = None,
+    show_all_precincts: bool = False,
+) -> Axes:
     """Plot intervals&point estimates of support for candidate, sorted by point estimates for precincts
 
     Parameters
@@ -835,11 +890,12 @@ def plot_intervals_all_precincts(
     """
     num_intervals = len(point_estimates)
 
-    if num_intervals > 50 and not show_all_precincts:
+    if num_intervals > MAX_PRECINCTS_DEFAULT and not show_all_precincts:
         warnings.warn(
             f"User attempted to plot {num_intervals} precinct-level voting preference "
             f"ridgeplots. Automatically restricting to first 50 precincts "
-            f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)"
+            f"(run with `show_all_precincts=True` to plot all precinct ridgeplots.)",
+            stacklevel=2,
         )
         point_estimates = point_estimates[:50]
         intervals = intervals[:, :50]
@@ -857,7 +913,7 @@ def plot_intervals_all_precincts(
         )
 
     if precinct_labels is None:
-        precinct_labels = range(num_intervals)
+        precinct_labels = [f"Precinct {i}" for i in range(num_intervals)]
 
     ax.set(
         title=title,
@@ -868,11 +924,14 @@ def plot_intervals_all_precincts(
     )
 
     ax.get_xaxis().tick_bottom()
-    ax.axes.get_yaxis().set_visible(False)
+    if ax.axes is not None:
+        ax.axes.get_yaxis().set_visible(False)
 
-    point_estimates, intervals, precinct_labels = zip(
-        *sorted(zip(point_estimates, intervals, precinct_labels))
-    )
+    sorted_data = sorted(zip(point_estimates, intervals, precinct_labels))
+    point_estimates_list, intervals_list, precinct_labels_list = zip(*sorted_data)
+    point_estimates = np.array(point_estimates_list)
+    intervals = np.array(intervals_list)
+    precinct_labels = list(precinct_labels_list)
     bars = []
 
     for point_estimate, interval, precinct_label, int_height in zip(
@@ -893,14 +952,14 @@ def plot_intervals_all_precincts(
 
 
 def tomography_plot(
-    group_fraction,
-    votes_fraction,
-    demographic_group_name,
-    candidate_name,
-    ax=None,
-    c="b",
-    **plot_kwargs,
-):
+    group_fraction: np.ndarray,
+    votes_fraction: np.ndarray,
+    demographic_group_name: str,
+    candidate_name: str,
+    ax: Axes | None = None,
+    c: str = "b",
+    **plot_kwargs: dict[str, Any],  # noqa: ANN401
+) -> Axes:
     """Tomography plot (basic), applicable for 2x2 ei
 
     Parameters
@@ -938,5 +997,5 @@ def tomography_plot(
     ax.set_ylabel(f"voter pref of non-{demographic_group_name} for {candidate_name}")
     for i in range(num_precincts):
         b_2 = (votes_fraction[i] - b_1 * group_fraction[i]) / (1 - group_fraction[i])
-        ax.plot(b_1, b_2, c=c, **plot_kwargs)
+        ax.plot(b_1, b_2, c=c, **plot_kwargs)  # type: ignore
     return ax

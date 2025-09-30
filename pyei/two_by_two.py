@@ -1,11 +1,14 @@
 """Models and fitting for 2x2 methods"""
 
 import warnings
+from typing import Any
 
+import arviz as az
 import numpy as np
 import pymc as pm
 import pytensor
 import pytensor.tensor as at
+from matplotlib.axes import Axes
 
 from pyei.plot_utils import (
     plot_boxplots,
@@ -18,9 +21,10 @@ from pyei.plot_utils import (
 )
 
 
-def _truncated_normal_asym(group_fraction, votes_fraction, precinct_pops):  # pylint: disable=too-many-locals
-    """A modification of king97's truncated normal that puts some broad priors
-    over the parameters of the truncated normal dist
+def _truncated_normal_asym(
+    group_fraction: np.ndarray, votes_fraction: np.ndarray, precinct_pops: np.ndarray
+) -> pm.Model:
+    """A modification of king97's truncated normal that puts some broad priors over the parameters of the truncated normal dist.
 
     Parameters
     ----------
@@ -126,11 +130,13 @@ def _truncated_normal_asym(group_fraction, votes_fraction, precinct_pops):  # py
 
 
 def ei_beta_binom_model_modified(
-    group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
-):
-    """An modification of the 2 x 2 beta/binomial EI model from King, Rosen, Tanner 1999,
-    with (scaled) Pareto distributions over each parameters of the beta distribution,
-    for better sampling geometry
+    group_fraction: np.ndarray,
+    votes_fraction: np.ndarray,
+    precinct_pops: np.ndarray,
+    pareto_scale: float = 8,
+    pareto_shape: float = 2,
+) -> pm.Model:
+    """An modification of the 2 x 2 beta/binomial EI model from King, Rosen, Tanner 1999, with (scaled) Pareto distributions over each parameters of the beta distribution, for better sampling geometry.
 
     Parameters
     ----------
@@ -183,7 +189,12 @@ def ei_beta_binom_model_modified(
     return model
 
 
-def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
+def ei_beta_binom_model(
+    group_fraction: np.ndarray,
+    votes_fraction: np.ndarray,
+    precinct_pops: np.ndarray,
+    lmbda: float,
+) -> pm.Model:
     """2 x 2 beta/binomial EI model from King, Rosen, Tanner 1999
 
     Parameters
@@ -219,7 +230,16 @@ def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
     return model
 
 
-def _log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, prev):
+def _log_binom_sum(
+    lower: int,
+    upper: int,
+    obs_vote: int,
+    n0_curr: int,
+    n1_curr: int,
+    b_1_curr: float,
+    b_2_curr: float,
+    prev: float,
+) -> float:
     """Helper function for computing log prob of convolution of binomial
 
     Parameters
@@ -254,7 +274,9 @@ def _log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr,
     return prev + component_for_current_precinct
 
 
-def _binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
+def _binom_conv_log_p(
+    b_1: float, b_2: float, n_0: int, n_1: int, upper: int, lower: int, obs_votes: int
+) -> float:
     """Log probability for convolution of binomials
 
     Parameters
@@ -425,8 +447,12 @@ class TwoByTwoEIBaseBayes:
         to define summary quantities
     """
 
-    def __init__(self, model_name, **additional_model_params):
-        """model_name: str
+    def __init__(self, model_name: str, **additional_model_params: Any) -> None:  # noqa: ANN401
+        """Initialize the base class.
+
+        Parameters
+        ----------
+        model_name: str
             The name of one of the models ( "king99", "king99_pareto_modification",
              "truncated_normal",
             "goodman_er_bayes")
@@ -434,59 +460,78 @@ class TwoByTwoEIBaseBayes:
             Hyperparameters to pass to model, if changing default parameters
             (see model documentation for the hyperparameters for each model)
         """
-        self.model_name = model_name
-        self.additional_model_params = additional_model_params
+        self.model_name: str = model_name
+        self.additional_model_params: dict[str, Any] = additional_model_params  # noqa: ANN401
 
-        self.sim_model = None
-        self.sim_trace = None
+        self.sim_model: pm.Model | None = None
+        self.sim_trace: az.InferenceData | None = None
 
-        self.precinct_pops = None
-        self.demographic_group_name = None
-        self.candidate_name = None
+        self.precinct_pops: np.ndarray | None = None
+        self.demographic_group_name: str | None = None
+        self.candidate_name: str | None = None
 
-        self.demographic_group_fraction = None
-        self.votes_fraction = None
+        self.demographic_group_fraction: np.ndarray | None = None
+        self.votes_fraction: np.ndarray | None = None
 
-        self.posterior_mean_voting_prefs = [None, None]
-        self.credible_interval_95_mean_voting_prefs = [None, None]
-        self.sampled_voting_prefs = [None, None]
+        self.posterior_mean_voting_prefs: list[float] = [0.0, 0.0]
+        self.credible_interval_95_mean_voting_prefs: list[tuple[float, float]] = [
+            (0.0, 0.0),
+            (0.0, 0.0),
+        ]
+        self.sampled_voting_prefs: list[np.ndarray | None] = [None, None]
 
-    def group_names_for_display(self):
+    def group_names_for_display(self) -> tuple[str, str]:
         """Returns the group names to be displayed in plots"""
+        if self.demographic_group_name is None:
+            raise ValueError(
+                "demographic_group_name must be set before calling group_names_for_display"
+            )
         return self.demographic_group_name, "non-" + self.demographic_group_name
 
-    def _voting_prefs_array(self):
-        """Bundles together the samples as num_samples x 2 x 1 array,
-        for ease of passing to plots
-        """
+    def _voting_prefs_array(self) -> np.ndarray:
+        """Bundle together the samples as num_samples x 2 x 1 array, for ease of passing to plots."""
+        if self.sampled_voting_prefs[0] is None or self.sampled_voting_prefs[1] is None:
+            raise ValueError(
+                "sampled_voting_prefs must be set before calling _voting_prefs_array"
+            )
         num_samples = len(self.sampled_voting_prefs[0])
         sampled_voting_prefs = np.empty((num_samples, 2, 1))  # num_samples x 2 x 1
         sampled_voting_prefs[:, 0, 0] = self.sampled_voting_prefs[0]
         sampled_voting_prefs[:, 1, 0] = self.sampled_voting_prefs[1]
         return sampled_voting_prefs
 
-    def calculate_summary(self):
-        """Calculate point estimates (post. means) and 95% equal-tailed credible intervals
-        Assumes sampled_voting_prefs has already been set
+    def calculate_summary(self) -> None:
+        """Calculate point estimates (post. means) and 95% equal-tailed credible intervals.
+
+        Assumes sampled_voting_prefs has already been set.
         """
+        if self.sampled_voting_prefs[0] is None or self.sampled_voting_prefs[1] is None:
+            raise ValueError(
+                "sampled_voting_prefs must be set before calling calculate_summary"
+            )
+
         # compute point estimates
-        self.posterior_mean_voting_prefs[0] = self.sampled_voting_prefs[0].mean()
-        self.posterior_mean_voting_prefs[1] = self.sampled_voting_prefs[1].mean()
+        self.posterior_mean_voting_prefs[0] = float(self.sampled_voting_prefs[0].mean())
+        self.posterior_mean_voting_prefs[1] = float(self.sampled_voting_prefs[1].mean())
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
-        self.credible_interval_95_mean_voting_prefs[0] = np.percentile(
-            self.sampled_voting_prefs[0], percentiles
+        self.credible_interval_95_mean_voting_prefs[0] = tuple(
+            np.percentile(self.sampled_voting_prefs[0], percentiles)
         )
-        self.credible_interval_95_mean_voting_prefs[1] = np.percentile(
-            self.sampled_voting_prefs[1], percentiles
+        self.credible_interval_95_mean_voting_prefs[1] = tuple(
+            np.percentile(self.sampled_voting_prefs[1], percentiles)
         )
 
     def _calculate_polarization(
-        self, threshold=None, percentile=None, reference_group=0
-    ):
-        """Calculate percentile given a threshold, or threshold if given a percentile
-        exactly one of percentile and threshold must be null
+        self,
+        threshold: float | None = None,
+        percentile: float | None = None,
+        reference_group: int = 0,
+    ) -> tuple[float, float, np.ndarray, list[str]]:
+        """Calculate percentile given a threshold, or threshold if given a percentile.
+
+        Exactly one of percentile and threshold must be null.
 
         Parameters
         ----------
@@ -508,6 +553,15 @@ class TwoByTwoEIBaseBayes:
         Exactly one of threshold and percentile must be None
 
         """
+        if self.sampled_voting_prefs[0] is None or self.sampled_voting_prefs[1] is None:
+            raise ValueError(
+                "sampled_voting_prefs must be set before calling _calculate_polarization"
+            )
+        if self.demographic_group_name is None:
+            raise ValueError(
+                "demographic_group_name must be set before calling _calculate_polarization"
+            )
+
         samples = self.sampled_voting_prefs[0] - self.sampled_voting_prefs[1]
         group = self.demographic_group_name
         group_complement = "non-" + self.demographic_group_name
@@ -532,14 +586,15 @@ class TwoByTwoEIBaseBayes:
         return threshold, percentile, samples, [group, group_complement]
 
     def polarization_report(
-        self, threshold=None, percentile=None, reference_group=0, verbose=True
-    ):
-        """For a given threshold, return the probability that difference between the group's
-        preferences for the given candidate is more than threshold
-        OR
-        For a given confidence level, return the associated central credible interval for
-        the difference between the two groups' preferences.
-        Exactly one {percentile,threshold} must be None
+        self,
+        threshold: float | None = None,
+        percentile: float | None = None,
+        reference_group: int = 0,
+        verbose: bool = True,
+    ) -> float | tuple[float, float]:
+        """For a given threshold, return the probability that difference between the group's preferences for the given candidate is more than threshold OR for a given confidence level, return the associated central credible interval for the difference between the two groups' preferences.
+
+        Exactly one {percentile,threshold} must be None.
 
         Parameters
         ----------
@@ -562,9 +617,16 @@ class TwoByTwoEIBaseBayes:
         -----
         Exactly one of threshold and percentile must be None
         """
+        if self.candidate_name is None:
+            raise ValueError(
+                "candidate_name must be set before calling polarization_report"
+            )
+
         return_interval = threshold is None
 
         if return_interval:
+            if percentile is None:
+                raise ValueError("percentile must be provided when threshold is None")
             lower_percentile = (100 - percentile) / 2
             upper_percentile = lower_percentile + percentile
             lower_threshold, _, _, groups = self._calculate_polarization(
@@ -581,6 +643,8 @@ class TwoByTwoEIBaseBayes:
                 )
             return (lower_threshold, upper_threshold)
         else:
+            if threshold is None:
+                raise ValueError("threshold must be provided when percentile is None")
             threshold, percentile, _, groups = self._calculate_polarization(
                 threshold, percentile, reference_group
             )
@@ -592,7 +656,7 @@ class TwoByTwoEIBaseBayes:
                 )
             return percentile
 
-    def summary(self):
+    def summary(self) -> str:
         """Return a summary string"""
         # TODO: probably format this as a table
         return f"""Model: {self.model_name}
@@ -612,44 +676,59 @@ class TwoByTwoEIBaseBayes:
         {self.credible_interval_95_mean_voting_prefs[1]}
         """
 
-    def plot_kde(self, ax=None):
-        """Kernel density estimate/ histogram plot
-        Optional arguments:
-        ax  :  matplotlib axes object
+    def plot_kde(self, ax: Axes | None = None) -> Axes:
+        """Kernel density estimate/ histogram plot.
+
+        Parameters
+        ----------
+        ax : matplotlib axes object, optional
+            The axes to plot on.
         """
+        if self.candidate_name is None:
+            raise ValueError("candidate_name must be set before calling plot_kde")
         return plot_kdes(
             self._voting_prefs_array(),
-            self.group_names_for_display(),
+            list(self.group_names_for_display()),
             [self.candidate_name],
             plot_by="candidate",
             axes=ax,
         )
 
-    def plot_boxplot(self, ax=None):
-        """Boxplot of voting prefs for each group
-        Optional arguments:
-        ax  :  matplotlib axes object
+    def plot_boxplot(self, ax: Axes | None = None) -> Axes:
+        """Boxplot of voting prefs for each group.
+
+        Parameters
+        ----------
+        ax : matplotlib axes object, optional
+            The axes to plot on.
         """
+        if self.candidate_name is None:
+            raise ValueError("candidate_name must be set before calling plot_boxplot")
         return plot_boxplots(
             self._voting_prefs_array(),
-            self.group_names_for_display(),
+            list(self.group_names_for_display()),
             [self.candidate_name],
             plot_by="candidate",
             axes=ax,
         )
 
-    def plot_intervals(self, ax=None):
-        """Plot of credible intervals for each group
-        Optional arguments:
-        ax  :  matplotlib axes object
+    def plot_intervals(self, ax: Axes | None = None) -> Axes:
+        """Plot of credible intervals for each group.
+
+        Parameters
+        ----------
+        ax : matplotlib axes object, optional
+            The axes to plot on.
         """
+        if self.candidate_name is None:
+            raise ValueError("candidate_name must be set before calling plot_intervals")
         title = "95% credible intervals"
         return plot_conf_or_credible_interval(
             [
                 self.credible_interval_95_mean_voting_prefs[0],
                 self.credible_interval_95_mean_voting_prefs[1],
             ],
-            self.group_names_for_display(),
+            list(self.group_names_for_display()),
             self.candidate_name,
             title,
             ax=ax,
@@ -657,13 +736,13 @@ class TwoByTwoEIBaseBayes:
 
     def plot_polarization_kde(
         self,
-        threshold=None,
-        percentile=None,
-        reference_group=0,
-        show_threshold=False,
-        ax=None,
-        color="steelblue",
-    ):
+        threshold: float | None = None,
+        percentile: float | None = None,
+        reference_group: int = 0,
+        show_threshold: bool = False,
+        ax: Axes | None = None,
+        color: str = "steelblue",
+    ) -> Axes:
         """Plot kde of differences between voting preferences
 
         Parameters
@@ -696,6 +775,8 @@ class TwoByTwoEIBaseBayes:
         return_interval = threshold is None
 
         if return_interval:
+            if percentile is None:
+                raise ValueError("percentile must be provided when threshold is None")
             lower_percentile = (100 - percentile) / 2
             upper_percentile = lower_percentile + percentile
             lower_threshold, _, samples, groups = self._calculate_polarization(
@@ -706,16 +787,22 @@ class TwoByTwoEIBaseBayes:
             )
             thresholds = [lower_threshold, upper_threshold]
         else:
+            if threshold is None:
+                raise ValueError("threshold must be provided when percentile is None")
             threshold, percentile, samples, groups = self._calculate_polarization(
                 threshold, percentile, reference_group
             )
-            thresholds = [threshold]  # pylint: disable=duplicate-code
+            thresholds = [threshold]
 
+        if self.candidate_name is None:
+            raise ValueError(
+                "candidate_name must be set before calling plot_polarization_kde"
+            )
         return plot_polarization_kde(
             samples,
             thresholds,
             percentile,
-            groups,  # pylint: disable=duplicate-code
+            groups,
             self.candidate_name,
             show_threshold,
             ax,
@@ -726,8 +813,12 @@ class TwoByTwoEIBaseBayes:
 class TwoByTwoEI(TwoByTwoEIBaseBayes):
     """Fitting and plotting for king97, king99, and wakefield models"""
 
-    def __init__(self, model_name, **additional_model_params):
-        """model_name: str
+    def __init__(self, model_name: str, **additional_model_params: Any) -> None:  # noqa: ANN401
+        """Initialize the TwoByTwoEI class.
+
+        Parameters
+        ----------
+        model_name: str
             Name of model: can be 'king97', 'king99', 'king99_pareto_modification'
             'wakefield_beta' or 'wakefield normal'
         additional_model_params
@@ -736,50 +827,46 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         """
         super().__init__(model_name, **additional_model_params)
 
-        self.precinct_pops = None
-        self.precinct_names = None
+        self.precinct_pops: np.ndarray | None = None
+        self.precinct_names: list[str] | None = None
 
     def fit(
         self,
-        group_fraction,
-        votes_fraction,
-        precinct_pops,
-        demographic_group_name="given demographic group",
-        candidate_name="given candidate",
-        precinct_names=None,
-        target_accept=0.99,
-        tune=1500,
-        draw_samples=True,
-        **other_sampling_args,
-    ):
-        """Fit the specified model using MCMC sampling
-        Required arguments:
-        group_fraction  :   Length-p (p=# of precincts) vector giving demographic
-                            information (X) as the fraction of precinct_pop in
-                            the demographic group of interest
-        votes_fraction  :   Length p vector giving the fraction of each precinct_pop
-                            that votes for the candidate of interest (T)
-        precinct_pops   :   Length-p vector giving size of each precinct population
-                            of interest (e.g. voting population) (N)
-        Optional arguments:
-        demographic_group_name  :   Name of the demographic group of interest,
-                                    where results are computed for the
-                                    demographic group and its complement
-        candidate_name          :   Name of the candidate whose support we
-                                    want to analyze
-        precinct_names          :   Length p vector giving the string names
-                                    for each precinct.
+        group_fraction: np.ndarray,
+        votes_fraction: np.ndarray,
+        precinct_pops: np.ndarray,
+        demographic_group_name: str = "given demographic group",
+        candidate_name: str = "given candidate",
+        precinct_names: list[str] | None = None,
+        target_accept: float = 0.99,
+        tune: int = 1500,
+        draw_samples: bool = True,
+        **other_sampling_args: Any,  # noqa: ANN401
+    ) -> None:
+        """Fit the specified model using MCMC sampling.
+
+        Parameters
+        ----------
+        group_fraction : array-like
+            Length-p (p=# of precincts) vector giving demographic information (X) as the fraction of precinct_pop in the demographic group of interest
+        votes_fraction : array-like
+            Length p vector giving the fraction of each precinct_pop that votes for the candidate of interest (T)
+        precinct_pops : array-like
+            Length-p vector giving size of each precinct population of interest (e.g. voting population) (N)
+        demographic_group_name : str, optional
+            Name of the demographic group of interest, where results are computed for the demographic group and its complement
+        candidate_name : str, optional
+            Name of the candidate whose support we want to analyze
+        precinct_names : list[str], optional
+            Length p vector giving the string names for each precinct.
         target_accept : float, optional
-            Default=.99 Strictly between zero and 1 (should be close to 1). Passed to pymc's
-            sampling.sample
+            Default=.99 Strictly between zero and 1 (should be close to 1). Passed to pymc's sampling.sample
         tune : int, optional
             Default=1500, passed to pymc's sampling.sample
         draw_samples: bool, optional
-            Default=True. Set to False to only set up the variable but not generate
-            posterior samples (i.e. if you want to generate prior predictive samples only)
-        other_sampling_args :
-            For to pymc's sampling.sample
-            https://docs.pymc.io/api/inference.html
+            Default=True. Set to False to only set up the variable but not generate posterior samples (i.e. if you want to generate prior predictive samples only)
+        other_sampling_args : dict, optional
+            For to pymc's sampling.sample https://docs.pymc.io/api/inference.html
         """
         # Additional params includes lambda for king99, the
         # parameter passed to the exponential hyperpriors,
@@ -802,13 +889,22 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         self.demographic_group_name = demographic_group_name
         self.candidate_name = candidate_name
         if precinct_names is not None:
-            assert len(precinct_names) == len(precinct_pops)
+            if len(precinct_names) != len(precinct_pops):
+                raise ValueError(
+                    "precinct_names and precinct_pops must have the same length"
+                )
             if len(set(precinct_names)) != len(precinct_names):
                 warnings.warn(
                     "Precinct names are not unique. This may interfere with "
-                    "passing precinct names to precinct_level_plot()."
+                    "passing precinct names to precinct_level_plot().",
+                    stacklevel=2,
                 )
-            self.precinct_names = np.array(precinct_names)
+            self.precinct_names = list(precinct_names)
+
+        # Type annotation for model_function
+        from collections.abc import Callable
+
+        model_function: Callable[..., pm.Model]
 
         if self.model_name == "king99":
             model_function = ei_beta_binom_model
@@ -817,9 +913,11 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             model_function = ei_beta_binom_model_modified
 
         elif self.model_name == "truncated_normal":
-            model_function = truncated_normal_asym
+            model_function = _truncated_normal_asym
+        else:
+            raise ValueError(f"Unknown model name: {self.model_name}")
 
-        self.sim_model = model_function(  # pylint: disable=possibly-used-before-assignment
+        self.sim_model = model_function(
             group_fraction,
             votes_fraction,
             precinct_pops,
@@ -827,7 +925,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         )
 
         if draw_samples:
-            with self.sim_model:  # pylint: disable=not-context-manager
+            with self.sim_model:
                 # this "if" is a workaround until jax.scipy.special.erfcx is
                 # implemented https://github.com/google/jax/issues/1987
                 # (when that's implemented, trunc-normal can use jax sampling
@@ -851,19 +949,28 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             self.calculate_sampled_voting_prefs()
             super().calculate_summary()
 
-    def calculate_sampled_voting_prefs(self):
+    def calculate_sampled_voting_prefs(self) -> None:
         """Sampled voting preferences (combining samples with precinct pops)"""
+        if self.precinct_pops is None:
+            raise ValueError(
+                "precinct_pops must be set before calling calculate_sampled_voting_prefs"
+            )
+        if self.sim_trace is None:
+            raise ValueError(
+                "sim_trace must be set before calling calculate_sampled_voting_prefs"
+            )
+
         # multiply sample proportions by precinct pops to get samples of
         # number of voters the demographic group who voted for the candidate
         # in each precinct
         samples_converted_to_pops_gp1 = (
-            self.sim_trace["posterior"]["b_1"]
+            self.sim_trace["posterior"]["b_1"]  # noqa: PD013,PD011
             .stack(all_draws=["chain", "draw"])
             .values.T
             * self.precinct_pops
         )  # shape: num_samples x num_precincts
         samples_converted_to_pops_gp2 = (
-            self.sim_trace["posterior"]["b_2"]
+            self.sim_trace["posterior"]["b_2"]  # noqa: PD013,PD011
             .stack(all_draws=["chain", "draw"])
             .values.T
             * self.precinct_pops
@@ -885,19 +992,32 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             samples_of_votes_summed_across_district_gp2 / self.precinct_pops.sum()
         )  # sampled voted prefs across precincts
 
-    def precinct_level_estimates(self):
-        """If desired, we can return precinct-level estimates
+    def precinct_level_estimates(self) -> tuple[np.ndarray, np.ndarray]:
+        """Return precinct-level estimates.
+
         Returns:
-            precinct_posterior_means: num_precincts x 2 (groups) x 2 (candidates)
-            precinct_credible_intervals: num_precincts x 2 (groups) x 2 (candidates) x 2 (endpoints)
+        -------
+        tuple
+            A tuple containing:
+            - precinct_posterior_means: num_precincts x 2 (groups) x 2 (candidates)
+            - precinct_credible_intervals: num_precincts x 2 (groups) x 2 (candidates) x 2 (endpoints)
         """
+        if self.precinct_pops is None:
+            raise ValueError(
+                "precinct_pops must be set before calling precinct_level_estimates"
+            )
+        if self.sim_trace is None:
+            raise ValueError(
+                "sim_trace must be set before calling precinct_level_estimates"
+            )
+
         # TODO: make this output match r_by_c version in shape, num_precincts x 2 x 2
         percentiles = [2.5, 97.5]
         num_precincts = len(self.precinct_pops)
 
         # The stracking on the next line convers to a num_samples x num_precincts array
         precinct_level_samples_gp1 = (
-            self.sim_trace["posterior"]["b_1"]
+            self.sim_trace["posterior"]["b_1"]  # noqa: PD013,PD011
             .stack(all_draws=["chain", "draw"])
             .values.T
         )
@@ -908,7 +1028,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         # The stracking on the next line convers to a num_samples x num_precincts array
         precinct_level_samples_gp2 = (
-            self.sim_trace["posterior"]["b_2"]
+            self.sim_trace["posterior"]["b_2"]  # noqa: PD013,PD011
             .stack(all_draws=["chain", "draw"])
             .values.T
         )
@@ -931,7 +1051,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         return (precinct_posterior_means, precinct_credible_intervals)
 
-    def plot_intervals_by_precinct(self):
+    def plot_intervals_by_precinct(self) -> tuple[Axes, Axes]:
         """Plot of point estimates and credible intervals for each precinct"""
         # TODO: Fix use of axes
 
@@ -943,67 +1063,89 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         precinct_credible_intervals_gp1 = precinct_credible_intervals[:, 0, 0, :]
         precinct_credible_intervals_gp2 = precinct_credible_intervals[:, 1, 0, :]
 
+        if self.candidate_name is None or self.precinct_names is None:
+            raise ValueError(
+                "candidate_name and precinct_names must be set before calling plot_intervals_by_precinct"
+            )
+
+        group_names = self.group_names_for_display()
         plot_gp1 = plot_intervals_all_precincts(
             precinct_posterior_means_gp1,
             precinct_credible_intervals_gp1,
             self.candidate_name,
             self.precinct_names,
-            self.group_names_for_display()[0],
+            group_names[0],
         )
         plot_gp2 = plot_intervals_all_precincts(
             precinct_posterior_means_gp2,
             precinct_credible_intervals_gp2,
             self.candidate_name,
             self.precinct_names,
-            self.group_names_for_display()[1],
+            group_names[1],
         )
 
         return plot_gp1, plot_gp2
 
-    def plot(self, axes=None):
-        """kde, boxplot, and credible intervals
-        Optional arguments:
-        axes : list or tuple of matplotlib axis objects or None
-            Default=None
-            Length 2: (ax_box, ax_hist)
+    def plot(self, axes: list[Axes] | None = None) -> tuple[Axes, Axes]:
+        """Plot kde, boxplot, and credible intervals.
+
+        Parameters
+        ----------
+        axes : list or tuple of matplotlib axis objects, optional
+            Default=None. Length 2: (ax_box, ax_hist)
         """
+        if self.candidate_name is None:
+            raise ValueError("candidate_name must be set before calling plot")
+        group_names = self.group_names_for_display()
         return plot_summary(
             self._voting_prefs_array(),
-            self.group_names_for_display()[0],
-            self.group_names_for_display()[1],
+            group_names[0],
+            group_names[1],
             self.candidate_name,
             axes=axes,
         )
 
     def precinct_level_plot(
         self,
-        ax=None,
-        alpha=1,
-        show_all_precincts=False,
-        precinct_names=None,
-        plot_as_histograms=False,
-    ):
-        """Ridgeplots for precincts
-        Optional arguments:
-        ax                  :  matplotlib axes object
-        show_all_precincts  :  If True, then it will show all ridge plots
-                               (even if there are more than 50)
-        alpha               : float
-                                The opacity for the fill color in the
-                                kdes / histograms
-        precinct_names      :  Labels for each precinct (if not supplied, by
-                               default we label each precinct with an integer
-                               label, 1 to n)
-        plot_as_histograms : bool, optional. Default is false. If true, plot
-                                with histograms instead of kdes
+        ax: Axes | None = None,
+        alpha: float = 1,
+        show_all_precincts: bool = False,
+        precinct_names: list[str] | None = None,
+        plot_as_histograms: bool = False,
+    ) -> Axes:
+        """Plot ridgeplots for precincts.
+
+        Parameters
+        ----------
+        ax : matplotlib axes object, optional
+            The axes to plot on.
+        show_all_precincts : bool, optional
+            If True, then it will show all ridge plots (even if there are more than 50)
+        alpha : float, optional
+            The opacity for the fill color in the kdes / histograms
+        precinct_names : list[str], optional
+            Labels for each precinct (if not supplied, by default we label each precinct with an integer label, 1 to n)
+        plot_as_histograms : bool, optional
+            Default is false. If true, plot with histograms instead of kdes
         """
+        if self.sim_trace is None:
+            raise ValueError("sim_trace must be set before calling precinct_level_plot")
+        if self.candidate_name is None:
+            raise ValueError(
+                "candidate_name must be set before calling precinct_level_plot"
+            )
+        if self.precinct_names is None:
+            raise ValueError(
+                "precinct_names must be set before calling precinct_level_plot"
+            )
+
         voting_prefs_group1 = (
-            self.sim_trace["posterior"]["b_1"]
+            self.sim_trace["posterior"]["b_1"]  # noqa: PD013,PD011
             .stack(all_draws=["chain", "draw"])
             .values.T
         )
         voting_prefs_group2 = (
-            self.sim_trace["posterior"]["b_2"]
+            self.sim_trace["posterior"]["b_2"]  # noqa: PD013,PD011
             .stack(all_draws=["chain", "draw"])
             .values.T
         )
@@ -1014,7 +1156,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             voting_prefs_group2 = voting_prefs_group2[:, precinct_idxs]
         return plot_precincts(
             [voting_prefs_group1, voting_prefs_group2],
-            group_names=group_names,
+            group_names=list(group_names),
             candidate=self.candidate_name,
             alpha=alpha,
             precinct_labels=precinct_names,
