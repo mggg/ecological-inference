@@ -95,6 +95,7 @@ docs = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["pyei"]
+include = ["pyei/py.typed"]
 
 [tool.ruff.lint]
 extend-select = [
