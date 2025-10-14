@@ -20,8 +20,6 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 from matplotlib.transforms import Transform
 
-# from pyei.r_by_c import RowByColumnEI  # Avoid circular import
-
 PALETTE = "Dark2"  # set library-wide color palette
 FIGSIZE = (6, 4)
 MAX_PRECINCTS_DEFAULT = 50

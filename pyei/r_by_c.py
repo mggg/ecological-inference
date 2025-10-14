@@ -450,8 +450,8 @@ class RowByColumnEI:
 
     def _calculate_margin(
         self,
-        group: int,
-        candidates: list[int],
+        group: str,
+        candidates: list[str],
         threshold: float | None = None,
         percentile: float | None = None,
     ) -> float:
@@ -516,8 +516,8 @@ class RowByColumnEI:
 
     def margin_report(
         self,
-        group: int,
-        candidates: list[int],
+        group: str,
+        candidates: list[str],
         threshold: float | None = None,
         percentile: float | None = None,
         verbose: bool = True,
@@ -597,8 +597,8 @@ class RowByColumnEI:
 
     def _calculate_polarization(
         self,
-        groups: list[int],
-        candidate: int,
+        groups: list[str],
+        candidate: str,
         threshold: float | None = None,
         percentile: float | None = None,
     ) -> float:
@@ -655,12 +655,12 @@ class RowByColumnEI:
 
     def polarization_report(
         self,
-        groups: list[int],
-        candidate: int,
+        groups: list[str],
+        candidate: str,
         threshold: float | None = None,
         percentile: float | None = None,
         verbose: bool = True,
-    ) -> float | str:
+    ) -> tuple[float, float] | float:
         """For a given threshold, return the probability that the difference between
 
         the two demographic groups' preferences for the candidate is greater than
@@ -1123,8 +1123,8 @@ class RowByColumnEI:
 
     def plot_margin_kde(
         self,
-        group: int,
-        candidates: list[int],
+        group: str,
+        candidates: list[str],
         threshold: float | None = None,
         percentile: float | None = None,
         show_threshold: bool = False,
@@ -1202,8 +1202,8 @@ class RowByColumnEI:
 
     def plot_polarization_kde(
         self,
-        groups: list[int],
-        candidate: int,
+        groups: list[str],
+        candidate: str,
         threshold: float | None = None,
         percentile: float | None = None,
         show_threshold: bool = False,
@@ -1269,9 +1269,9 @@ class RowByColumnEI:
                 "sampled_voting_prefs, candidate_names, and demographic_group_names must be set"
             )
 
-        candidate_index = self.candidate_names.index(str(candidate))
-        group_index_0 = self.demographic_group_names.index(str(groups[0]))
-        group_index_1 = self.demographic_group_names.index(str(groups[1]))
+        candidate_index = self.candidate_names.index(candidate)
+        group_index_0 = self.demographic_group_names.index(groups[0])
+        group_index_1 = self.demographic_group_names.index(groups[1])
         samples = (
             self.sampled_voting_prefs[:, group_index_0, candidate_index]
             - self.sampled_voting_prefs[:, group_index_1, candidate_index]
@@ -1281,8 +1281,8 @@ class RowByColumnEI:
             samples,
             thresholds,
             percentile or 0.0,
-            [str(g) for g in groups],
-            str(candidate),
+            groups,
+            candidate,
             show_threshold,
             ax,
             color=color,
@@ -1337,7 +1337,7 @@ class RowByColumnEI:
 
     def precinct_level_plot(
         self,
-        candidate: int,
+        candidate: str,
         groups: list[str] | None = None,
         alpha: float = 1,
         ax: Axes | None = None,

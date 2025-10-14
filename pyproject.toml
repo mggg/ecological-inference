@@ -126,6 +126,7 @@ ignore = [
   "ANN003", # missing type on **kwargs
   "B905",   # won't work on python <3.10
   "D417",   # Missing argument descriptions docstring for `__init__`: `**kwargs`, `*args`
+  "S311",   # Allow cryptographically weak pseudo-random number generators
 ]
 
 [tool.ruff.lint.pydocstyle]

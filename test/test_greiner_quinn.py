@@ -36,12 +36,12 @@ def example_r_by_c_data_asym():  # noqa: ANN201
 
     group_diff = group_counts.sum(axis=0) - precinct_pops
     for idx_of_mismatch in np.where(group_diff != 0):
-        group_to_adjust = random.randint(0, num_groups - 1)  # noqa: S311
+        group_to_adjust = random.randint(0, num_groups - 1)
         group_counts[group_to_adjust, idx_of_mismatch] -= group_diff[idx_of_mismatch]
 
     vote_diff = vote_counts.sum(axis=0) - precinct_pops
     for idx_of_mismatch in np.where(vote_diff != 0):
-        candidate_to_adjust = random.randint(0, num_candidates - 1)  # noqa: S311
+        candidate_to_adjust = random.randint(0, num_candidates - 1)
         vote_counts[candidate_to_adjust, idx_of_mismatch] -= vote_diff[idx_of_mismatch]
 
     group_counts = group_counts.T

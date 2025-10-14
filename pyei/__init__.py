@@ -2,7 +2,6 @@
 
 __version__ = "1.1.4"
 
-# Import main classes and functions
 from .data import Datasets
 from .goodmans_er import GoodmansER, GoodmansERBayes
 from .plot_utils import (

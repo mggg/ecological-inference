@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 import pymc as pm
 import seaborn as sns
+import seaborn.algorithms as sns_algo
 import seaborn.utils as sns_utils
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
@@ -150,7 +151,7 @@ class GoodmansER:
 
             def fit_fast(
                 xgrid: np.ndarray, x: np.ndarray, y: np.ndarray, w: np.ndarray
-            ) -> np.ndarray:
+            ) -> tuple[np.ndarray, np.ndarray]:
                 """Modify this function from sns to accommodate weighted regression in CI computation."""
 
                 def weighted_reg_func(
@@ -165,17 +166,17 @@ class GoodmansER:
                 x_with_ones = np.c_[np.ones(len(x)), x]
                 grid = np.c_[np.ones(len(xgrid)), xgrid]  # append ones for intercept
                 yhat = grid.dot(weighted_reg_func(x_with_ones, y, w))
-                # beta_boots = sns_algo.bootstrap(
-                #     x_with_ones,
-                #     y,
-                #     w,
-                #     func=weighted_reg_func,
-                #     n_boot=1000,
-                #     units=None,
-                #     seed=None,
-                # ).T
-                # yhat_boots = grid.dot(beta_boots).T  # Unused variable
-                return yhat
+                beta_boots = sns_algo.bootstrap(
+                    x_with_ones,
+                    y,
+                    w,
+                    func=weighted_reg_func,
+                    n_boot=1000,
+                    units=None,
+                    seed=None,
+                ).T
+                yhat_boots = grid.dot(beta_boots).T  # Unused variable
+                return yhat, yhat_boots
 
             if (
                 self.demographic_group_fraction is None
