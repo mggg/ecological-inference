@@ -643,8 +643,8 @@ class TwoByTwoEIBaseBayes:
                 )
             return (lower_threshold, upper_threshold)
         else:
-            if threshold is None:
-                raise ValueError("threshold must be provided when percentile is None")
+            if percentile is not None:
+                raise ValueError("Exactly one of threshold and percentile must be None")
             threshold, percentile, _, groups = self._calculate_polarization(
                 threshold, percentile, reference_group
             )
@@ -787,8 +787,8 @@ class TwoByTwoEIBaseBayes:
             )
             thresholds = [lower_threshold, upper_threshold]
         else:
-            if threshold is None:
-                raise ValueError("threshold must be provided when percentile is None")
+            if percentile is not None:
+                raise ValueError("Exactly one of threshold and percentile must be None")
             threshold, percentile, samples, groups = self._calculate_polarization(
                 threshold, percentile, reference_group
             )

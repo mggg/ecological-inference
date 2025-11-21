@@ -448,6 +448,40 @@ class RowByColumnEI:
                     np.percentile(self.sampled_voting_prefs[:, row, col], percentiles)
                 )
 
+    def _get_margin_samples(self, group: str, candidates: list[str]) -> np.ndarray:
+        """Get samples of the margin between two candidates for a given group.
+
+        Parameters:
+        ----------
+        group: str
+            Demographic group in question
+        candidates: list of str
+            Length 2 vector of candidates upon which to calculate the margin
+
+        Returns:
+        --------
+        np.ndarray
+            Samples of candidate[0] - candidate[1] margin for the given group
+        """
+        if self.candidate_names is None or self.demographic_group_names is None:
+            raise ValueError(
+                "candidate_names and demographic_group_names must be set before calling _get_margin_samples"
+            )
+        if self.sampled_voting_prefs is None:
+            raise ValueError(
+                "sampled_voting_prefs must be set before calling _get_margin_samples"
+            )
+
+        candidate_index_0 = self.candidate_names.index(str(candidates[0]))
+        candidate_index_1 = self.candidate_names.index(str(candidates[1]))
+        group_index = self.demographic_group_names.index(str(group))
+
+        samples = (
+            self.sampled_voting_prefs[:, group_index, candidate_index_0]
+            - self.sampled_voting_prefs[:, group_index, candidate_index_1]
+        )
+        return samples
+
     def _calculate_margin(
         self,
         group: str,
@@ -491,18 +525,9 @@ class RowByColumnEI:
             )
 
         # TODO: document return values
-        candidate_index_0 = self.candidate_names.index(str(candidates[0]))
-        candidate_index_1 = self.candidate_names.index(str(candidates[1]))
-        group_index = self.demographic_group_names.index(str(group))
-
-        samples = (
-            self.sampled_voting_prefs[:, group_index, candidate_index_0]
-            - self.sampled_voting_prefs[:, group_index, candidate_index_1]
-        )
+        samples = self._get_margin_samples(group, candidates)
         if percentile is None and threshold is not None:
-            percentile = (
-                100 * (samples > threshold).sum() / len(self.sampled_voting_prefs)
-            )
+            percentile = 100 * (samples > threshold).sum() / len(samples)
         elif threshold is None and percentile is not None:
             threshold = np.percentile(samples, 100 - percentile)
         else:
@@ -545,8 +570,6 @@ class RowByColumnEI:
         verbose: bool
             If true, print a report putting margin in context
         """
-        return_interval = threshold is None
-
         if self.candidate_names is None or self.demographic_group_names is None:
             raise ValueError(
                 "candidate_names and demographic_group_names must be set before calling margin_report"
@@ -564,16 +587,36 @@ class RowByColumnEI:
                 {self.demographic_group_names}"""
             )
 
-        if return_interval:
-            if percentile is None:
-                raise ValueError("percentile must be provided when threshold is None")
+        if not ((threshold is None) ^ (percentile is None)):
+            raise ValueError(
+                "When generating margin report, exactly one of 'threshold' and 'percentile' "
+                "may be None. "
+            )
+
+        return_string = ""
+        if threshold is not None:
+            threshold = self._calculate_margin(
+                group, candidates, threshold, percentile=None
+            )
+
+            if verbose:
+                samples = self._get_margin_samples(group, candidates)
+                calculated_percentile = 100 * (samples > threshold).sum() / len(samples)
+                print(
+                    f"There is a {calculated_percentile:.1f}% probability that the difference between"
+                    + f" {group}s' preferences for {candidates[0]} and {candidates[1]}"
+                    + f" is more than {threshold:.2f}."
+                )
+            return_string = str(threshold)
+
+        if percentile is not None:
             lower_percentile = (100 - percentile) / 2
             upper_percentile = lower_percentile + percentile
             lower_threshold = self._calculate_margin(
-                group, candidates, threshold, upper_percentile
+                group, candidates, threshold=None, percentile=upper_percentile
             )
             upper_threshold = self._calculate_margin(
-                group, candidates, threshold, lower_percentile
+                group, candidates, threshold=None, percentile=lower_percentile
             )
 
             if verbose:
@@ -582,18 +625,45 @@ class RowByColumnEI:
                     + f" {group}s' preferences for {candidates[0]} and {candidates[1]} is"
                     + f" between [{lower_threshold:.2f}, {upper_threshold:.2f}]."
                 )
-            return f"({lower_threshold:.2f}, {upper_threshold:.2f})"
-        else:
-            if threshold is None:
-                raise ValueError("threshold must be provided when percentile is None")
-            threshold = self._calculate_margin(group, candidates, threshold, percentile)
-            if verbose:
-                print(
-                    f"There is a {percentile:.1f}% probability that the difference between"
-                    + f" {group}s' preferences for {candidates[0]} and {candidates[1]}"
-                    + f" is more than {threshold:.2f}."
-                )
-            return str(threshold)
+            return_string = f"({lower_threshold:.2f}, {upper_threshold:.2f})"
+
+        return return_string
+
+    def _get_polarization_samples(
+        self, groups: list[str], candidate: str
+    ) -> np.ndarray:
+        """Get samples of the polarization (difference) between two groups for a given candidate.
+
+        Parameters:
+        -----------
+        groups: list[str]
+            Length 2 vector of demographic groups from which to calculate polarization
+        candidate: str
+            Candidate for which to calculate polarization
+
+        Returns:
+        --------
+        np.ndarray
+            Samples of groups[0] - groups[1] difference for the given candidate
+        """
+        if self.candidate_names is None or self.demographic_group_names is None:
+            raise ValueError(
+                "candidate_names and demographic_group_names must be set before calling _get_polarization_samples"
+            )
+        if self.sampled_voting_prefs is None:
+            raise ValueError(
+                "sampled_voting_prefs must be set before calling _get_polarization_samples"
+            )
+
+        candidate_index = self.candidate_names.index(str(candidate))
+        group_index_0 = self.demographic_group_names.index(str(groups[0]))
+        group_index_1 = self.demographic_group_names.index(str(groups[1]))
+
+        samples = (
+            self.sampled_voting_prefs[:, group_index_0, candidate_index]
+            - self.sampled_voting_prefs[:, group_index_1, candidate_index]
+        )
+        return samples
 
     def _calculate_polarization(
         self,
@@ -620,30 +690,21 @@ class RowByColumnEI:
             Between 0 and 100. Used to calculate the equal-tailed interval
             for the polarization. At least one of threshold and percentile
             must be None
-        """
-        if self.candidate_names is None or self.demographic_group_names is None:
-            raise ValueError(
-                "candidate_names and demographic_group_names must be set before calling _calculate_polarization"
-            )
-        candidate_index = self.candidate_names.index(str(candidate))
-        group_index_0 = self.demographic_group_names.index(str(groups[0]))
-        group_index_1 = self.demographic_group_names.index(str(groups[1]))
 
-        if self.sampled_voting_prefs is None:
-            raise ValueError(
-                "sampled_voting_prefs must be set before calling _calculate_polarization"
-            )
-        samples = (
-            self.sampled_voting_prefs[:, group_index_0, candidate_index]
-            - self.sampled_voting_prefs[:, group_index_1, candidate_index]
-        )
+        Returns:
+        --------
+        float
+            If threshold is provided, returns the calculated percentile.
+            If percentile is provided, returns the calculated threshold.
+        """
+        samples = self._get_polarization_samples(groups, candidate)
 
         if percentile is None and threshold is not None:
-            percentile = (
-                100 * (samples > threshold).sum() / len(self.sampled_voting_prefs)
-            )
+            percentile = 100 * (samples > threshold).sum() / len(samples)
+            return percentile
         elif threshold is None and percentile is not None:
             threshold = np.percentile(samples, 100 - percentile)
+            return threshold
         else:
             raise ValueError(
                 """Exactly one of threshold or percentile must be None.
@@ -651,7 +712,122 @@ class RowByColumnEI:
             to calculate the associated threshold.
             """
             )
-        return threshold
+
+    def _validate_polarization_inputs(self, groups: list[str], candidate: str) -> None:
+        """Validate inputs for polarization calculations.
+
+        Parameters:
+        -----------
+        groups: list[str]
+            Length 2 vector of demographic groups from which to calculate polarization
+        candidate: str
+            Candidate for which to calculate polarization
+
+        Raises:
+        -------
+        ValueError
+            If inputs are invalid
+        """
+        if self.demographic_group_names is None or self.candidate_names is None:
+            raise ValueError(
+                "demographic_group_names and candidate_names must be set before calling polarization methods"
+            )
+        if not all(group in self.demographic_group_names for group in groups):
+            raise ValueError(
+                f"""Elements of group_names must be in the list of demographic_group_names
+                provided to fit():
+                {self.demographic_group_names}"""
+            )
+        if candidate not in self.candidate_names:
+            raise ValueError(
+                f"""candidate_name must be in the list of candidate_names provided to fit():
+                {self.candidate_names}"""
+            )
+
+    def polarization_interval(
+        self,
+        groups: list[str],
+        candidate: str,
+        percentile: float,
+        verbose: bool = True,
+    ) -> tuple[float, float]:
+        """Calculate the equal-tailed credible interval for polarization between two groups.
+
+        Parameters:
+        -----------
+        groups: list[str]
+            Length 2 vector of demographic groups from which to calculate polarization
+        candidate: str
+            Candidate for which to calculate polarization
+        percentile: float
+            Between 0 and 100. Used to calculate the equal-tailed interval
+            for the polarization.
+        verbose: bool
+            If true, print a report putting polarization in context
+
+        Returns:
+        --------
+        tuple[float, float]
+            (lower_threshold, upper_threshold) representing the credible interval
+        """
+        self._validate_polarization_inputs(groups, candidate)
+
+        lower_percentile = (100 - percentile) / 2
+        upper_percentile = lower_percentile + percentile
+        lower_threshold = self._calculate_polarization(
+            groups, candidate, threshold=None, percentile=upper_percentile
+        )
+        upper_threshold = self._calculate_polarization(
+            groups, candidate, threshold=None, percentile=lower_percentile
+        )
+
+        if verbose:
+            print(
+                f"There is a {percentile}% probability that the difference between"
+                + f" the groups' preferences for {candidate} ({groups[0]} - {groups[1]}) is"
+                + f" between [{lower_threshold:.2f}, {upper_threshold:.2f}]."
+            )
+        return (lower_threshold, upper_threshold)
+
+    def polarization_percentile(
+        self,
+        groups: list[str],
+        candidate: str,
+        threshold: float,
+        verbose: bool = True,
+    ) -> float:
+        """Calculate the probability that polarization exceeds a given threshold.
+
+        Parameters:
+        -----------
+        groups: list[str]
+            Length 2 vector of demographic groups from which to calculate polarization
+        candidate: str
+            Candidate for which to calculate polarization
+        threshold: float
+            A specified level of difference in support for the candidate
+            between one group and the other.
+        verbose: bool
+            If true, print a report putting polarization in context
+
+        Returns:
+        --------
+        float
+            Probability (between 0 and 1) that the difference between the groups'
+            preferences for the candidate is greater than the threshold
+        """
+        self._validate_polarization_inputs(groups, candidate)
+
+        samples = self._get_polarization_samples(groups, candidate)
+        actual_percentile = 100 * (samples > threshold).sum() / len(samples)
+
+        if verbose:
+            print(
+                f"There is a {actual_percentile:.1f}% probability that the difference between"
+                + f" the groups' preferences for {candidate} ({groups[0]} - {groups[1]}) "
+                + f" is more than {threshold:.2f}."
+            )
+        return actual_percentile / 100.0
 
     def polarization_report(
         self,
@@ -667,6 +843,9 @@ class RowByColumnEI:
         the threshold OR For a given confidence level, calculate the associated
         confidence interval of the difference between the two groups' preferences.
         Exactly one of {percentile, threshold} must be None.
+
+        This is a backward-compatible wrapper that calls either `polarization_interval`
+        or `polarization_percentile` based on the provided parameters.
 
         Parameters:
         -----------
@@ -686,75 +865,20 @@ class RowByColumnEI:
         verbose: bool
             If true, print a report putting polarization in context
 
+        Returns:
+        --------
+        tuple[float, float] | float
+            If percentile is provided, returns (lower_threshold, upper_threshold).
+            If threshold is provided, returns the probability as a float between 0 and 1.
         """
-        return_interval = threshold is None
-
-        if self.demographic_group_names is None or self.candidate_names is None:
-            raise ValueError(
-                "demographic_group_names and candidate_names must be set before calling polarization_report"
-            )
-        if not all(group in self.demographic_group_names for group in groups):
-            raise ValueError(
-                f"""Elements of group_names must be in the list of demographic_group_names
-                provided to fit():
-                {self.demographic_group_names}"""
-            )
-
-        if candidate not in self.candidate_names:
-            raise ValueError(
-                f"""candidate_name must be in the list of candidate_names provided to fit():
-                {self.candidate_names}"""
-            )
-
-        if return_interval:
-            if percentile is None:
-                raise ValueError("percentile must be provided when threshold is None")
-            lower_percentile = (100 - percentile) / 2
-            upper_percentile = lower_percentile + percentile
-            lower_threshold = self._calculate_polarization(
-                groups, candidate, threshold, upper_percentile
-            )
-            upper_threshold = self._calculate_polarization(
-                groups, candidate, threshold, lower_percentile
-            )
-
-            if verbose:
-                print(
-                    f"There is a {percentile}% probability that the difference between"
-                    + f" the groups' preferences for {candidate} ({groups[0]} - {groups[1]}) is"
-                    + f" between [{lower_threshold:.2f}, {upper_threshold:.2f}]."
-                )
-            return (lower_threshold, upper_threshold)  # type: ignore[return-value]
+        if threshold is None and percentile is not None:
+            return self.polarization_interval(groups, candidate, percentile, verbose)
+        elif threshold is not None and percentile is None:
+            return self.polarization_percentile(groups, candidate, threshold, verbose)
         else:
-            if threshold is None:
-                raise ValueError("threshold must be provided when percentile is None")
-            threshold = self._calculate_polarization(
-                groups, candidate, threshold, percentile
+            raise ValueError(
+                "Exactly one of threshold and percentile must be provided (the other must be None)"
             )
-            if verbose:
-                # Calculate the actual percentile from the threshold
-                if (
-                    self.sampled_voting_prefs is None
-                    or self.candidate_names is None
-                    or self.demographic_group_names is None
-                ):
-                    raise ValueError(
-                        "sampled_voting_prefs, candidate_names, and demographic_group_names must be set"
-                    )
-                candidate_index = self.candidate_names.index(str(candidate))
-                group_index_0 = self.demographic_group_names.index(str(groups[0]))
-                group_index_1 = self.demographic_group_names.index(str(groups[1]))
-                samples = (
-                    self.sampled_voting_prefs[:, group_index_0, candidate_index]
-                    - self.sampled_voting_prefs[:, group_index_1, candidate_index]
-                )
-                actual_percentile = 100 * (samples > threshold).sum() / len(samples)
-                print(
-                    f"There is a {actual_percentile:.1f}% probability that the difference between"
-                    + f" the groups' preferences for {candidate} ({groups[0]} - {groups[1]}) "
-                    + f" is more than {threshold:.2f}."
-                )
-            return actual_percentile / 100.0
 
     def summary(self, non_candidate_names: list[str] | None = None) -> str:
         """Return a summary string for the ei results
@@ -1161,8 +1285,8 @@ class RowByColumnEI:
             )
             thresholds = [lower_threshold, upper_threshold]
         else:
-            if threshold is None:
-                raise ValueError("threshold must be provided when percentile is None")
+            if percentile is not None:
+                raise ValueError("Exactly one of threshold and percentile must be None")
             threshold = self._calculate_margin(group, candidates, threshold, percentile)
             thresholds = [threshold]
 
@@ -1176,13 +1300,7 @@ class RowByColumnEI:
                 "sampled_voting_prefs, candidate_names, and demographic_group_names must be set"
             )
 
-        candidate_index_0 = self.candidate_names.index(str(candidates[0]))
-        candidate_index_1 = self.candidate_names.index(str(candidates[1]))
-        group_index = self.demographic_group_names.index(str(group))
-        samples = (
-            self.sampled_voting_prefs[:, group_index, candidate_index_0]
-            - self.sampled_voting_prefs[:, group_index, candidate_index_1]
-        )
+        samples = self._get_margin_samples(group, candidates)
 
         from matplotlib.figure import Figure
 
@@ -1252,8 +1370,8 @@ class RowByColumnEI:
             )
             thresholds = [lower_threshold, upper_threshold]
         else:
-            if threshold is None:
-                raise ValueError("threshold must be provided when percentile is None")
+            if percentile is not None:
+                raise ValueError("Exactly one of threshold and percentile must be None")
             threshold = self._calculate_polarization(
                 groups, candidate, threshold, percentile
             )

@@ -132,7 +132,7 @@ def pyei_greiner_quinn_sample(
         gamma=gamma,
         burnin=burnin,
     )
-    # convert to InferenceData object
+
     # Convert samples to proper format for InferenceData
     processed_samples = {}
     for var_name in samples.keys():
@@ -145,7 +145,7 @@ def pyei_greiner_quinn_sample(
             sample_data, 0
         )  # add an axis for chain
 
-    # Ensure 'b' variable exists for consistency with pyei
+    # Ensure 'b' variable exists for consistency with arviz
     if "theta" in processed_samples:
         processed_samples["b"] = processed_samples.pop("theta")
     elif "b" not in processed_samples:
@@ -270,12 +270,6 @@ def greiner_quinn_gibbs_sample(
             mu_samp,
             Sigma_samp,
             gamma,
-        )
-
-        omega_samp = _theta_to_omega(theta_samp)
-        # TODO: IS THE NEXT LINE UNNECESSARY?
-        omega_samp = omega_samp.reshape(
-            (num_precincts, num_groups * (num_candidates - 1))
         )
 
         # (c) sample mu and sigma given omega (or, equivalently, given theta)
