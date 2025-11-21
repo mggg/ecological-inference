@@ -1,11 +1,11 @@
-# pylint: disable-all
-"""Port of R code for Noncentral Hypergeometric distribution
-adapted from R code published in conjunction with:
+"""Port of R code for Noncentral Hypergeometric distribution.
+
+Adapted from R code published in conjunction with:
 Liao, J.G. And Rosen, O. (2001) Fast and Stable Algorithms for Computing and
 Sampling from the Noncentral Hypergeometric Distribution.  The American
 Statistician 55, 366-369.
 
-Used in Greiner-Quinn method Gibbs sampler
+Used in Greiner-Quinn method Gibbs sampler.
 """
 
 import math
@@ -15,32 +15,52 @@ from numba import jit
 
 
 @jit
-def _r_function(n1, n2, m1, psi, i):
+def _r_function(n1: int, n2: int, m1: int, psi: float, i: int) -> float:
     """The function r defined in Liao and Rosen 2001"""
     return (n1 - i + 1) * (m1 - i + 1) / (i * (n2 - m1 + i)) * psi
 
 
 @jit
-def _sample_low_to_high(lower, ran, pi, shift, uu):
+def _sample_low_to_high(
+    lower: int, ran: float, pi: np.ndarray, shift: int, uu: int
+) -> int:
     for i in range(lower, uu + 1):
         if ran <= pi[i + shift]:
             return i
         ran = ran - pi[i + shift]
+    return uu  # fallback
 
 
 @jit
-def _sample_high_to_low(upper, ran, pi, shift, ll):
+def _sample_high_to_low(
+    upper: int, ran: float, pi: np.ndarray, shift: int, ll: int
+) -> int:
     for i in range(upper, ll - 1, -1):
         if ran <= pi[i + shift]:
             return i
         ran = ran - pi[i + shift]
+    return ll  # fallback
 
 
 @jit
-def non_central_hypergeometric_sample(n1, n2, m1, psi):
-    """Allows for sampling from noncentralhypergeometric distribution
-    Following the methods of Liao and Rosen, 2001
+def non_central_hypergeometric_sample(n1: int, n2: int, m1: int, psi: float) -> int:
+    """Sample from noncentral hypergeometric distribution.
 
+    Following the methods of Liao and Rosen, 2001.
+
+    Parameters
+    ----------
+    n1 : int
+        Number of items in first group
+    n2 : int
+        Number of items in second group
+    m1 : int
+        Number of items to sample
+    psi : float
+        Odds ratio parameter
+
+    Notes:
+    -----
     If
     y1 ~ Binom(n1, pi1)
     y2 ~ Binom(n2, pi2)

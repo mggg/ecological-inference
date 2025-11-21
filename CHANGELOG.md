@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-09-30
+
+### Added
+- Comprehensive type annotations throughout the codebase using Python 3.11+ syntax
+- Type checking support with `mypy` (zero errors)
+- Improved IDE support and code documentation through type hints
+- Proper typing for NumPy arrays, Matplotlib objects, and PyMC models
+- Specific type annotations for ArviZ `InferenceData` objects
+- Type annotations for Matplotlib `Axes` objects and plotting functions
+
+### Changed
+- **BREAKING**: Added type annotations to all functions, methods, and class attributes
+- Enhanced development experience with better type safety
+- Replaced `typing.Any` with specific types where possible
+- Added `# noqa: ANN401` comments for necessary `Any` usage in `**kwargs` parameters
+
+### Fixed
+- Resolved all `ANN401` linting errors (dynamically typed expressions)
+- Fixed type compatibility issues with matplotlib subplot arrays
+- Improved type safety for plotting utilities and model parameters
+- Fixed PD013 and PD011 linting errors for xarray `.stack()` and `.values` calls
+- Added proper `# noqa` comments to suppress false positive pandas linting warnings
+
+### Migration Required
+- Consider running `mypy` on your code to take advantage of new type annotations
+- See [MIGRATION_NOTES.md](MIGRATION_NOTES.md) for detailed migration instructions
+
 ## [1.2.0] - 2025-09-25
 
 ### Added

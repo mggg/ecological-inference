@@ -4,13 +4,34 @@
 import numpy as np
 import pytest
 
-from test_plot_utils import example_two_by_two_data  # pylint:disable=unused-import
+from pyei import data
 from pyei.goodmans_er import GoodmansER, GoodmansERBayes
 
 
+@pytest.fixture(scope="session")
+def example_two_by_two_data():  # noqa: ANN201
+    """Load santa clara data to test two by two ei and plots"""
+    sc_data = data.Datasets.Santa_Clara.to_dataframe()
+    group_fractions = np.array(sc_data["pct_e_asian_vote"])
+    votes_fractions = np.array(sc_data["pct_for_hardy2"])
+    precinct_pops = np.array(sc_data["total2"])
+    demographic_group_name = "e_asian"
+    candidate_name = "Hardy"
+    precinct_names = sc_data["precinct"]
+    return {
+        "group_fractions": group_fractions,
+        "votes_fractions": votes_fractions,
+        "precint_pops": precinct_pops,
+        "demographic_group_name": demographic_group_name,
+        "candidate_name": candidate_name,
+        "precinct_names": precinct_names,
+    }
+
+
 @pytest.fixture
-def group_and_vote_fractions():
+def group_and_vote_fractions():  # noqa: ANN201
     """Sample group and vote fractions, where every member of the demographic
+
     group votes for the given candidate and every non-member of the
     demographic group does not vote for the given candidate.
     """
@@ -20,8 +41,9 @@ def group_and_vote_fractions():
 
 
 @pytest.fixture
-def group_and_vote_fractions_with_pop():
+def group_and_vote_fractions_with_pop():  # noqa: ANN201
     """Sample group and vote fractions, where every member of the demographic
+
     group votes for the given candidate and 10% of the demographic group's
     complement supports the given candidate (i.e., slope = 1, intercept = 0.1),
     with an exception of one precinct.
@@ -35,10 +57,12 @@ def group_and_vote_fractions_with_pop():
 
 
 @pytest.fixture
-def goodmans_er_bayes_examples(example_two_by_two_data):  # pylint: disable=redefined-outer-name
+def goodmans_er_bayes_examples(example_two_by_two_data):  # noqa: ANN001,ANN201
     """Run Bayesian Goodman's ER"""
     ex = example_two_by_two_data
-    bayes_goodman_ei_weighted = GoodmansERBayes("goodman_er_bayes", weighted_by_pop=True, sigma=1)
+    bayes_goodman_ei_weighted = GoodmansERBayes(
+        "goodman_er_bayes", weighted_by_pop=True, sigma=1
+    )
     bayes_goodman_ei_weighted.fit(
         ex["group_fractions"],
         ex["votes_fractions"],
@@ -64,7 +88,7 @@ def goodmans_er_bayes_examples(example_two_by_two_data):  # pylint: disable=rede
     }
 
 
-def test_fit(group_and_vote_fractions):
+def test_fit(group_and_vote_fractions):  # noqa: ANN001,ANN201,D103
     model = GoodmansER()
     group_share, vote_share = group_and_vote_fractions
     model.fit(group_share, vote_share)
@@ -72,7 +96,7 @@ def test_fit(group_and_vote_fractions):
     np.testing.assert_almost_equal(model.slope_, 1)
 
 
-def test_weighted_fit(group_and_vote_fractions_with_pop):
+def test_weighted_fit(group_and_vote_fractions_with_pop):  # noqa: ANN001,ANN201,D103
     model = GoodmansER(is_weighted_regression=True)
     group_share, vote_share, pops = group_and_vote_fractions_with_pop
     model.fit(group_share, vote_share, pops)
@@ -80,7 +104,7 @@ def test_weighted_fit(group_and_vote_fractions_with_pop):
     np.testing.assert_almost_equal(model.slope_, 1, decimal=3)
 
 
-def test_summary():
+def test_summary():  # noqa: ANN201,D103
     model = GoodmansER()
     model.demographic_group_name = "Trees"
     model.candidate_name = "Lorax"
@@ -107,7 +131,7 @@ def test_summary():
     assert model.summary() == expected_summary
 
 
-def test_plot(group_and_vote_fractions):
+def test_plot(group_and_vote_fractions):  # noqa: ANN001,ANN201,D103
     model = GoodmansER()
     group_share, vote_share = group_and_vote_fractions
     model.fit(group_share, vote_share)
@@ -118,7 +142,7 @@ def test_plot(group_and_vote_fractions):
     assert (0.0, 1.0) == ax.get_ylim()
 
 
-def test_goodman_er_bayes_posterior_means(goodmans_er_bayes_examples):
+def test_goodman_er_bayes_posterior_means(goodmans_er_bayes_examples):  # noqa: ANN001,ANN201,D103
     goodmans_er_bayes_weighted = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"]
     np.testing.assert_almost_equal(
         goodmans_er_bayes_weighted.sampled_voting_prefs[0].mean(), 0.840, decimal=2
@@ -127,7 +151,9 @@ def test_goodman_er_bayes_posterior_means(goodmans_er_bayes_examples):
         goodmans_er_bayes_weighted.sampled_voting_prefs[1].mean(), 0.240, decimal=2
     )
 
-    goodmans_er_bayes_unweighted = goodmans_er_bayes_examples["bayes_goodman_ei_unweighted"]
+    goodmans_er_bayes_unweighted = goodmans_er_bayes_examples[
+        "bayes_goodman_ei_unweighted"
+    ]
     np.testing.assert_almost_equal(
         goodmans_er_bayes_unweighted.sampled_voting_prefs[0].mean(), 0.835, decimal=2
     )
@@ -136,7 +162,7 @@ def test_goodman_er_bayes_posterior_means(goodmans_er_bayes_examples):
     )
 
 
-def test_goodman_er_bayes_bounds(goodmans_er_bayes_examples):
+def test_goodman_er_bayes_bounds(goodmans_er_bayes_examples):  # noqa: ANN001,ANN201,D103
     goodmans_er_bayes_example = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"]
     (
         _,
@@ -152,6 +178,6 @@ def test_goodman_er_bayes_bounds(goodmans_er_bayes_examples):
     assert all(lower_bounds) >= 0
 
 
-def test_goodman_er_bayes_plot(goodmans_er_bayes_examples):
+def test_goodman_er_bayes_plot(goodmans_er_bayes_examples):  # noqa: ANN001,ANN201,D103
     ax = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"].plot()
     assert ax is not None

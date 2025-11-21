@@ -6,8 +6,12 @@ import pytensor.tensor as at
 
 
 def ei_multinom_dirichlet(
-    group_fractions, votes_fractions, precinct_pops, lmbda1=4, lmbda2=2
-):
+    group_fractions: np.ndarray,
+    votes_fractions: np.ndarray,
+    precinct_pops: np.ndarray,
+    lmbda1: float = 4,
+    lmbda2: float = 2,
+) -> pm.Model:
     """An implementation of the r x c dirichlet/multinomial EI model
 
     Parameters:
@@ -62,8 +66,12 @@ def ei_multinom_dirichlet(
 
 
 def ei_multinom_dirichlet_modified(
-    group_fractions, votes_fractions, precinct_pops, pareto_scale=5, pareto_shape=1
-):
+    group_fractions: np.ndarray,
+    votes_fractions: np.ndarray,
+    precinct_pops: np.ndarray,
+    pareto_scale: float = 5,
+    pareto_shape: float = 1,
+) -> pm.Model:
     """An implementation of the r x c dirichlet/multinomial EI model with reparametrized hyperpriors
 
     Parameters:

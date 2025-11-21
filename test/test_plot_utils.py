@@ -1,16 +1,16 @@
 """Test plot utils."""
 
-import pytest
 import numpy as np
+import pytest
 
 from pyei import data
-from pyei.plot_utils import *  # pylint:disable=wildcard-import,unused-wildcard-import
+from pyei.plot_utils import *  # noqa: F403
 from pyei.two_by_two import TwoByTwoEI
 
 
 @pytest.fixture(scope="session")
-def example_two_by_two_data():
-    """load santa clara data to test two by two ei and plots"""
+def example_two_by_two_data():  # noqa: ANN201
+    """Load santa clara data to test two by two ei and plots"""
     sc_data = data.Datasets.Santa_Clara.to_dataframe()
     group_fractions = np.array(sc_data["pct_e_asian_vote"])
     votes_fractions = np.array(sc_data["pct_for_hardy2"])
@@ -29,9 +29,11 @@ def example_two_by_two_data():
 
 
 @pytest.fixture(scope="session")
-def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined-outer-name
-    """run example two by two ei method - can use to test plotting"""
-    ei_ex = TwoByTwoEI(model_name="king99_pareto_modification", pareto_scale=8, pareto_shape=2)
+def example_two_by_two_ei(example_two_by_two_data):  # noqa: ANN001,ANN201
+    """Run example two by two ei method - can use to test plotting"""
+    ei_ex = TwoByTwoEI(
+        model_name="king99_pareto_modification", pareto_scale=8, pareto_shape=2
+    )
     ei_ex.fit(
         example_two_by_two_data["group_fractions"],
         example_two_by_two_data["votes_fractions"],
@@ -45,8 +47,8 @@ def example_two_by_two_ei(example_two_by_two_data):  # pylint: disable=redefined
     return ei_ex
 
 
-def test_tomography_plot(example_two_by_two_data):  # pylint: disable=redefined-outer-name
-    tomography_plot(
+def test_tomography_plot(example_two_by_two_data):  # noqa: ANN001,ANN201,D103
+    tomography_plot(  # noqa: F405
         example_two_by_two_data["group_fractions"],
         example_two_by_two_data["votes_fractions"],
         example_two_by_two_data["demographic_group_name"],
@@ -54,50 +56,54 @@ def test_tomography_plot(example_two_by_two_data):  # pylint: disable=redefined-
     )
 
 
-def test_ei_plot_and_plot_summary(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
+def test_ei_plot_and_plot_summary(example_two_by_two_ei):  # noqa: ANN001,ANN201,D103
     # TODO: maybe uncouple this to test the plot utils piece alone
     axes = example_two_by_two_ei.plot()
-    assert len(axes) == 2  ## one axis each for boxplot and kde
+    assert len(axes) == 2  ## one axis each for boxplot and kde  # noqa: PLR2004
 
 
-def test_ei_plot_kdes(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
+def test_ei_plot_kdes(example_two_by_two_ei):  # noqa: ANN001,ANN201,D103
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.plot_kde()
     assert ax is not None
 
 
-def test_ei_plot_boxplot(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
+def test_ei_plot_boxplot(example_two_by_two_ei):  # noqa: ANN001,ANN201,D103
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.plot_boxplot()
     assert ax is not None
 
 
-def test_ei_plot_intervals(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
+def test_ei_plot_intervals(example_two_by_two_ei):  # noqa: ANN001,ANN201,D103
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.plot_intervals()
     assert ax is not None
 
 
-def test_ei_precinct_level_plots(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
+def test_ei_precinct_level_plots(example_two_by_two_ei):  # noqa: ANN001,ANN201,D103
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.precinct_level_plot()
     assert ax is not None
 
 
-def test_ei_plot_intervals_by_precinct(
-    example_two_by_two_ei,
-):  # pylint: disable=redefined-outer-name
+def test_ei_plot_intervals_by_precinct(  # noqa: ANN201,D103
+    example_two_by_two_ei,  # noqa: ANN001
+):
     # TODO: maybe uncouple this to test the plot utils piece alone
     ax = example_two_by_two_ei.plot_intervals_by_precinct()
     assert ax is not None
 
 
-def test_plot_polarization_kde(example_two_by_two_ei):  # pylint: disable=redefined-outer-name
-    percentile_ax = example_two_by_two_ei.plot_polarization_kde(threshold=0.4, show_threshold=True)
+def test_plot_polarization_kde(example_two_by_two_ei):  # noqa: ANN001,ANN201,D103
+    percentile_ax = example_two_by_two_ei.plot_polarization_kde(
+        threshold=0.4, show_threshold=True
+    )
     percentile_ax_2 = example_two_by_two_ei.plot_polarization_kde(
         threshold=0.4, reference_group=1, show_threshold=True
     )
-    threshold_ax = example_two_by_two_ei.plot_polarization_kde(percentile=95, show_threshold=True)
+    threshold_ax = example_two_by_two_ei.plot_polarization_kde(
+        percentile=95, show_threshold=True
+    )
     assert percentile_ax is not None
     assert percentile_ax_2 is not None
     assert threshold_ax is not None
