@@ -817,7 +817,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             model_function = ei_beta_binom_model_modified
 
         elif self.model_name == "truncated_normal":
-            model_function = truncated_normal_asym
+            model_function = _truncated_normal_asym
 
         self.sim_model = model_function(  # pylint: disable=possibly-used-before-assignment
             group_fraction,
