@@ -4,13 +4,13 @@
 import numpy as np
 import pytest
 
-from test_plot_utils import example_two_by_two_data  # pylint:disable=unused-import
 from pyei.goodmans_er import GoodmansER, GoodmansERBayes
 
 
 @pytest.fixture
 def group_and_vote_fractions():
     """Sample group and vote fractions, where every member of the demographic
+
     group votes for the given candidate and every non-member of the
     demographic group does not vote for the given candidate.
     """
@@ -22,6 +22,7 @@ def group_and_vote_fractions():
 @pytest.fixture
 def group_and_vote_fractions_with_pop():
     """Sample group and vote fractions, where every member of the demographic
+
     group votes for the given candidate and 10% of the demographic group's
     complement supports the given candidate (i.e., slope = 1, intercept = 0.1),
     with an exception of one precinct.
@@ -38,7 +39,9 @@ def group_and_vote_fractions_with_pop():
 def goodmans_er_bayes_examples(example_two_by_two_data):  # pylint: disable=redefined-outer-name
     """Run Bayesian Goodman's ER"""
     ex = example_two_by_two_data
-    bayes_goodman_ei_weighted = GoodmansERBayes("goodman_er_bayes", weighted_by_pop=True, sigma=1)
+    bayes_goodman_ei_weighted = GoodmansERBayes(
+        "goodman_er_bayes", weighted_by_pop=True, sigma=1
+    )
     bayes_goodman_ei_weighted.fit(
         ex["group_fractions"],
         ex["votes_fractions"],
@@ -127,7 +130,9 @@ def test_goodman_er_bayes_posterior_means(goodmans_er_bayes_examples):
         goodmans_er_bayes_weighted.sampled_voting_prefs[1].mean(), 0.240, decimal=2
     )
 
-    goodmans_er_bayes_unweighted = goodmans_er_bayes_examples["bayes_goodman_ei_unweighted"]
+    goodmans_er_bayes_unweighted = goodmans_er_bayes_examples[
+        "bayes_goodman_ei_unweighted"
+    ]
     np.testing.assert_almost_equal(
         goodmans_er_bayes_unweighted.sampled_voting_prefs[0].mean(), 0.835, decimal=2
     )
