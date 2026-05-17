@@ -65,23 +65,90 @@ Homepage = "https://github.com/mggg/ecological-inference"
 Repository = "https://github.com/mggg/ecological-inference"
 Issues = "https://github.com/mggg/ecological-inference/issues"
 
-[project.optional-dependencies]
+[tool.hatch.build.targets.wheel]
+packages = ["pyei"]
+
+[tool.ruff.lint]
+# by default, ruff enables all F and a subset of E rules
+# for a description of rulesets and examples, see:
+# https://docs.astral.sh/ruff/rules/
+extend-select = [
+  "B",      # bugbear - identifies likely bugs
+  "D",      # pydocstyle - requires docstrings on all public modules/functions/classes
+  "I",      # isort
+  "UP",     # pyupgrade - requires preferred syntax in newer python versions
+]
+
+ignore = [
+  "D415",   # allow first line of docstrings to end without punctuation
+  "D417",   # Missing argument descriptions docstring for `__init__`: `**kwargs`, `*args`
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"test/*.py" = [
+  "D103",   # missing docstring on test functions — names are self-documenting
+]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+  "slow: tests that run MCMC/Gibbs sampling (>5s)",
+  "mcmc: tests that exercise PyMC/numpyro samplers",
+]
+filterwarnings = [
+  "default",
+  "ignore::DeprecationWarning:pymc.*",
+  "ignore::FutureWarning:arviz.*",
+]
+
+[tool.coverage.run]
+source = ["pyei"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+  "pragma: no cover",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+]
+
+[tool.pyright]
+# pytensor.tensor re-exports many names (TensorVariable, arange, as_tensor,
+# transpose, etc.) that aren't listed in its `__all__`. They are the canonical
+# public API — silence the false positives.
+reportPrivateImportUsage = "none"
+
+[[tool.mypy.overrides]]
+# These libraries don't ship type stubs and don't carry a py.typed marker.
+module = ["numba", "numba.*", "pymc", "pymc.*", "sklearn", "sklearn.*"]
+ignore_missing_imports = true
+
+[dependency-groups]
 dev = [
     # Code quality and linting
     "ruff==0.12.12",
     "mypy==1.17.1",
-    
+    "ty>=0.0.37",
+    "pyright>=1.1.409",
     # Testing framework
     "pytest==8.4.2",
     "pytest-cov==6.3.0",
-    
     # Development tools
     "pre-commit==4.3.0",
-    
     # Jupyter notebook support
     "jupyter==1.1.1",
     "ipykernel",
     "ipywidgets==8.1.5",
+    "pandas-stubs>=3.0.0.260204",
+    "scipy-stubs>=1.17.1.4",
+    "types-seaborn>=0.13.2.20260509",
+    "types-tqdm>=4.67.3.20260508",
 ]
 
 docs = [
@@ -91,46 +158,4 @@ docs = [
     "myst-parser",
     "nbsphinx",
     "sphinx-autodoc-typehints",
-]
-
-[tool.hatch.build.targets.wheel]
-packages = ["pyei"]
-
-[tool.ruff.lint]
-extend-select = [
-  # by default, ruff enables all F and a subset of E rules
-  # for a description of rulesets and examples, see:
-  # https://docs.astral.sh/ruff/rules/
-  "ANN",    # flake8-annotations - type annotations, some ignored
-  "B",      # bugbear - identifies likely bugs
-  "C4",     # flake8-comprehensions - identifies redundant calls in comprehensions
-  "D",      # pydocstyle - requires docstrings on all public modules/functions/classes
-  "I",      # isort
-  "N801",   # pep8-naming - enforce ClassNamesStyle
-  "N804",   # pep8-naming - first arg of classmethod should be cls
-  "N805",   # pep8-naming - first arg of method should be self
-  "PD",     # pandas-vet
-  "PLR2004",# Pylint no magic values!
-  "PTH",    # prefer pathlib over os.path as seems to be the consensus
-  "Q",      # flake8-quotes - double quotes preferred (like black)
-  "S",      # flake8-bandit - security checks
-  "UP",     # pyupgrade - requires preferred syntax in newer python versions
-  "YTT",    # flake8-2020 - corrects code that doesn't anticipate 2 digit python minor version  
-]
-
-ignore = [
-  "D415",   # allow first line of doctstrings to end without punctuation
-  "ANN101", # missing type annotation for `self` in method
-  "ANN002", # missing type on *args
-  "ANN003", # missing type on **kwargs
-  "B905",   # won't work on python <3.10
-  "D417",   # Missing argument descriptions docstring for `__init__`: `**kwargs`, `*args`
-]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
-[tool.ruff.lint.per-file-ignores]
-"test/*.py" = [
-  "S101",   # Use of assert
 ]

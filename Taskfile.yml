@@ -1,0 +1,247 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+vars:
+  PYTHON_VERSION: "3.11"
+  VENV_DIR: ".venv"
+  PKG: "pyei"
+  TEST_PATHS: "test"
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task: help
+
+  help:
+    desc: List available tasks
+    silent: true
+    cmds:
+      - task --list-all
+
+  ensure-uv-linux: &ensure-uv-unix
+    desc: Install uv if not already available
+    internal: true
+    silent: true
+    status:
+      - command -v uv
+    cmds:
+      - curl -LsSf https://astral.sh/uv/install.sh | sh
+
+  ensure-uv-darwin: *ensure-uv-unix
+
+  ensure-uv-windows:
+    internal: true
+    silent: true
+    status:
+      - where uv
+    cmds:
+      - powershell -ExecutionPolicy ByPass -Command "irm https://astral.sh/uv/install.ps1 | iex"
+
+  sync:
+    desc: Sync the development environment
+    internal: true
+    silent: true
+    deps: ["ensure-uv-{{OS}}"]
+    env:
+      UV_PROJECT_ENVIRONMENT: "{{.ROOT_DIR}}/{{.VENV_DIR}}"
+    cmds:
+      - uv python install {{.PYTHON_VERSION}}
+      - >-
+        uv --managed-python sync --locked --all-extras
+        --python {{.PYTHON_VERSION}}
+
+  lock:
+    desc: Generate a lockfile without installing dependencies
+    silent: true
+    deps: ["ensure-uv-{{OS}}", "upgrade-deps"]
+    env:
+      UV_PROJECT_ENVIRONMENT: "{{.ROOT_DIR}}/{{.VENV_DIR}}"
+    cmds:
+      - uv lock
+
+  upgrade-deps:
+    desc: Upgrade dependencies and regenerate the lockfile
+    silent: true
+    deps: ["ensure-uv-{{OS}}"]
+    env:
+      UV_PROJECT_ENVIRONMENT: "{{.ROOT_DIR}}/{{.VENV_DIR}}"
+    cmds:
+      - uv python install {{.PYTHON_VERSION}}
+      - >-
+        uv --managed-python sync --upgrade --all-extras
+        --python {{.PYTHON_VERSION}}
+
+  setup:
+    desc: Set up the development environment
+    silent: true
+    cmds:
+      - task: sync
+      - uv run pre-commit install
+
+  format:
+    desc: Format the codebase using Ruff
+    silent: true
+    deps: ["sync"]
+    cmds:
+      - uv run ruff check --select I --fix {{.PKG}} {{.TEST_PATHS}}
+      - uv run ruff format {{.PKG}} {{.TEST_PATHS}}
+
+  format-check:
+    desc: Check code formatting using Ruff
+    silent: true
+    deps: ["sync"]
+    cmds:
+      - uv run ruff check --select I {{.PKG}} {{.TEST_PATHS}}
+      - uv run ruff format --check --diff {{.PKG}} {{.TEST_PATHS}}
+
+  lint:
+    desc: Lint the codebase using Ruff
+    silent: true
+    deps: ["sync"]
+    vars:
+      CLI_ARGS: "{{.CLI_ARGS}}"
+    cmds:
+      - uv run ruff check {{.PKG}} {{.TEST_PATHS}} {{.CLI_ARGS}}
+
+  typecheck:
+    desc: Run type checks using Ty
+    aliases: [type-check]
+    silent: true
+    deps: ["sync"]
+    cmds:
+      - uv run ty check {{.PKG}} # Ty is faster than Pyright and can be used as a first pass
+      - uv run pyright {{.PKG}} # Pyright is more thorough and can catch some issues that Ty misses
+
+  all-checks:
+    desc: Run formatting, linting, and type checking
+    silent: true
+    cmds:
+      - task: format-check
+      - task: lint
+      - task: typecheck
+
+  check:
+    desc: Run formatting and lint checks
+    silent: true
+    cmds:
+      - task: format-check
+      - task: lint
+
+  pytest:
+    internal: true
+    silent: true
+    env:
+      PYTHONHASHSEED: "0"
+      TERM: xterm
+    cmds:
+      - task: sync
+      - uv run pytest -v {{.PYTEST_ARGS}}
+
+  test:
+    desc: Run tests using pytest (`task test -- test/foo` to scope the run)
+    silent: true
+    cmds:
+      - task: pytest
+        vars:
+          PYTEST_ARGS: "{{.CLI_ARGS | default .TEST_PATHS}}"
+
+  test:*:
+    desc: Run tests in a specific path (`task test:test/foo`)
+    silent: true
+    vars:
+      TEST_PATH: "{{index .MATCH 0}}"
+    cmds:
+      - task: pytest
+        vars:
+          PYTEST_ARGS: "{{.TEST_PATH}}"
+
+  test-slow:
+    desc: Run only tests marked slow
+    silent: true
+    cmds:
+      - task: pytest
+        vars:
+          PYTEST_ARGS: "{{.CLI_ARGS | default .TEST_PATHS}} -m slow"
+
+  test-fast:
+    desc: Run only tests not marked slow
+    silent: true
+    cmds:
+      - task: pytest
+        vars:
+          PYTEST_ARGS: '{{.CLI_ARGS | default .TEST_PATHS}} -m "not slow"'
+
+  coverage:
+    desc: Run tests with coverage reporting
+    silent: true
+    cmds:
+      - task: pytest
+        vars:
+          PYTEST_ARGS: >-
+            {{.CLI_ARGS | default .TEST_PATHS}} --cov={{.PKG}}
+            --cov-report=term-missing
+
+  coverage-xml:
+    desc: Run tests with coverage reporting and an XML report
+    silent: true
+    cmds:
+      - task: pytest
+        vars:
+          PYTEST_ARGS: >-
+            {{.CLI_ARGS | default .TEST_PATHS}} --cov={{.PKG}}
+            --cov-report=term-missing --cov-report=xml
+
+  precommit:
+    desc: Install and run pre-commit hooks
+    silent: true
+    cmds:
+      - task: sync
+      - uv run pre-commit install
+      - uv run pre-commit run
+
+  notebook:
+    desc: Start a Jupyter notebook server
+    silent: true
+    cmds:
+      - task: sync
+      - uv run jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser
+
+  clean:
+    desc: Clean build artifacts
+    silent: true
+    cmds:
+      - task: clean-{{OS}}
+
+  clean-linux:
+    internal: true
+    silent: true
+    cmds: &clean-unix
+      - rm -rf dist build "{{.VENV_DIR}}" .pytest_cache .mypy_cache .ruff_cache .coverage .coverage.* coverage.xml
+      - find . -type d -name "*.egg-info" -exec rm -rf {} +
+      - find . -type d -name "__pycache__" -exec rm -rf {} +
+      - find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
+      - find . -type f -name "*.pyc" -delete
+
+  clean-darwin:
+    internal: true
+    silent: true
+    cmds: *clean-unix
+
+  clean-windows:
+    internal: true
+    silent: true
+    cmds:
+      - cmd /c "if exist dist rmdir /s /q dist"
+      - cmd /c "if exist build rmdir /s /q build"
+      - cmd /c "if exist {{.VENV_DIR}} rmdir /s /q {{.VENV_DIR}}"
+      - cmd /c "if exist .pytest_cache rmdir /s /q .pytest_cache"
+      - cmd /c "if exist .mypy_cache rmdir /s /q .mypy_cache"
+      - cmd /c "if exist .ruff_cache rmdir /s /q .ruff_cache"
+      - cmd /c "if exist coverage.xml del /q coverage.xml"
+      - powershell -NoProfile -Command "Get-ChildItem -Path . -Filter .coverage* -File -Force | Remove-Item -Force"
+      - powershell -NoProfile -Command "Get-ChildItem -Path . -Filter *.egg-info -Directory -Recurse | Remove-Item -Recurse -Force"
+      - powershell -NoProfile -Command "Get-ChildItem -Path . -Directory -Filter __pycache__ -Recurse | Remove-Item -Recurse -Force"
+      - powershell -NoProfile -Command "Get-ChildItem -Path . -Directory -Filter .ipynb_checkpoints -Recurse | Remove-Item -Recurse -Force"
+      - powershell -NoProfile -Command "Get-ChildItem -Path . -Filter *.pyc -File -Recurse | Remove-Item -Force"
