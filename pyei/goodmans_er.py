@@ -1,11 +1,17 @@
 """Goodman's ecological regression"""
 
+from collections.abc import Callable
+from typing import Any, cast
+
 import numpy as np
 import pymc as pm
 import seaborn as sns
 import seaborn.algorithms as sns_algo
 import seaborn.utils as sns_utils
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from numpy.typing import NDArray
 from sklearn.linear_model import LinearRegression
 
 from pyei.two_by_two import TwoByTwoEIBaseBayes
@@ -14,33 +20,33 @@ from pyei.two_by_two import TwoByTwoEIBaseBayes
 class GoodmansER:
     """Fitting and plotting for Goodman's ER (with options for pop weighting)"""
 
-    def __init__(self, is_weighted_regression=False):
+    def __init__(self, is_weighted_regression: bool = False) -> None:
         """Parameters
+
         ----------
         is_weighted_regression: bool, optional
             Default is False. If true, weight precincts by population when
             performing the regression.
         """
-        self.demographic_group_fraction = None
-        self.vote_fraction = None
-        self.demographic_group_fraction = None
-        self.demographic_group_name = None
-        self.candidate_name = None
-        self.intercept_ = None
-        self.slope_ = None
-        self.voting_prefs_est_ = None
-        self.voting_prefs_complement_est_ = None
-        self.precinct_pops = None
+        self.demographic_group_fraction: NDArray[np.floating] | None = None
+        self.vote_fraction: NDArray[np.floating] | None = None
+        self.demographic_group_name: str | None = None
+        self.candidate_name: str | None = None
+        self.intercept_: float | None = None
+        self.slope_: float | None = None
+        self.voting_prefs_est_: float | None = None
+        self.voting_prefs_complement_est_: float | None = None
+        self.precinct_pops: NDArray[np.integer] | None = None
         self.is_weighted_regression = is_weighted_regression
 
     def fit(
         self,
-        group_fraction,
-        vote_fraction,
-        precinct_pops=None,
-        demographic_group_name="given demographic group",
-        candidate_name="given candidate",
-    ):
+        group_fraction: NDArray[np.floating],
+        vote_fraction: NDArray[np.floating],
+        precinct_pops: NDArray[np.integer] | None = None,
+        demographic_group_name: str = "given demographic group",
+        candidate_name: str = "given candidate",
+    ) -> "GoodmansER":
         """Fit the linear model (use pop weights iff is_weighted_regression is true
 
         Parameters
@@ -80,7 +86,7 @@ class GoodmansER:
         self.voting_prefs_complement_est_ = reg.intercept_
         return self
 
-    def summary(self):
+    def summary(self) -> str:
         """Return summary of results as string"""
         if self.is_weighted_regression:
             model_name = "Goodmans ER, weighted by population"
@@ -97,10 +103,10 @@ class GoodmansER:
 
     def plot(
         self,
-        line_kws=None,
-        scatter_kws=None,
+        line_kws: dict[str, Any] | None = None,
+        scatter_kws: dict[str, Any] | None = None,
         **sns_regplot_args,
-    ):
+    ) -> tuple[Figure, Axes]:
         """Plot the linear regression with 95% confidence interval
 
         Notes:
@@ -110,6 +116,14 @@ class GoodmansER:
             line_kws=dict(color="red")
             scatter_kws={"s": 50}
         """
+        if (
+            self.intercept_ is None
+            or self.slope_ is None
+            or self.demographic_group_fraction is None
+            or self.vote_fraction is None
+        ):
+            raise RuntimeError("GoodmansER must be fit before plotting")
+
         fig, ax = plt.subplots()
         ax.axis("square")
         ax.grid(visible=True, which="major")
@@ -119,6 +133,10 @@ class GoodmansER:
         ax.set_ylabel(f"Fraction voting for {self.candidate_name}")
 
         if self.is_weighted_regression:
+            if self.precinct_pops is None:
+                raise RuntimeError(
+                    "precinct_pops must be set for weighted regression plot"
+                )
             if line_kws is None:
                 line_kws = {}
             line_kws.setdefault("linewidth", 2.5)
@@ -141,12 +159,22 @@ class GoodmansER:
             )
             xgrid = np.linspace(0, 1, 101)
 
-            def fit_fast(xgrid, x, y, w):
+            def fit_fast(
+                xgrid: NDArray[np.floating],
+                x: NDArray[np.floating],
+                y: NDArray[np.floating],
+                w: NDArray[np.floating],
+            ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
                 """Modifying this function from sns to accomodate weighted regression
+
                 in CI computation
                 """
 
-                def weighted_reg_func(_x, _y, _w):
+                def weighted_reg_func(
+                    _x: NDArray[np.floating],
+                    _y: NDArray[np.floating],
+                    _w: NDArray[np.floating],
+                ) -> NDArray[np.floating]:
                     """Low-level regression and prediction using linear algebra."""
                     _w_sqrt = np.sqrt(_w)
                     x_weighted = np.diag(_w_sqrt).dot(_x)
@@ -172,7 +200,7 @@ class GoodmansER:
                 xgrid,
                 self.demographic_group_fraction,
                 self.vote_fraction,
-                self.precinct_pops,
+                self.precinct_pops.astype(np.float64),
             )
             # CIs at each grid point
             err_bands = sns_utils.ci(yhat_boots, which=95, axis=0)
@@ -193,16 +221,18 @@ class GoodmansER:
 
 class GoodmansERBayes(TwoByTwoEIBaseBayes):
     """Bayesian ecological regression with uniform prior over the voting preferences
+
     Generate samples from the posterior.
     """
 
     def __init__(
         self,
-        model_name="goodman_er_bayes",
-        weighted_by_pop=False,
+        model_name: str = "goodman_er_bayes",
+        weighted_by_pop: bool = False,
         **additional_model_params,
-    ):
+    ) -> None:
         """Optional arguments:
+
         model_name: str
             Default is "goodman_er_bayes"
         weighted_by_pop: bool
@@ -217,15 +247,15 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
     def fit(
         self,
-        group_fraction,
-        votes_fraction,
-        precinct_pops=None,
-        demographic_group_name="given demographic group",
-        candidate_name="given candidate",
-        target_accept=0.9,
-        tune=1000,
+        group_fraction: NDArray[np.floating],
+        votes_fraction: NDArray[np.floating],
+        precinct_pops: NDArray[np.integer] | None = None,
+        demographic_group_name: str = "given demographic group",
+        candidate_name: str = "given candidate",
+        target_accept: float = 0.9,
+        tune: int = 1000,
         **other_sampling_args,
-    ):
+    ) -> None:
         """Fit a bayesian er modeling via sampling.
 
         Parameters
@@ -259,6 +289,7 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         self.demographic_group_fraction = group_fraction
         self.votes_fraction = votes_fraction
 
+        model_function: Callable[..., pm.Model]
         if self.weighted_by_pop:
             model_function = _goodmans_er_bayes_pop_weighted_model
             self.additional_model_params["precinct_pops"] = precinct_pops
@@ -276,24 +307,31 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         self.calculate_sampled_voting_prefs()
         super().calculate_summary()
 
-    def calculate_sampled_voting_prefs(self):
+    def calculate_sampled_voting_prefs(self) -> None:
         """Sets sampled_voting_prefs"""
+        if self.sim_trace is None:
+            raise RuntimeError("Model must be fit before calculating voting prefs")
+        sim_trace = cast(Any, self.sim_trace)
         # obtain samples of the districtwide proportion of each demog. group voting for candidate
         self.sampled_voting_prefs[0] = (
-            self.sim_trace["posterior"]["b_1"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
         )
         # sampled voted prefs across precincts
         self.sampled_voting_prefs[1] = (
-            self.sim_trace["posterior"]["b_2"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
         )
         # sampled voted prefs across precincts
 
-    def compute_credible_int_for_line(self, x_vals=np.linspace(0, 1, 100)):
+    def compute_credible_int_for_line(
+        self, x_vals: NDArray[np.floating] | None = None
+    ) -> tuple[
+        NDArray[np.floating],
+        NDArray[np.floating],
+        NDArray[np.floating],
+        NDArray[np.floating],
+    ]:
         """Computes regression line (mean) and 95% central credible interval for
+
         the mean line at each of the specified x values(x_vals)
 
         Parameters
@@ -305,14 +343,17 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
             that is in the demographic group of interest (values for X in the notation of King '97)
 
         """
+        if x_vals is None:
+            x_vals = np.linspace(0, 1, 100)
+        if self.sampled_voting_prefs[0] is None or self.sampled_voting_prefs[1] is None:
+            raise RuntimeError("Model must be fit before computing credible interval")
+        prefs_0 = self.sampled_voting_prefs[0]
+        prefs_1 = self.sampled_voting_prefs[1]
         lower_bounds = np.empty_like(x_vals)
         upper_bounds = np.empty_like(x_vals)
         means = np.empty_like(x_vals)
         for idx, x in enumerate(x_vals):
-            mean_samples = (
-                self.sampled_voting_prefs[1]
-                + (self.sampled_voting_prefs[0] - self.sampled_voting_prefs[1]) * x
-            )
+            mean_samples = prefs_1 + (prefs_0 - prefs_1) * x
             percentiles = np.percentile(mean_samples, [2.5, 97.5])
             lower_bounds[idx] = percentiles[0]
             upper_bounds[idx] = percentiles[1]
@@ -320,8 +361,13 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
 
         return x_vals, means, lower_bounds, upper_bounds
 
-    def plot(self, scatter_kws=None, line_kws=None):
+    def plot(
+        self,
+        scatter_kws: dict[str, Any] | None = None,
+        line_kws: dict[str, Any] | None = None,
+    ) -> Axes:
         """Plot regression line of votes_fraction vs. group_fraction, with scatter plot and
+
         equal-tailed 95% credible interval for the line"
         Parameters:
         -----------
@@ -340,6 +386,8 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         """
         # TODO: consider renaming these plots for goodman, to disambiguate with TwoByTwoEI.plot()
         # TODO: accept axis argument
+        if self.demographic_group_fraction is None or self.votes_fraction is None:
+            raise RuntimeError("Model must be fit before plotting")
         x_vals, means, lower_bounds, upper_bounds = self.compute_credible_int_for_line()
         _, ax = plt.subplots()
 
@@ -369,8 +417,13 @@ class GoodmansERBayes(TwoByTwoEIBaseBayes):
         return ax
 
 
-def _goodmans_er_bayes_model(group_fraction, votes_fraction, sigma=1):
+def _goodmans_er_bayes_model(
+    group_fraction: NDArray[np.floating],
+    votes_fraction: NDArray[np.floating],
+    sigma: float = 1,
+) -> pm.Model:
     """Ecological regression with uniform priors over voting prefs b_1, b_2,
+
     constraining them to be between zero and 1
 
     Parameters
@@ -402,9 +455,13 @@ def _goodmans_er_bayes_model(group_fraction, votes_fraction, sigma=1):
 
 
 def _goodmans_er_bayes_pop_weighted_model(
-    group_fraction, votes_fraction, precinct_pops, sigma=1
-):
+    group_fraction: NDArray[np.floating],
+    votes_fraction: NDArray[np.floating],
+    precinct_pops: NDArray[np.integer],
+    sigma: float = 1,
+) -> pm.Model:
     """Ecological regression with variance of modeled vote fraction inversely proportional to
+
     precinct population.
 
     Uniform priors over voting prefs b_1, b_2 constrain them to be between 0 and 1
@@ -433,7 +490,7 @@ def _goodmans_er_bayes_pop_weighted_model(
         pm.Normal(
             "votes_count_obs",
             b_2 + (b_1 - b_2) * group_fraction,
-            sigma=eps * pm.math.sqrt(mean_precinct_pop / precinct_pops),
+            sigma=eps * cast(Any, pm).math.sqrt(mean_precinct_pop / precinct_pops),
             observed=votes_fraction,
         )
 

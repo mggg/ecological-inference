@@ -1,11 +1,16 @@
 """Models and fitting for 2x2 methods"""
 
 import warnings
+from collections.abc import Callable
+from typing import Any, cast
 
+import arviz as az
 import numpy as np
 import pymc as pm
 import pytensor
 import pytensor.tensor as at
+from matplotlib.axes import Axes
+from numpy.typing import NDArray
 
 from pyei.plot_utils import (
     plot_boxplots,
@@ -18,8 +23,13 @@ from pyei.plot_utils import (
 )
 
 
-def _truncated_normal_asym(group_fraction, votes_fraction, precinct_pops):  # pylint: disable=too-many-locals
+def _truncated_normal_asym(
+    group_fraction: NDArray[np.floating],
+    votes_fraction: NDArray[np.floating],
+    precinct_pops: NDArray[np.integer],
+) -> pm.Model:  # pylint: disable=too-many-locals
     """A modification of king97's truncated normal that puts some broad priors
+
     over the parameters of the truncated normal dist
 
     Parameters
@@ -109,7 +119,7 @@ def _truncated_normal_asym(group_fraction, votes_fraction, precinct_pops):  # py
         votes_frac_l_bound = group_fraction * upper_b
         votes_frac_u_bound = (1 - group_fraction) + group_fraction * upper_b
 
-        votes_frac_stdev = pm.math.sqrt(votes_frac_var)
+        votes_frac_stdev = cast(Any, pm).math.sqrt(votes_frac_var)
         pm.TruncatedNormal(
             "votes_fraction",
             mu=votes_frac_mean,
@@ -126,9 +136,14 @@ def _truncated_normal_asym(group_fraction, votes_fraction, precinct_pops):  # py
 
 
 def ei_beta_binom_model_modified(
-    group_fraction, votes_fraction, precinct_pops, pareto_scale=8, pareto_shape=2
-):
+    group_fraction: NDArray[np.floating],
+    votes_fraction: NDArray[np.floating],
+    precinct_pops: NDArray[np.integer],
+    pareto_scale: float = 8,
+    pareto_shape: float = 2,
+) -> pm.Model:
     """An modification of the 2 x 2 beta/binomial EI model from King, Rosen, Tanner 1999,
+
     with (scaled) Pareto distributions over each parameters of the beta distribution,
     for better sampling geometry
 
@@ -183,7 +198,12 @@ def ei_beta_binom_model_modified(
     return model
 
 
-def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
+def ei_beta_binom_model(
+    group_fraction: NDArray[np.floating],
+    votes_fraction: NDArray[np.floating],
+    precinct_pops: NDArray[np.integer],
+    lmbda: float,
+) -> pm.Model:
     """2 x 2 beta/binomial EI model from King, Rosen, Tanner 1999
 
     Parameters
@@ -219,7 +239,16 @@ def ei_beta_binom_model(group_fraction, votes_fraction, precinct_pops, lmbda):
     return model
 
 
-def _log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr, prev):
+def _log_binom_sum(
+    lower: int,
+    upper: int,
+    obs_vote: int,
+    n0_curr: int,
+    n1_curr: int,
+    b_1_curr: at.TensorVariable,
+    b_2_curr: at.TensorVariable,
+    prev: at.TensorVariable,
+) -> at.TensorVariable:
     """Helper function for computing log prob of convolution of binomial
 
     Parameters
@@ -245,7 +274,7 @@ def _log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr,
     # votes_within_group_count is y_0i in Wakefield's notation, the count of votes from
     # given group for given candidate within precinct i (unobserved)
     votes_within_group_count = at.arange(lower, upper)
-    component_for_current_precinct = pm.math.logsumexp(
+    component_for_current_precinct = cast(Any, pm).math.logsumexp(
         pm.logp(pm.Binomial.dist(n0_curr, b_1_curr), votes_within_group_count)
         + pm.logp(
             pm.Binomial.dist(n1_curr, b_2_curr), obs_vote - votes_within_group_count
@@ -254,7 +283,15 @@ def _log_binom_sum(lower, upper, obs_vote, n0_curr, n1_curr, b_1_curr, b_2_curr,
     return prev + component_for_current_precinct
 
 
-def _binom_conv_log_p(b_1, b_2, n_0, n_1, upper, lower, obs_votes):
+def _binom_conv_log_p(
+    b_1: at.TensorVariable,
+    b_2: at.TensorVariable,
+    n_0: NDArray[np.integer],
+    n_1: NDArray[np.integer],
+    upper: NDArray[np.integer],
+    lower: NDArray[np.integer],
+    obs_votes: NDArray[np.integer],
+) -> at.TensorVariable:
     """Log probability for convolution of binomials
 
     Parameters
@@ -425,8 +462,9 @@ class TwoByTwoEIBaseBayes:
         to define summary quantities
     """
 
-    def __init__(self, model_name, **additional_model_params):
+    def __init__(self, model_name: str, **additional_model_params) -> None:
         """model_name: str
+
             The name of one of the models ( "king99", "king99_pareto_modification",
              "truncated_normal",
             "goodman_er_bayes")
@@ -437,55 +475,78 @@ class TwoByTwoEIBaseBayes:
         self.model_name = model_name
         self.additional_model_params = additional_model_params
 
-        self.sim_model = None
-        self.sim_trace = None
+        self.sim_model: pm.Model | None = None
+        self.sim_trace: az.InferenceData | None = None
 
-        self.precinct_pops = None
-        self.demographic_group_name = None
-        self.candidate_name = None
+        self.precinct_pops: NDArray[np.integer] | None = None
+        self.demographic_group_name: str | None = None
+        self.candidate_name: str | None = None
 
-        self.demographic_group_fraction = None
-        self.votes_fraction = None
+        self.demographic_group_fraction: NDArray[np.floating] | None = None
+        self.votes_fraction: NDArray[np.floating] | None = None
 
-        self.posterior_mean_voting_prefs = [None, None]
-        self.credible_interval_95_mean_voting_prefs = [None, None]
-        self.sampled_voting_prefs = [None, None]
+        self.posterior_mean_voting_prefs: list[float | None] = [None, None]
+        self.credible_interval_95_mean_voting_prefs: list[
+            NDArray[np.floating] | None
+        ] = [
+            None,
+            None,
+        ]
+        self.sampled_voting_prefs: list[NDArray[np.floating] | None] = [None, None]
 
-    def group_names_for_display(self):
+    def group_names_for_display(self) -> tuple[str, str]:
         """Returns the group names to be displayed in plots"""
+        if self.demographic_group_name is None:
+            raise RuntimeError(
+                "Model must be fit before calling group_names_for_display"
+            )
         return self.demographic_group_name, "non-" + self.demographic_group_name
 
-    def _voting_prefs_array(self):
+    def _voting_prefs_array(self) -> NDArray[np.floating]:
         """Bundles together the samples as num_samples x 2 x 1 array,
+
         for ease of passing to plots
         """
-        num_samples = len(self.sampled_voting_prefs[0])
+        prefs_0, prefs_1 = self.sampled_voting_prefs
+        if prefs_0 is None or prefs_1 is None:
+            raise RuntimeError("Model must be fit before _voting_prefs_array")
+        num_samples = len(prefs_0)
         sampled_voting_prefs = np.empty((num_samples, 2, 1))  # num_samples x 2 x 1
-        sampled_voting_prefs[:, 0, 0] = self.sampled_voting_prefs[0]
-        sampled_voting_prefs[:, 1, 0] = self.sampled_voting_prefs[1]
+        sampled_voting_prefs[:, 0, 0] = prefs_0
+        sampled_voting_prefs[:, 1, 0] = prefs_1
         return sampled_voting_prefs
 
-    def calculate_summary(self):
+    def calculate_summary(self) -> None:
         """Calculate point estimates (post. means) and 95% equal-tailed credible intervals
+
         Assumes sampled_voting_prefs has already been set
         """
+        prefs_0, prefs_1 = self.sampled_voting_prefs
+        if prefs_0 is None or prefs_1 is None:
+            raise RuntimeError(
+                "sampled_voting_prefs must be set before calculate_summary"
+            )
         # compute point estimates
-        self.posterior_mean_voting_prefs[0] = self.sampled_voting_prefs[0].mean()
-        self.posterior_mean_voting_prefs[1] = self.sampled_voting_prefs[1].mean()
+        self.posterior_mean_voting_prefs[0] = prefs_0.mean()
+        self.posterior_mean_voting_prefs[1] = prefs_1.mean()
 
         # compute credible intervals
         percentiles = [2.5, 97.5]
         self.credible_interval_95_mean_voting_prefs[0] = np.percentile(
-            self.sampled_voting_prefs[0], percentiles
+            prefs_0, percentiles
         )
         self.credible_interval_95_mean_voting_prefs[1] = np.percentile(
-            self.sampled_voting_prefs[1], percentiles
+            prefs_1, percentiles
         )
 
     def _calculate_polarization(
-        self, threshold=None, percentile=None, reference_group=0
-    ):
+        self,
+        threshold: float | None = None,
+        percentile: float | None = None,
+        reference_group: int = 0,
+    ) -> tuple[float, float, NDArray[np.floating], list[str]]:
         """Calculate percentile given a threshold, or threshold if given a percentile
+
         exactly one of percentile and threshold must be null
 
         Parameters
@@ -508,7 +569,10 @@ class TwoByTwoEIBaseBayes:
         Exactly one of threshold and percentile must be None
 
         """
-        samples = self.sampled_voting_prefs[0] - self.sampled_voting_prefs[1]
+        prefs_0, prefs_1 = self.sampled_voting_prefs
+        if prefs_0 is None or prefs_1 is None or self.demographic_group_name is None:
+            raise RuntimeError("Model must be fit before _calculate_polarization")
+        samples = prefs_0 - prefs_1
         group = self.demographic_group_name
         group_complement = "non-" + self.demographic_group_name
         if reference_group == 1:
@@ -517,11 +581,9 @@ class TwoByTwoEIBaseBayes:
             group_complement = self.demographic_group_name
 
         if percentile is None and threshold is not None:
-            percentile = (
-                100 * (samples > threshold).sum() / len(self.sampled_voting_prefs[0])
-            )
+            percentile = float(100 * (samples > threshold).sum() / len(prefs_0))
         elif threshold is None and percentile is not None:
-            threshold = np.percentile(samples, 100 - percentile)
+            threshold = float(np.percentile(samples, 100 - percentile))
         else:
             raise ValueError(
                 """Exactly one of threshold or percentile must be None.
@@ -529,12 +591,18 @@ class TwoByTwoEIBaseBayes:
             to calculate the associated threshold.
             """
             )
+        assert threshold is not None and percentile is not None
         return threshold, percentile, samples, [group, group_complement]
 
     def polarization_report(
-        self, threshold=None, percentile=None, reference_group=0, verbose=True
-    ):
+        self,
+        threshold: float | None = None,
+        percentile: float | None = None,
+        reference_group: int = 0,
+        verbose: bool = True,
+    ) -> tuple[float, float] | float:
         """For a given threshold, return the probability that difference between the group's
+
         preferences for the given candidate is more than threshold
         OR
         For a given confidence level, return the associated central credible interval for
@@ -565,6 +633,8 @@ class TwoByTwoEIBaseBayes:
         return_interval = threshold is None
 
         if return_interval:
+            if percentile is None:
+                raise ValueError("Either threshold or percentile must be provided")
             lower_percentile = (100 - percentile) / 2
             upper_percentile = lower_percentile + percentile
             lower_threshold, _, _, groups = self._calculate_polarization(
@@ -592,7 +662,7 @@ class TwoByTwoEIBaseBayes:
                 )
             return percentile
 
-    def summary(self):
+    def summary(self) -> str:
         """Return a summary string"""
         # TODO: probably format this as a table
         return f"""Model: {self.model_name}
@@ -612,24 +682,33 @@ class TwoByTwoEIBaseBayes:
         {self.credible_interval_95_mean_voting_prefs[1]}
         """
 
-    def plot_kde(self, ax=None):
+    def plot_kde(self, ax: Axes | None = None) -> Axes:
         """Kernel density estimate/ histogram plot
+
         Optional arguments:
         ax  :  matplotlib axes object
         """
-        return plot_kdes(
-            self._voting_prefs_array(),
-            self.group_names_for_display(),
-            [self.candidate_name],
-            plot_by="candidate",
-            axes=ax,
+        if self.candidate_name is None:
+            raise RuntimeError("Model must be fit before plotting")
+        return cast(
+            Axes,
+            plot_kdes(
+                self._voting_prefs_array(),
+                self.group_names_for_display(),
+                [self.candidate_name],
+                plot_by="candidate",
+                axes=ax,
+            ),
         )
 
-    def plot_boxplot(self, ax=None):
+    def plot_boxplot(self, ax: Axes | None = None) -> Axes:
         """Boxplot of voting prefs for each group
+
         Optional arguments:
         ax  :  matplotlib axes object
         """
+        if self.candidate_name is None:
+            raise RuntimeError("Model must be fit before plotting")
         return plot_boxplots(
             self._voting_prefs_array(),
             self.group_names_for_display(),
@@ -638,17 +717,18 @@ class TwoByTwoEIBaseBayes:
             axes=ax,
         )
 
-    def plot_intervals(self, ax=None):
+    def plot_intervals(self, ax: Axes | None = None) -> Axes:
         """Plot of credible intervals for each group
+
         Optional arguments:
         ax  :  matplotlib axes object
         """
+        ci_0, ci_1 = self.credible_interval_95_mean_voting_prefs
+        if ci_0 is None or ci_1 is None or self.candidate_name is None:
+            raise RuntimeError("Model must be fit before plotting intervals")
         title = "95% credible intervals"
         return plot_conf_or_credible_interval(
-            [
-                self.credible_interval_95_mean_voting_prefs[0],
-                self.credible_interval_95_mean_voting_prefs[1],
-            ],
+            [ci_0, ci_1],
             self.group_names_for_display(),
             self.candidate_name,
             title,
@@ -657,13 +737,13 @@ class TwoByTwoEIBaseBayes:
 
     def plot_polarization_kde(
         self,
-        threshold=None,
-        percentile=None,
-        reference_group=0,
-        show_threshold=False,
-        ax=None,
-        color="steelblue",
-    ):
+        threshold: float | None = None,
+        percentile: float | None = None,
+        reference_group: int = 0,
+        show_threshold: bool = False,
+        ax: Axes | None = None,
+        color: str = "steelblue",
+    ) -> Axes:
         """Plot kde of differences between voting preferences
 
         Parameters
@@ -693,9 +773,13 @@ class TwoByTwoEIBaseBayes:
         Matplotlib axis object
 
         """
+        if self.candidate_name is None:
+            raise RuntimeError("Model must be fit before plotting")
         return_interval = threshold is None
 
         if return_interval:
+            if percentile is None:
+                raise ValueError("Either threshold or percentile must be provided")
             lower_percentile = (100 - percentile) / 2
             upper_percentile = lower_percentile + percentile
             lower_threshold, _, samples, groups = self._calculate_polarization(
@@ -726,8 +810,9 @@ class TwoByTwoEIBaseBayes:
 class TwoByTwoEI(TwoByTwoEIBaseBayes):
     """Fitting and plotting for king97, king99, and wakefield models"""
 
-    def __init__(self, model_name, **additional_model_params):
+    def __init__(self, model_name: str, **additional_model_params) -> None:
         """model_name: str
+
             Name of model: can be 'king97', 'king99', 'king99_pareto_modification'
             'wakefield_beta' or 'wakefield normal'
         additional_model_params
@@ -736,23 +821,24 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         """
         super().__init__(model_name, **additional_model_params)
 
-        self.precinct_pops = None
-        self.precinct_names = None
+        self.precinct_pops: NDArray[np.integer] | None = None
+        self.precinct_names: NDArray[np.str_] | None = None
 
     def fit(
         self,
-        group_fraction,
-        votes_fraction,
-        precinct_pops,
-        demographic_group_name="given demographic group",
-        candidate_name="given candidate",
-        precinct_names=None,
-        target_accept=0.99,
-        tune=1500,
-        draw_samples=True,
+        group_fraction: NDArray[np.floating],
+        votes_fraction: NDArray[np.floating],
+        precinct_pops: NDArray[np.integer],
+        demographic_group_name: str = "given demographic group",
+        candidate_name: str = "given candidate",
+        precinct_names: list[str] | NDArray[np.str_] | None = None,
+        target_accept: float = 0.99,
+        tune: int = 1500,
+        draw_samples: bool = True,
         **other_sampling_args,
-    ):
+    ) -> None:
         """Fit the specified model using MCMC sampling
+
         Required arguments:
         group_fraction  :   Length-p (p=# of precincts) vector giving demographic
                             information (X) as the fraction of precinct_pop in
@@ -806,20 +892,25 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             if len(set(precinct_names)) != len(precinct_names):
                 warnings.warn(
                     "Precinct names are not unique. This may interfere with "
-                    "passing precinct names to precinct_level_plot()."
+                    "passing precinct names to precinct_level_plot().",
+                    stacklevel=2,
                 )
             self.precinct_names = np.array(precinct_names)
 
+        model_function: Callable[..., pm.Model]
         if self.model_name == "king99":
             model_function = ei_beta_binom_model
-
         elif self.model_name == "king99_pareto_modification":
             model_function = ei_beta_binom_model_modified
-
         elif self.model_name == "truncated_normal":
             model_function = _truncated_normal_asym
+        else:
+            raise ValueError(
+                f"Unsupported model_name: {self.model_name!r}. "
+                "Expected one of: 'king99', 'king99_pareto_modification', 'truncated_normal'."
+            )
 
-        self.sim_model = model_function(  # pylint: disable=possibly-used-before-assignment
+        self.sim_model = model_function(
             group_fraction,
             votes_fraction,
             precinct_pops,
@@ -851,21 +942,22 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             self.calculate_sampled_voting_prefs()
             super().calculate_summary()
 
-    def calculate_sampled_voting_prefs(self):
+    def calculate_sampled_voting_prefs(self) -> None:
         """Sampled voting preferences (combining samples with precinct pops)"""
+        if self.sim_trace is None or self.precinct_pops is None:
+            raise RuntimeError(
+                "Model must be fit before calculate_sampled_voting_prefs"
+            )
+        sim_trace = cast(Any, self.sim_trace)
         # multiply sample proportions by precinct pops to get samples of
         # number of voters the demographic group who voted for the candidate
         # in each precinct
         samples_converted_to_pops_gp1 = (
-            self.sim_trace["posterior"]["b_1"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
             * self.precinct_pops
         )  # shape: num_samples x num_precincts
         samples_converted_to_pops_gp2 = (
-            self.sim_trace["posterior"]["b_2"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
             * self.precinct_pops
         )  # shape: num_samples x num_precincts
 
@@ -885,21 +977,25 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
             samples_of_votes_summed_across_district_gp2 / self.precinct_pops.sum()
         )  # sampled voted prefs across precincts
 
-    def precinct_level_estimates(self):
+    def precinct_level_estimates(
+        self,
+    ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
         """If desired, we can return precinct-level estimates
+
         Returns:
             precinct_posterior_means: num_precincts x 2 (groups) x 2 (candidates)
             precinct_credible_intervals: num_precincts x 2 (groups) x 2 (candidates) x 2 (endpoints)
         """
+        if self.sim_trace is None or self.precinct_pops is None:
+            raise RuntimeError("Model must be fit before precinct_level_estimates")
+        sim_trace = cast(Any, self.sim_trace)
         # TODO: make this output match r_by_c version in shape, num_precincts x 2 x 2
         percentiles = [2.5, 97.5]
         num_precincts = len(self.precinct_pops)
 
         # The stracking on the next line convers to a num_samples x num_precincts array
         precinct_level_samples_gp1 = (
-            self.sim_trace["posterior"]["b_1"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
         )
         precinct_posterior_means_gp1 = precinct_level_samples_gp1.mean(axis=0)
         precinct_credible_intervals_gp1 = np.percentile(
@@ -908,9 +1004,7 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         # The stracking on the next line convers to a num_samples x num_precincts array
         precinct_level_samples_gp2 = (
-            self.sim_trace["posterior"]["b_2"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
         )
         precinct_posterior_means_gp2 = precinct_level_samples_gp2.mean(axis=0)
         precinct_credible_intervals_gp2 = np.percentile(
@@ -931,9 +1025,11 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         return (precinct_posterior_means, precinct_credible_intervals)
 
-    def plot_intervals_by_precinct(self):
+    def plot_intervals_by_precinct(self) -> tuple[Axes, Axes]:
         """Plot of point estimates and credible intervals for each precinct"""
         # TODO: Fix use of axes
+        if self.candidate_name is None:
+            raise RuntimeError("Model must be fit before plotting")
 
         precinct_posterior_means, precinct_credible_intervals = (
             self.precinct_level_estimates()
@@ -960,13 +1056,18 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
         return plot_gp1, plot_gp2
 
-    def plot(self, axes=None):
+    def plot(
+        self, axes: tuple[Axes, Axes] | list[Axes] | None = None
+    ) -> tuple[Axes, Axes]:
         """kde, boxplot, and credible intervals
+
         Optional arguments:
         axes : list or tuple of matplotlib axis objects or None
             Default=None
             Length 2: (ax_box, ax_hist)
         """
+        if self.candidate_name is None:
+            raise RuntimeError("Model must be fit before plotting")
         return plot_summary(
             self._voting_prefs_array(),
             self.group_names_for_display()[0],
@@ -977,13 +1078,14 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
 
     def precinct_level_plot(
         self,
-        ax=None,
-        alpha=1,
-        show_all_precincts=False,
-        precinct_names=None,
-        plot_as_histograms=False,
-    ):
+        ax: Axes | None = None,
+        alpha: float = 1,
+        show_all_precincts: bool = False,
+        precinct_names: list[str] | NDArray[np.str_] | None = None,
+        plot_as_histograms: bool = False,
+    ) -> Axes:
         """Ridgeplots for precincts
+
         Optional arguments:
         ax                  :  matplotlib axes object
         show_all_precincts  :  If True, then it will show all ridge plots
@@ -997,18 +1099,19 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         plot_as_histograms : bool, optional. Default is false. If true, plot
                                 with histograms instead of kdes
         """
+        if self.sim_trace is None or self.candidate_name is None:
+            raise RuntimeError("Model must be fit before plotting")
+        sim_trace = cast(Any, self.sim_trace)
         voting_prefs_group1 = (
-            self.sim_trace["posterior"]["b_1"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            sim_trace["posterior"]["b_1"].stack(all_draws=["chain", "draw"]).values.T
         )
         voting_prefs_group2 = (
-            self.sim_trace["posterior"]["b_2"]
-            .stack(all_draws=["chain", "draw"])
-            .values.T
+            sim_trace["posterior"]["b_2"].stack(all_draws=["chain", "draw"]).values.T
         )
         group_names = self.group_names_for_display()
         if precinct_names is not None:
+            if self.precinct_names is None:
+                raise RuntimeError("precinct_names not set on this model")
             precinct_idxs = np.arange(len(self.precinct_names))
             voting_prefs_group1 = voting_prefs_group1[:, precinct_idxs]
             voting_prefs_group2 = voting_prefs_group2[:, precinct_idxs]
