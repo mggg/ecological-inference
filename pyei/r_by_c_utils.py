@@ -69,16 +69,3 @@ def check_dimensions_of_input(
         In particular, it is required that len(precinct_pops) = group_fractions.shape[1]
         """
         )
-    # check shapes of group_fractions, votes_fractions, and precinct_pops to make sure
-    # number of precincts match (the last dimension of each)
-    if not (
-        len(votes_fractions[0]) == len(group_fractions[0])
-        and len(group_fractions[0]) == len(precinct_pops)
-    ):
-        raise ValueError(
-            """Mismatching num_precincts in input shapes. Inputs should have shape: \n
-        votes_fraction shape: r x num_precincts \n
-        group_fractions shape: c x num_precincts \n
-        precinct_pops length: num_precincts
-        """
-        )
