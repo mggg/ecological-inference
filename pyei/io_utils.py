@@ -18,11 +18,6 @@ def to_netcdf(ei_object: TwoByTwoEIBaseBayes | RowByColumnEI, filepath: str) -> 
     filepath : str
     The path to the file where the data will be saved
     """
-    # Check if model has been fit yet
-    # Add properties as attrs to sim_trace
-    # if not (isinstance(ei_object, TwoByTwoEIBaseBayes) or isinstance(ei_object, RowByColumnEI)):
-    #     raise ValueError("ei_object must be of class TwoByTwoEIBaseBayes or RowByColumnEI")
-
     if ei_object.sim_trace is None:
         raise ValueError("ei_object must be fit before saving")
 
@@ -57,8 +52,12 @@ def to_netcdf(ei_object: TwoByTwoEIBaseBayes | RowByColumnEI, filepath: str) -> 
         sim_trace.posterior.attrs["is_two_by_two"] = "false"
 
     for attr in attr_list:
-        if getattr(ei_object, attr) is not None:
-            sim_trace.posterior.attrs[attr] = getattr(ei_object, attr)
+        # ``getattr`` with a default lets subclasses (e.g. ``GoodmansERBayes``)
+        # that don't set every attr round-trip cleanly; missing attrs are
+        # treated the same as explicit None and skipped.
+        value = getattr(ei_object, attr, None)
+        if value is not None:
+            sim_trace.posterior.attrs[attr] = value
 
     # Use az.InferenceData's to_netcdf
     sim_trace.to_netcdf(filepath)
@@ -97,6 +96,19 @@ def from_netcdf(filepath: str) -> TwoByTwoEI | RowByColumnEI:
     ei_object: TwoByTwoEI | RowByColumnEI
     is_two_by_two = attrs_dict["is_two_by_two"] == "true"
     if is_two_by_two:
+        # ``from_netcdf`` always reconstructs ``TwoByTwoEIBaseBayes`` subclasses
+        # as a plain ``TwoByTwoEI``. That works for the king99 / truncated-normal
+        # variants whose posterior layout matches ``TwoByTwoEI.calculate_sampled_voting_prefs``,
+        # but ``GoodmansERBayes`` has district-level (not per-precinct) b_1/b_2
+        # and overrides ``calculate_sampled_voting_prefs``. Recomputing it with
+        # the base implementation would fail with a confusing shape-broadcast
+        # error. Surface a clear message at load time instead.
+        if attrs_dict["model_name"] == "goodman_er_bayes":
+            raise NotImplementedError(
+                "Round-tripping GoodmansERBayes through netCDF is not supported: "
+                "from_netcdf would reconstruct it as TwoByTwoEI and the "
+                "calculate_sampled_voting_prefs implementations are incompatible."
+            )
         ei_object = TwoByTwoEI(attrs_dict["model_name"])
     else:
         ei_object = RowByColumnEI(attrs_dict["model_name"])
