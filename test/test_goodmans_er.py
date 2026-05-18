@@ -127,6 +127,33 @@ def test_plot(group_and_vote_fractions):
     assert (0.0, 1.0) == ax.get_ylim()
 
 
+def test_weighted_plot_renders_with_ci_band(group_and_vote_fractions_with_pop):
+    model = GoodmansER(is_weighted_regression=True)
+    group_share, vote_share, pops = group_and_vote_fractions_with_pop
+    model.fit(group_share, vote_share, pops)
+    assert model.intercept_ is not None
+    assert model.slope_ is not None
+    _, ax = model.plot()
+
+    # The first line drawn is the regression line at endpoints x=0 and x=1.
+    xy: NDArray[np.float64] = np.array(ax.lines[0].get_xydata(), dtype=np.float64)
+    x_plot, y_plot = xy.T
+    np.testing.assert_allclose(x_plot, [0.0, 1.0], atol=1e-10)
+    np.testing.assert_allclose(
+        y_plot,
+        [model.intercept_, model.intercept_ + model.slope_],
+        atol=1e-10,
+    )
+
+    assert (0.0, 1.0) == ax.get_xlim()
+    assert (0.0, 1.0) == ax.get_ylim()
+
+    # The bootstrap CI is drawn via ax.fill_between, which registers as a
+    # PolyCollection on the axes and distinguishes this from the unweighted
+    # plot path (which uses sns.regplot's own CI shading).
+    assert len(ax.collections) >= 1
+
+
 @pytest.mark.slow
 def test_goodman_er_bayes_posterior_means(goodmans_er_bayes_examples):
     goodmans_er_bayes_weighted = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"]

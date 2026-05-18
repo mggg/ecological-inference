@@ -154,10 +154,6 @@ def test_precinct_level_estimates_intervals_bracket_means(example_two_by_two_ei)
 
 @pytest.mark.slow
 def test_precinct_level_estimates_complement_intervals_mirror(example_two_by_two_ei):
-    """Complement (column 1) interval is the reflection of the column-0
-    interval around 0.5, with endpoints preserved as (lower, upper):
-    lower_complement = 1 - upper_original, upper_complement = 1 - lower_original.
-    """
     _, intervals = example_two_by_two_ei.precinct_level_estimates()
     for group_idx in (0, 1):
         np.testing.assert_allclose(
@@ -194,18 +190,18 @@ def _synthetic_two_by_two_truth(b_1_true=0.75, b_2_true=0.20, num_precincts=40):
     ],
 )
 def test_two_by_two_fit_recovers_known_truth(model_name, extra_params):
-    """End-to-end posterior recovery on synthetic ground truth for the two
-    king99 variants. Both run under numpyro and converge quickly enough
-    that a 400/400 chain recovers truth within 0.05.
+    """End-to-end posterior recovery on synthetic ground truth for the two king99 variants.
 
-    Guards the wiring between model definition, sampler, and the
-    posterior-aggregation step in ``calculate_sampled_voting_prefs``.
-    A miswired prior would surface as a recovery failure.
+    Both run under numpyro and converge quickly enough that a 400/400 chain recovers truth within
+    0.05.
 
-    ``truncated_normal`` is covered structurally below — its posterior
-    geometry is known to be hard (the model doesn't use numpyro because
-    ``jax.scipy.special.erfcx`` is missing), and pinning a tight recovery
-    tolerance there would be a flake source rather than a regression signal.
+    Guards the wiring between model definition, sampler, and the posterior-aggregation step in
+    ``calculate_sampled_voting_prefs``. A miswired prior would surface as a recovery failure.
+
+    ``truncated_normal`` is covered structurally below because its posterior geometry is known to be
+    hard (the model doesn't use numpyro because ``jax.scipy.special.erfcx`` is missing), and
+    pinning a tight recovery tolerance there would be a flake source rather than a regression
+    signal.
     """
     group_fraction, votes_fraction, precinct_pops, b_1_true, b_2_true = (
         _synthetic_two_by_two_truth()
@@ -223,6 +219,8 @@ def test_two_by_two_fit_recovers_known_truth(model_name, extra_params):
         random_seed=0,
     )
 
+    assert ei.sampled_voting_prefs[0] is not None
+    assert ei.sampled_voting_prefs[1] is not None
     posterior_b1 = ei.sampled_voting_prefs[0].mean()
     posterior_b2 = ei.sampled_voting_prefs[1].mean()
     np.testing.assert_allclose(posterior_b1, b_1_true, atol=0.05)
@@ -230,20 +228,54 @@ def test_two_by_two_fit_recovers_known_truth(model_name, extra_params):
 
 
 @pytest.mark.slow
+def test_truncated_normal_no_swap_branch_with_small_group_fractions():
+    """Exercise the ``upper_level_b_name = 'b_1'`` (no-swap) branch of ``_truncated_normal_asym``.
+
+    The model picks whichever of b_1 / b_2 has wider per-precinct support bounds, on average, as
+    the primary parameter. With group_fraction concentrated near zero, b_1's support is wider
+    (it has 1/X scaling while b_2 has 1/(1-X)), which flips the default swap-branch behavior
+    the other model_name tests exercise.
+
+    Coverage smoke test only.
+    """
+    rng = np.random.default_rng(1)
+    num_precincts = 30
+    precinct_pops = np.full(num_precincts, 600, dtype=np.int64)
+    group_fraction = rng.uniform(0.05, 0.30, size=num_precincts)
+    b_1_true = 0.4
+    b_2_true = 0.6
+    p = b_1_true * group_fraction + b_2_true * (1 - group_fraction)
+    votes_fraction = rng.binomial(precinct_pops, p) / precinct_pops
+
+    ei = two_by_two.TwoByTwoEI(model_name="truncated_normal")
+    ei.fit(
+        group_fraction,
+        votes_fraction,
+        precinct_pops,
+        demographic_group_name="synth_group",
+        candidate_name="synth_cand",
+        draws=200,
+        tune=200,
+        random_seed=0,
+        cores=1,  # avoid fork-after-JAX (see truncated_normal test)
+    )
+    # Sanity: fit completed and yielded a 2-element prefs pair.
+    assert ei.sampled_voting_prefs[0] is not None
+    assert ei.sampled_voting_prefs[1] is not None
+
+
+@pytest.mark.slow
 def test_two_by_two_fit_truncated_normal_produces_valid_output():
     """Structural check that the ``truncated_normal`` model_name fits cleanly
-    and yields sampled_voting_prefs that are well-formed probabilities.
 
-    Recovery is intentionally not asserted here — see the docstring on
-    ``test_two_by_two_fit_recovers_known_truth``. This test catches a
-    miswired prior that would produce NaNs, out-of-bounds samples, or
-    wrong-shape output.
+    Recovery is intentionally not asserted here (see the docstring on
+    ``test_two_by_two_fit_recovers_known_truth``). This test catches a miswired prior that would
+    produce NaNs, out-of-bounds samples, or wrong-shape output.
 
-    ``cores=1`` is required because the numpyro-backed king99 tests above
-    initialise JAX (which starts internal threads), and PyMC's default
-    multi-chain sampler would then call ``os.fork()`` — fork-after-threading
-    is unsafe under JAX and can deadlock. Single-process sampling avoids
-    the fork entirely.
+    ``cores=1`` is required because the numpyro-backed king99 tests above initialise JAX
+    (which starts internal threads), and PyMC's default multi-chain sampler would then call
+    ``os.fork()``. Fork-after-threading is unsafe under JAX and can deadlock, so we use
+    single-process sampling to avoid the fork entirely.
     """
     group_fraction, votes_fraction, precinct_pops, _, _ = _synthetic_two_by_two_truth()
     ei = two_by_two.TwoByTwoEI(model_name="truncated_normal")
