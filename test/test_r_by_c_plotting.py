@@ -81,7 +81,7 @@ def test_computation_of_districtwide_samples(two_r_by_c_ei_runs):
         ei_ex.demographic_group_fractions,
         ei_ex.precinct_pops,
     )
-    np.all(np.isclose(test_districtwide_prefs, ei_ex.sampled_voting_prefs))
+    assert np.allclose(test_districtwide_prefs, ei_ex.sampled_voting_prefs)
 
 
 def test_candidate_of_choice_report(two_r_by_c_ei_runs):
@@ -160,6 +160,7 @@ def test_ei_r_by_c_intervals_by_precinct(two_r_by_c_ei_runs):
     )
     with pytest.raises(ValueError):
         example_r_by_c_ei.plot_intervals_by_precinct("e_asian", "Kolstaad")
+    with pytest.raises(ValueError):
         example_r_by_c_ei.plot_intervals_by_precinct("ibnd", "Hardy")
 
 

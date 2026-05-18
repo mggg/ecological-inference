@@ -161,11 +161,11 @@ def test_goodman_er_bayes_bounds(goodmans_er_bayes_examples):
         upper_bounds,
     ) = goodmans_er_bayes_example.compute_credible_int_for_line()
 
-    assert all(upper_bounds) <= 1.0
-    assert all(upper_bounds) >= 0
-
-    assert all(lower_bounds) <= 1.0
-    assert all(lower_bounds) >= 0
+    assert np.all(upper_bounds <= 1.0)
+    assert np.all(upper_bounds >= 0)
+    assert np.all(lower_bounds <= 1.0)
+    assert np.all(lower_bounds >= 0)
+    assert np.all(lower_bounds <= upper_bounds)
 
 
 @pytest.mark.slow
