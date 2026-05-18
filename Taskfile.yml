@@ -7,6 +7,10 @@ vars:
   VENV_DIR: ".venv"
   PKG: "pyei"
   TEST_PATHS: "test"
+  # Coverage floor; ratchet up as the suite improves. Set ~2 below the
+  # last measured value so honest refactors don't break CI but real
+  # regressions do.
+  COV_MIN: "74"
 
 tasks:
   default:
@@ -174,17 +178,17 @@ tasks:
           PYTEST_ARGS: '{{.CLI_ARGS | default .TEST_PATHS}} -m "not slow"'
 
   coverage:
-    desc: Run tests with coverage reporting
+    desc: Run tests with coverage reporting (enforces COV_MIN floor)
     silent: true
     cmds:
       - task: pytest
         vars:
           PYTEST_ARGS: >-
             {{.CLI_ARGS | default .TEST_PATHS}} --cov={{.PKG}}
-            --cov-report=term-missing
+            --cov-report=term-missing --cov-fail-under={{.COV_MIN}}
 
   coverage-xml:
-    desc: Run tests with coverage reporting and an XML report
+    desc: Run tests with coverage reporting, XML output, and floor enforcement
     silent: true
     cmds:
       - task: pytest
@@ -192,6 +196,7 @@ tasks:
           PYTEST_ARGS: >-
             {{.CLI_ARGS | default .TEST_PATHS}} --cov={{.PKG}}
             --cov-report=term-missing --cov-report=xml
+            --cov-fail-under={{.COV_MIN}}
 
   precommit:
     desc: Install and run pre-commit hooks

@@ -100,9 +100,35 @@ markers = [
   "mcmc: tests that exercise PyMC/numpyro samplers",
 ]
 filterwarnings = [
-  "default",
+  # Promote unexpected warnings to test failures so dependency regressions
+  # and new pyei-emitted warnings surface immediately. Each `ignore` below
+  # documents a known warning source.
+  "error",
+
+  # --- Upstream library warnings we accept ---
+  # PyMC emits DeprecationWarnings from internal use of legacy APIs during
+  # the 5.x series; not actionable from this repo.
   "ignore::DeprecationWarning:pymc.*",
+  # Arviz emits FutureWarnings while it transitions to xarray-einstats APIs.
   "ignore::FutureWarning:arviz.*",
+  # Numba's @jit decorator warns about nopython=True being implicit on @njit —
+  # cosmetic, fires on import of distribution_utils.
+  "ignore:nopython is set for njit and is ignored:RuntimeWarning:numba.*",
+  # JAX warns about non-reusable donated buffers under numpyro's NUTS — an
+  # internal optimisation hint, not a correctness signal.
+  "ignore:Some donated buffers were not usable:UserWarning:jax.*",
+  # Seaborn 0.13 is migrating boxplot from `vert` to `orientation`.
+  "ignore::PendingDeprecationWarning:seaborn.*",
+  # Binary-compat warning emitted during arviz/scipy/netCDF4 module import.
+  "ignore:numpy.ndarray size changed:RuntimeWarning",
+
+  # --- pyei-emitted warnings: technical debt, not regressions ---
+  # plot_utils passes a default 8-colour palette regardless of group count;
+  # should be sliced to len(groups) — tracked for a follow-up.
+  "ignore:The palette list has more values:UserWarning:pyei.*",
+  # plot_utils calls ax.set_yticklabels() without first set_yticks() — matplotlib
+  # 3.7+ flags this; benign for the current rendering but should be cleaned up.
+  "ignore:set_ticklabels.. should only be used:UserWarning:pyei.*",
 ]
 
 [tool.coverage.run]
@@ -139,6 +165,7 @@ dev = [
     # Testing framework
     "pytest==8.4.2",
     "pytest-cov==6.3.0",
+    "hypothesis>=6.103",
     # Development tools
     "pre-commit==4.3.0",
     # Jupyter notebook support
