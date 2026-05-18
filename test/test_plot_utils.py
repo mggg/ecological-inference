@@ -47,7 +47,7 @@ def test_ei_plot_kde_has_density_curves(example_two_by_two_ei):
 
 
 def test_ei_plot_boxplot_has_two_groups(example_two_by_two_ei):
-    """boxplot shows one box per group (demographic group + complement)."""
+    """Boxplot shows one box per group (demographic group + complement)."""
     ax = example_two_by_two_ei.plot_boxplot()
     # Seaborn boxplot draws box artists; count the labels on the categorical axis.
     tick_labels = [t.get_text() for t in ax.get_yticklabels() + ax.get_xticklabels()]

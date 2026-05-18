@@ -63,7 +63,7 @@ def test_psi_1_matches_central_hypergeometric(n1, n2, m1, py_func):
 
 @pytest.mark.parametrize("py_func", [False, True], ids=["jit", "py_func"])
 def test_psi_greater_than_one_shifts_mass_up(py_func):
-    """psi > 1 should push the mean above the hypergeometric mean."""
+    """Psi > 1 should push the mean above the hypergeometric mean."""
     n1, n2, m1 = 20, 20, 15
     n_samples = 3000
     samples_eq = _sample_n(n1, n2, m1, 1.0, n_samples, py_func=py_func).mean()
@@ -73,7 +73,7 @@ def test_psi_greater_than_one_shifts_mass_up(py_func):
 
 @pytest.mark.parametrize("py_func", [False, True], ids=["jit", "py_func"])
 def test_psi_less_than_one_shifts_mass_down(py_func):
-    """psi < 1 should push the mean below the hypergeometric mean."""
+    """Psi < 1 should push the mean below the hypergeometric mean."""
     n1, n2, m1 = 20, 20, 15
     n_samples = 3000
     samples_eq = _sample_n(n1, n2, m1, 1.0, n_samples, py_func=py_func).mean()
@@ -82,9 +82,9 @@ def test_psi_less_than_one_shifts_mass_down(py_func):
 
 
 def test_jit_and_py_func_distributions_agree():
-    """The numba-jitted and pure-Python paths sample from the same
-    distribution; numba uses its own RNG state, so we compare empirical
-    moments rather than per-sample equality."""
+    # The numba-jitted and pure-Python paths sample from the same
+    # distribution; numba uses its own RNG state, so we compare empirical
+    # moments rather than per-sample equality.
     n_samples = 5000
     samples_jit = _sample_n(10, 10, 7, 2.0, n_samples, py_func=False)
     samples_py = _sample_n(10, 10, 7, 2.0, n_samples, py_func=True)
@@ -103,8 +103,6 @@ def test_mode_at_lower_bound_branch():
 
 
 def test_mode_at_upper_bound_branch():
-    """Exercise the mode == uu fast path: heavy psi with m1 == n1 pins
-    most mass to the upper bound n1."""
     samples = _sample_n(5, 10, 5, 100.0, 500)
     # With psi=100 and m1==n1, the upper-bound mode dominates but doesn't
     # saturate — empirically ~65–75%. Threshold at 0.5 to test the direction

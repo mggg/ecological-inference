@@ -40,7 +40,7 @@ PROPERTY_SETTINGS = settings(
     c=hst.integers(min_value=2, max_value=5),
 )
 def test_theta_omega_roundtrip(num_precincts, r, c):
-    """omega → theta → omega must be the identity (modulo float epsilon).
+    """Omega → theta → omega must be the identity (modulo float epsilon).
 
     theta_to_omega(theta) = log(theta[..., :-1] / theta[..., -1]) and
     omega_to_theta is its inverse for any positive theta with rows summing
@@ -62,8 +62,6 @@ def test_theta_omega_roundtrip(num_precincts, r, c):
     c=hst.integers(min_value=2, max_value=5),
 )
 def test_theta_to_omega_shape_drops_last_candidate(num_precincts, r, c):
-    """omega has c-1 entries per (precinct, group); the last candidate is
-    the reference category and is implicit."""
     theta = st.dirichlet.rvs(np.ones(c), size=(num_precincts, r))
     omega = _theta_to_omega(theta)
     assert omega.shape == (num_precincts, r, c - 1)
@@ -82,9 +80,6 @@ def test_theta_to_omega_shape_drops_last_candidate(num_precincts, r, c):
     seed=hst.integers(min_value=0, max_value=2**31 - 1),
 )
 def test_initial_internal_count_preserves_both_marginals(num_precincts, r, c, seed):
-    """Initialized internal counts must satisfy both the group-sum and
-    candidate-sum marginal constraints — this is the precondition the
-    Gibbs sampler relies on for correctness."""
     rng = np.random.default_rng(seed)
     precinct_pops = rng.integers(10, 100, size=num_precincts)
 
@@ -127,8 +122,9 @@ def test_initial_internal_count_preserves_both_marginals(num_precincts, r, c, se
     ),
 )
 def test_nchg_sample_in_support(n1, n2, psi):
-    """The sample must lie in [max(0, m1 - n2), min(n1, m1)] for any m1
-    achievable by Binom(n1+n2, p) — we cover the interior range here."""
+    # The sample must lie in [max(0, m1 - n2), min(n1, m1)] for any m1
+    # achievable by Binom(n1+n2, p) — we cover the interior range here.
+
     # Pick m1 mid-range so both bounds are non-trivial.
     m1 = max(1, min(n1, n2))
     samp = non_central_hypergeometric_sample.py_func(n1, n2, m1, psi)

@@ -43,8 +43,10 @@ def test_theta_to_omega():
 
 @pytest.fixture(scope="module")
 def gq_sample_run(example_r_by_c_data_asym):
-    """One short Gibbs chain on the asymmetric fixture, shared across the
-    structural / invariant tests below so we pay the sampling cost once."""
+    """One short Gibbs chain on the asymmetric fixture.
+
+    Shared across the structural / invariant tests below so we pay the sampling cost once.
+    """
     r = example_r_by_c_data_asym["group_counts"].shape[1]
     c = example_r_by_c_data_asym["vote_counts"].shape[1]
     num_samples = 50
@@ -168,9 +170,6 @@ def test_greiner_quinn_gibbs_sample_rejects_burnin_ge_num_samples(
 
 @pytest.mark.slow
 def test_pyei_greiner_quinn_gibbs_produces_valid_voting_prefs(example_r_by_c_data_asym):
-    """The greiner-quinn model_name path must produce a usable RowByColumnEI:
-    sampled_voting_prefs has the right shape, sums to 1 per group, and lies in [0, 1].
-    """
     ei = RowByColumnEI(model_name="greiner-quinn")
     ei.fit(
         example_r_by_c_data_asym["group_fractions"],
@@ -180,6 +179,9 @@ def test_pyei_greiner_quinn_gibbs_produces_valid_voting_prefs(example_r_by_c_dat
         burnin=2,
     )
     r, c = ei.num_groups_and_num_candidates
+
+    assert ei.sampled_voting_prefs is not None
+
     assert ei.sampled_voting_prefs.shape[1:] == (r, c)
     assert ei.sampled_voting_prefs.min() >= 0.0
     assert ei.sampled_voting_prefs.max() <= 1.0

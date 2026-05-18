@@ -135,10 +135,6 @@ def test_summary_with_non_candidate_names_uses_turnout_adjusted(two_r_by_c_ei_ru
 
 
 def test_summary_with_unknown_non_candidate_name_raises(two_r_by_c_ei_runs):
-    """The ``summary()`` wrapper must surface the unknown-name ValueError
-    from ``_calculate_turnout_adjusted_samples`` rather than silently
-    rendering a partial summary or crashing on a downstream attribute.
-    """
     ei = two_r_by_c_ei_runs[0]
     with pytest.raises(
         ValueError, match="non_candidate_names must be in candidate_names"
