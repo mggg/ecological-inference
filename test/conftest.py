@@ -3,6 +3,7 @@
 import random
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -25,6 +26,18 @@ def _seed_rngs():
     """
     random.seed(0)
     np.random.seed(0)
+
+
+@pytest.fixture(autouse=True)
+def _close_matplotlib_figs():
+    """Close any matplotlib figures after each test.
+
+    Without this, the suite leaks figures across the many plot tests and
+    triggers matplotlib's "More than 20 figures have been opened" warning,
+    which would become a failure once we promote warnings to errors.
+    """
+    yield
+    plt.close("all")
 
 
 @pytest.fixture(scope="session")

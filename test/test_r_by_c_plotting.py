@@ -5,22 +5,10 @@ import pytest
 
 from pyei.plot_utils import plot_precinct_scatterplot
 
-# from pyei.io_utils import to_netcdf, from_netcdf
-
 
 def test_ei_r_by_c_summary(two_r_by_c_ei_runs):
     example_r_by_c_ei = two_r_by_c_ei_runs[0]
     assert isinstance(example_r_by_c_ei.summary(), str)
-
-
-# @TODO: this test fails on github but not locally - fix
-# def test_io_utils(two_r_by_c_ei_runs):
-#     example_r_by_c_ei = two_r_by_c_ei_runs[0]
-#     model_name_orig = example_r_by_c_ei.model_name
-#     to_netcdf(example_r_by_c_ei, "example.nc")
-#     reloaded_ei = from_netcdf("example.nc")
-#     assert isinstance(reloaded_ei.summary(), str)  # check that summary string is there
-#     assert model_name_orig == reloaded_ei.model_name  # check that model data came with
 
 
 def test_ei_calculate_turnout_adjusted_samples(two_r_by_c_ei_runs):
