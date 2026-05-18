@@ -7,6 +7,10 @@ from pyei.io_utils import from_netcdf, to_netcdf
 from pyei.r_by_c import RowByColumnEI
 from pyei.two_by_two import TwoByTwoEI
 
+# Every roundtrip needs a fitted EI; the unfit-error test is the lone
+# fast case and we accept the mislabel rather than complicate the markup.
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture(scope="session")
 def r_by_c_roundtrip_file(two_r_by_c_ei_runs, tmp_path_factory):

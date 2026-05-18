@@ -11,6 +11,11 @@ import pytest
 
 from pyei.plot_utils import tomography_plot
 
+# Most tests in this module use the fitted example_two_by_two_ei fixture.
+# tomography_plot is fast (no fit) but flagging the whole module keeps the
+# marker scheme simple — the cost is one extra fast test in the slow lane.
+pytestmark = pytest.mark.slow
+
 
 def test_tomography_plot_draws_one_line_per_precinct(example_two_by_two_data):
     """The tomography plot draws a constraint line per precinct."""

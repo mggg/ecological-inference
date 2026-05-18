@@ -2,6 +2,7 @@
 
 # pylint: disable=duplicate-code
 import numpy as np
+import pytest
 import scipy.stats as st
 
 from pyei.distribution_utils import non_central_hypergeometric_sample
@@ -41,6 +42,7 @@ def test_theta_to_omega():
     )
 
 
+@pytest.mark.slow
 def test_greiner_quinn_gibbs_sample(example_r_by_c_data_asym):
     r = example_r_by_c_data_asym["group_counts"].shape[1]
     c = example_r_by_c_data_asym["vote_counts"].shape[1]
@@ -66,6 +68,7 @@ def test_greiner_quinn_gibbs_sample(example_r_by_c_data_asym):
     )
 
 
+@pytest.mark.slow
 def test_pyei_greiner_quinn_gibbs(example_r_by_c_data_asym):
     ei_greiner_quinn = RowByColumnEI(model_name="greiner-quinn")
     ei_greiner_quinn.fit(

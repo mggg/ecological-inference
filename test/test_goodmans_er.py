@@ -130,6 +130,7 @@ def test_plot(group_and_vote_fractions):
     assert (0.0, 1.0) == ax.get_ylim()
 
 
+@pytest.mark.slow
 def test_goodman_er_bayes_posterior_means(goodmans_er_bayes_examples):
     goodmans_er_bayes_weighted = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"]
     np.testing.assert_almost_equal(
@@ -150,6 +151,7 @@ def test_goodman_er_bayes_posterior_means(goodmans_er_bayes_examples):
     )
 
 
+@pytest.mark.slow
 def test_goodman_er_bayes_bounds(goodmans_er_bayes_examples):
     goodmans_er_bayes_example = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"]
     (
@@ -166,6 +168,7 @@ def test_goodman_er_bayes_bounds(goodmans_er_bayes_examples):
     assert all(lower_bounds) >= 0
 
 
+@pytest.mark.slow
 def test_goodman_er_bayes_plot(goodmans_er_bayes_examples):
     ax = goodmans_er_bayes_examples["bayes_goodman_ei_weighted"].plot()
     assert ax is not None

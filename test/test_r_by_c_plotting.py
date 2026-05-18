@@ -5,6 +5,9 @@ import pytest
 
 from pyei.plot_utils import plot_precinct_scatterplot
 
+# All tests in this module depend on the fitted two_r_by_c_ei_runs fixture.
+pytestmark = pytest.mark.slow
+
 
 def test_ei_r_by_c_summary(two_r_by_c_ei_runs):
     example_r_by_c_ei = two_r_by_c_ei_runs[0]

@@ -9,6 +9,11 @@ import pytest
 
 from pyei.r_by_c import RowByColumnEI
 
+# All tests in this module exercise a fitted RowByColumnEI (PyMC/numpyro
+# NUTS sampling). The unsupported-model-name test is the only exception
+# and is marked individually as fast below.
+pytestmark = pytest.mark.slow
+
 # ---------------------------------------------------------------------------
 # Shape & marginal invariants
 # ---------------------------------------------------------------------------

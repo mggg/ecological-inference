@@ -120,6 +120,7 @@ def test_binom_conv_log_p():
     np.testing.assert_allclose(theano_result, prev)
 
 
+@pytest.mark.slow
 def test_polarization_report(example_two_by_two_ei):
     prob_20 = example_two_by_two_ei.polarization_report(threshold=0.2)
     prob_40 = example_two_by_two_ei.polarization_report(threshold=0.4)
