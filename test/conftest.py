@@ -1,6 +1,7 @@
 """Shared fixtures for the pyei test suite."""
 
 import random
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -8,6 +9,10 @@ import pytest
 from pyei import data
 from pyei.r_by_c import RowByColumnEI
 from pyei.two_by_two import TwoByTwoEI
+
+ASYM_COUNTS_PATH = (
+    Path(__file__).resolve().parents[1] / "sample_data" / "santa_clara_asym_counts.npz"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -54,6 +59,7 @@ def example_two_by_two_ei(example_two_by_two_data):
         precinct_names=example_two_by_two_data["precinct_names"],
         draws=100,
         tune=100,
+        random_seed=0,
     )
     return ei_ex
 
@@ -82,39 +88,18 @@ def example_r_by_c_data():
 def example_r_by_c_data_asym():
     """Trimmed Santa Clara dataset with r != c (2 groups, 3 candidates).
 
-    Group and vote count marginals are adjusted to agree with precinct
-    populations. We seed inside the fixture because the function-scoped
-    autouse seeder fires after session fixtures are built.
+    Counts are loaded from a frozen snapshot at
+    ``sample_data/santa_clara_asym_counts.npz`` (generated once with
+    ``random.seed(0)``) so the fixture is byte-identical across runs and
+    Python versions.
     """
-    random.seed(0)
-    sc_data = data.Datasets.Santa_Clara.to_dataframe().iloc[:10, :]
-    precinct_pops = np.array(sc_data["total2"])
-    votes_fractions = np.array(
-        sc_data[["pct_for_hardy2", "pct_for_kolstad2", "pct_for_nadeem2"]]
-    ).T
-    group_fractions = np.array(sc_data[["pct_asian_vote", "pct_non_asian_vote"]]).T
-
-    group_counts = np.round(group_fractions * precinct_pops)
-    vote_counts = np.round(votes_fractions * precinct_pops)
-    num_groups = group_counts.shape[0]
-    num_candidates = vote_counts.shape[0]
-
-    group_diff = group_counts.sum(axis=0) - precinct_pops
-    for idx_of_mismatch in np.where(group_diff != 0):
-        group_to_adjust = random.randint(0, num_groups - 1)
-        group_counts[group_to_adjust, idx_of_mismatch] -= group_diff[idx_of_mismatch]
-
-    vote_diff = vote_counts.sum(axis=0) - precinct_pops
-    for idx_of_mismatch in np.where(vote_diff != 0):
-        candidate_to_adjust = random.randint(0, num_candidates - 1)
-        vote_counts[candidate_to_adjust, idx_of_mismatch] -= vote_diff[idx_of_mismatch]
-
+    snap = np.load(ASYM_COUNTS_PATH)
     return {
-        "group_fractions": group_fractions,
-        "votes_fractions": votes_fractions,
-        "group_counts": group_counts.T,
-        "vote_counts": vote_counts.T,
-        "precinct_pops": precinct_pops,
+        "group_fractions": snap["group_fractions"],
+        "votes_fractions": snap["votes_fractions"],
+        "group_counts": snap["group_counts"],
+        "vote_counts": snap["vote_counts"],
+        "precinct_pops": snap["precinct_pops"],
         "demographic_group_names": ["asian", "non_asian"],
         "candidate_names": ["Hardy", "Kolstad", "Nadeem"],
     }
@@ -130,6 +115,7 @@ def _fit_r_by_c(example_r_by_c_data, model_name):
         example_r_by_c_data["candidate_names"],
         draws=100,
         tune=100,
+        random_seed=0,
     )
     return ei_ex
 

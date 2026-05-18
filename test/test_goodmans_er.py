@@ -1,8 +1,10 @@
 """Test Goodmans Ecological Regression."""
 
 # pylint:disable=redefined-outer-name
+
 import numpy as np
 import pytest
+from numpy.typing import NDArray
 
 from pyei.goodmans_er import GoodmansER, GoodmansERBayes
 
@@ -49,6 +51,7 @@ def goodmans_er_bayes_examples(example_two_by_two_data):  # pylint: disable=rede
         demographic_group_name=ex["demographic_group_name"],
         candidate_name=ex["candidate_name"],
         tune=2000,
+        random_seed=0,
     )
 
     bayes_goodman_ei_unweighted = GoodmansERBayes(
@@ -60,6 +63,7 @@ def goodmans_er_bayes_examples(example_two_by_two_data):  # pylint: disable=rede
         ex["precint_pops"],
         demographic_group_name=ex["demographic_group_name"],
         candidate_name=ex["candidate_name"],
+        random_seed=0,
     )
     return {
         "bayes_goodman_ei_weighted": bayes_goodman_ei_weighted,
@@ -71,6 +75,8 @@ def test_fit(group_and_vote_fractions):
     model = GoodmansER()
     group_share, vote_share = group_and_vote_fractions
     model.fit(group_share, vote_share)
+    assert model.intercept_ is not None
+    assert model.slope_ is not None
     np.testing.assert_almost_equal(model.intercept_, 0)
     np.testing.assert_almost_equal(model.slope_, 1)
 
@@ -79,6 +85,8 @@ def test_weighted_fit(group_and_vote_fractions_with_pop):
     model = GoodmansER(is_weighted_regression=True)
     group_share, vote_share, pops = group_and_vote_fractions_with_pop
     model.fit(group_share, vote_share, pops)
+    assert model.intercept_ is not None
+    assert model.slope_ is not None
     np.testing.assert_almost_equal(model.intercept_, 0.1, decimal=3)
     np.testing.assert_almost_equal(model.slope_, 1, decimal=3)
 
@@ -115,7 +123,8 @@ def test_plot(group_and_vote_fractions):
     group_share, vote_share = group_and_vote_fractions
     model.fit(group_share, vote_share)
     _, ax = model.plot()
-    x_plot, y_plot = ax.lines[0].get_xydata().T
+    xy: NDArray[np.float64] = np.array(ax.lines[0].get_xydata(), dtype=np.float64)
+    x_plot, y_plot = xy.T
     np.testing.assert_allclose(x_plot, y_plot, atol=1e-10)
     assert (0.0, 1.0) == ax.get_xlim()
     assert (0.0, 1.0) == ax.get_ylim()
