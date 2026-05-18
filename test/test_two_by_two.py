@@ -168,36 +168,50 @@ def test_precinct_level_estimates_complement_intervals_mirror(example_two_by_two
         )
 
 
-@pytest.mark.slow
-def test_two_by_two_fit_recovers_known_truth():
-    """End-to-end posterior recovery on synthetic ground truth.
+def _synthetic_two_by_two_truth(b_1_true=0.75, b_2_true=0.20, num_precincts=40):
+    """Generate precinct-level data from known per-group preferences.
 
-    Generates precinct-level vote counts from known per-group preferences
-    (b_1 = 0.75 for the demographic group, b_2 = 0.20 for the complement),
-    then fits ``TwoByTwoEI`` and verifies the posterior mean of
-    ``sampled_voting_prefs`` recovers those truths within tolerance.
-
-    This guards the wiring between the model definition, the sampler, and
-    the posterior-aggregation step in ``calculate_sampled_voting_prefs`` —
-    none of which is covered by the per-primitive scipy tests.
+    Returns ``(group_fraction, votes_fraction, precinct_pops, b_1_true,
+    b_2_true)``. The seed is pinned via ``np.random.default_rng(0)`` so
+    every call produces the same dataset regardless of test ordering.
     """
     rng = np.random.default_rng(0)
-    num_precincts = 40
     precinct_pops = np.full(num_precincts, 600, dtype=np.int64)
-
     # Varied group fractions so both slopes are identifiable.
     group_fraction = rng.uniform(0.15, 0.85, size=num_precincts)
-    b_1_true = 0.75
-    b_2_true = 0.20
-
-    # Per-precinct true vote rate, then binomial draw for the observed votes.
     p_per_precinct = b_1_true * group_fraction + b_2_true * (1 - group_fraction)
     vote_counts = rng.binomial(precinct_pops, p_per_precinct)
     votes_fraction = vote_counts / precinct_pops
+    return group_fraction, votes_fraction, precinct_pops, b_1_true, b_2_true
 
-    ei = two_by_two.TwoByTwoEI(
-        model_name="king99_pareto_modification", pareto_scale=8, pareto_shape=2
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "model_name, extra_params",
+    [
+        ("king99_pareto_modification", {"pareto_scale": 8, "pareto_shape": 2}),
+        ("king99", {"lmbda": 0.5}),
+    ],
+)
+def test_two_by_two_fit_recovers_known_truth(model_name, extra_params):
+    """End-to-end posterior recovery on synthetic ground truth for the two
+    king99 variants. Both run under numpyro and converge quickly enough
+    that a 400/400 chain recovers truth within 0.05.
+
+    Guards the wiring between model definition, sampler, and the
+    posterior-aggregation step in ``calculate_sampled_voting_prefs``.
+    A miswired prior would surface as a recovery failure.
+
+    ``truncated_normal`` is covered structurally below — its posterior
+    geometry is known to be hard (the model doesn't use numpyro because
+    ``jax.scipy.special.erfcx`` is missing), and pinning a tight recovery
+    tolerance there would be a flake source rather than a regression signal.
+    """
+    group_fraction, votes_fraction, precinct_pops, b_1_true, b_2_true = (
+        _synthetic_two_by_two_truth()
     )
+
+    ei = two_by_two.TwoByTwoEI(model_name=model_name, **extra_params)
     ei.fit(
         group_fraction,
         votes_fraction,
@@ -211,11 +225,49 @@ def test_two_by_two_fit_recovers_known_truth():
 
     posterior_b1 = ei.sampled_voting_prefs[0].mean()
     posterior_b2 = ei.sampled_voting_prefs[1].mean()
-    # Tolerance budget: short chain (400 draws) plus the multimodality of
-    # ER-style likelihoods means recovery within 0.05 is realistic without
-    # being so tight that minor sampler-version drift flakes the test.
     np.testing.assert_allclose(posterior_b1, b_1_true, atol=0.05)
     np.testing.assert_allclose(posterior_b2, b_2_true, atol=0.05)
+
+
+@pytest.mark.slow
+def test_two_by_two_fit_truncated_normal_produces_valid_output():
+    """Structural check that the ``truncated_normal`` model_name fits cleanly
+    and yields sampled_voting_prefs that are well-formed probabilities.
+
+    Recovery is intentionally not asserted here — see the docstring on
+    ``test_two_by_two_fit_recovers_known_truth``. This test catches a
+    miswired prior that would produce NaNs, out-of-bounds samples, or
+    wrong-shape output.
+
+    ``cores=1`` is required because the numpyro-backed king99 tests above
+    initialise JAX (which starts internal threads), and PyMC's default
+    multi-chain sampler would then call ``os.fork()`` — fork-after-threading
+    is unsafe under JAX and can deadlock. Single-process sampling avoids
+    the fork entirely.
+    """
+    group_fraction, votes_fraction, precinct_pops, _, _ = (
+        _synthetic_two_by_two_truth()
+    )
+    ei = two_by_two.TwoByTwoEI(model_name="truncated_normal")
+    ei.fit(
+        group_fraction,
+        votes_fraction,
+        precinct_pops,
+        demographic_group_name="synth_group",
+        candidate_name="synth_cand",
+        draws=300,
+        tune=300,
+        random_seed=0,
+        cores=1,
+    )
+
+    prefs_0, prefs_1 = ei.sampled_voting_prefs
+    assert prefs_0 is not None and prefs_1 is not None
+    assert prefs_0.shape == prefs_1.shape
+    for prefs in (prefs_0, prefs_1):
+        assert not np.isnan(prefs).any()
+        assert prefs.min() >= 0.0
+        assert prefs.max() <= 1.0
 
 
 @pytest.mark.slow
