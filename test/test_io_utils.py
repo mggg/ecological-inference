@@ -74,6 +74,11 @@ def test_r_by_c_roundtrip_preserves_posterior_samples(r_by_c_roundtrip_file):
     np.testing.assert_allclose(reloaded_b, orig_b)
 
 
+def test_r_by_c_roundtrip_preserves_precinct_pops(r_by_c_roundtrip_file):
+    original, reloaded = r_by_c_roundtrip_file
+    np.testing.assert_array_equal(reloaded.precinct_pops, original.precinct_pops)
+
+
 def test_r_by_c_roundtrip_summary_renders(r_by_c_roundtrip_file):
     _, reloaded = r_by_c_roundtrip_file
     summary = reloaded.summary()
@@ -92,3 +97,30 @@ def test_two_by_two_roundtrip_preserves_posterior(two_by_two_roundtrip_file):
     orig_b = original.sim_trace["posterior"]["b_1"].values
     reloaded_b = reloaded.sim_trace["posterior"]["b_1"].values
     np.testing.assert_allclose(reloaded_b, orig_b)
+
+
+def test_two_by_two_roundtrip_preserves_precinct_pops(two_by_two_roundtrip_file):
+    """precinct_pops is reused by calculate_sampled_voting_prefs on reload —
+    a wrong value here would silently rescale the recomputed prefs."""
+    original, reloaded = two_by_two_roundtrip_file
+    np.testing.assert_array_equal(reloaded.precinct_pops, original.precinct_pops)
+
+
+def test_two_by_two_roundtrip_preserves_group_and_candidate_names(
+    two_by_two_roundtrip_file,
+):
+    original, reloaded = two_by_two_roundtrip_file
+    assert reloaded.demographic_group_name == original.demographic_group_name
+    assert reloaded.candidate_name == original.candidate_name
+
+
+def test_two_by_two_roundtrip_recomputes_sampled_voting_prefs(two_by_two_roundtrip_file):
+    """``from_netcdf`` calls ``calculate_sampled_voting_prefs`` for 2x2; the
+    reload must reproduce both elements of the prefs pair within numerical
+    tolerance of the original."""
+    original, reloaded = two_by_two_roundtrip_file
+    for orig_arr, reloaded_arr in zip(
+        original.sampled_voting_prefs, reloaded.sampled_voting_prefs, strict=True
+    ):
+        assert orig_arr is not None and reloaded_arr is not None
+        np.testing.assert_allclose(reloaded_arr, orig_arr)
