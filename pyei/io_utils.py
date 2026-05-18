@@ -95,10 +95,10 @@ def from_netcdf(filepath: str) -> TwoByTwoEI | RowByColumnEI:
     attr_list.remove("arviz_version")
 
     ei_object: TwoByTwoEI | RowByColumnEI
-    if attrs_dict["is_two_by_two"] == "true":
-        ei_object = TwoByTwoEI(attrs_dict["model_name"])  # initialize EI object
-        ei_object.calculate_sampled_voting_prefs()  # calculate polity-wide samples
-    else:  # otherwise it's an R by C
+    is_two_by_two = attrs_dict["is_two_by_two"] == "true"
+    if is_two_by_two:
+        ei_object = TwoByTwoEI(attrs_dict["model_name"])
+    else:
         ei_object = RowByColumnEI(attrs_dict["model_name"])
 
         ei_object.demographic_group_fractions = idata.demographic_group_fractions[
@@ -115,6 +115,10 @@ def from_netcdf(filepath: str) -> TwoByTwoEI | RowByColumnEI:
         ]  # these vars only attached to the posterior for saving/loading
 
     ei_object.sim_trace = idata
-    ei_object.calculate_summary()  # calculate summary quantities
+    if is_two_by_two:
+        # 2x2 summary reads from sampled_voting_prefs, which must be computed
+        # from the freshly-restored sim_trace first.
+        cast(TwoByTwoEI, ei_object).calculate_sampled_voting_prefs()
+    ei_object.calculate_summary()
 
     return ei_object
