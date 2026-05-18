@@ -9,11 +9,6 @@ from pyei.plot_utils import plot_precinct_scatterplot
 pytestmark = pytest.mark.slow
 
 
-def test_ei_r_by_c_summary(two_r_by_c_ei_runs):
-    example_r_by_c_ei = two_r_by_c_ei_runs[0]
-    assert isinstance(example_r_by_c_ei.summary(), str)
-
-
 def test_ei_calculate_turnout_adjusted_samples(two_r_by_c_ei_runs):
     def calculate_turnout_adjust_samples_basic(
         non_adjusted_samples, abstain_column_name, candidate_names

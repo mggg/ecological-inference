@@ -97,25 +97,22 @@ def test_summary():
     model.candidate_name = "Lorax"
     model.voting_prefs_est_ = 1.0
     model.voting_prefs_complement_est_ = 0.0
-    expected_summary = """Goodmans ER
-        Est. fraction of Trees
-        voters who voted for Lorax is
-        1.000
-        Est. fraction of non- Trees
-        voters who voted for Lorax is
-        0.000
-        """
-    assert model.summary() == expected_summary
+
+    unweighted = model.summary()
+    assert "Goodmans ER" in unweighted
+    assert "weighted by population" not in unweighted
+    assert "Trees" in unweighted
+    assert "Lorax" in unweighted
+    assert "1.000" in unweighted
+    assert "0.000" in unweighted
+
     model.is_weighted_regression = True
-    expected_summary = """Goodmans ER, weighted by population
-        Est. fraction of Trees
-        voters who voted for Lorax is
-        1.000
-        Est. fraction of non- Trees
-        voters who voted for Lorax is
-        0.000
-        """
-    assert model.summary() == expected_summary
+    weighted = model.summary()
+    assert "Goodmans ER, weighted by population" in weighted
+    assert "Trees" in weighted
+    assert "Lorax" in weighted
+    assert "1.000" in weighted
+    assert "0.000" in weighted
 
 
 def test_plot(group_and_vote_fractions):

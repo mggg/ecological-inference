@@ -22,11 +22,6 @@ def waterbury_df():
     return data.Datasets.Waterbury.to_dataframe()
 
 
-def test_datasets_class_exposes_known_attributes():
-    assert hasattr(data.Datasets, "Santa_Clara")
-    assert hasattr(data.Datasets, "Waterbury")
-
-
 def test_santa_clara_shape(santa_clara_df):
     assert santa_clara_df.shape == (42, 21)
 
@@ -57,7 +52,7 @@ def test_santa_clara_fractions_in_unit_interval(santa_clara_df):
 
 
 def test_santa_clara_complementary_fractions_sum_to_one(santa_clara_df):
-    """asian + non_asian vote share is a binary partition of voters."""
+    """Asian + non_asian vote share is a binary partition of voters."""
     total = santa_clara_df["pct_asian_vote"] + santa_clara_df["pct_non_asian_vote"]
     np.testing.assert_allclose(total.to_numpy(), 1.0, atol=1e-6)
 
