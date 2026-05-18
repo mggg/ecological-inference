@@ -1021,11 +1021,19 @@ class TwoByTwoEI(TwoByTwoEIBaseBayes):
         precinct_credible_intervals[:, 0, 0, :] = precinct_credible_intervals_gp1
         # Complement column: 1 - [lower, upper] swaps endpoint order, so flip
         # back to (lower, upper) by indexing the source in reverse.
-        precinct_credible_intervals[:, 0, 1, 0] = 1 - precinct_credible_intervals_gp1[:, 1]
-        precinct_credible_intervals[:, 0, 1, 1] = 1 - precinct_credible_intervals_gp1[:, 0]
+        precinct_credible_intervals[:, 0, 1, 0] = (
+            1 - precinct_credible_intervals_gp1[:, 1]
+        )
+        precinct_credible_intervals[:, 0, 1, 1] = (
+            1 - precinct_credible_intervals_gp1[:, 0]
+        )
         precinct_credible_intervals[:, 1, 0, :] = precinct_credible_intervals_gp2
-        precinct_credible_intervals[:, 1, 1, 0] = 1 - precinct_credible_intervals_gp2[:, 1]
-        precinct_credible_intervals[:, 1, 1, 1] = 1 - precinct_credible_intervals_gp2[:, 0]
+        precinct_credible_intervals[:, 1, 1, 0] = (
+            1 - precinct_credible_intervals_gp2[:, 1]
+        )
+        precinct_credible_intervals[:, 1, 1, 1] = (
+            1 - precinct_credible_intervals_gp2[:, 0]
+        )
 
         return (precinct_posterior_means, precinct_credible_intervals)
 

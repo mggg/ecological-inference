@@ -140,7 +140,9 @@ def test_summary_with_unknown_non_candidate_name_raises(two_r_by_c_ei_runs):
     rendering a partial summary or crashing on a downstream attribute.
     """
     ei = two_r_by_c_ei_runs[0]
-    with pytest.raises(ValueError, match="non_candidate_names must be in candidate_names"):
+    with pytest.raises(
+        ValueError, match="non_candidate_names must be in candidate_names"
+    ):
         ei.summary(non_candidate_names=["NotAName"])
 
 

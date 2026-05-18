@@ -183,6 +183,4 @@ def test_pyei_greiner_quinn_gibbs_produces_valid_voting_prefs(example_r_by_c_dat
     assert ei.sampled_voting_prefs.shape[1:] == (r, c)
     assert ei.sampled_voting_prefs.min() >= 0.0
     assert ei.sampled_voting_prefs.max() <= 1.0
-    np.testing.assert_allclose(
-        ei.sampled_voting_prefs.sum(axis=2), 1.0, atol=1e-6
-    )
+    np.testing.assert_allclose(ei.sampled_voting_prefs.sum(axis=2), 1.0, atol=1e-6)

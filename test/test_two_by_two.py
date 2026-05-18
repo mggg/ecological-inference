@@ -245,9 +245,7 @@ def test_two_by_two_fit_truncated_normal_produces_valid_output():
     is unsafe under JAX and can deadlock. Single-process sampling avoids
     the fork entirely.
     """
-    group_fraction, votes_fraction, precinct_pops, _, _ = (
-        _synthetic_two_by_two_truth()
-    )
+    group_fraction, votes_fraction, precinct_pops, _, _ = _synthetic_two_by_two_truth()
     ei = two_by_two.TwoByTwoEI(model_name="truncated_normal")
     ei.fit(
         group_fraction,

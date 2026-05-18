@@ -36,7 +36,9 @@ def test_happy_path_no_warning_no_error():
 def test_votes_fractions_precinct_mismatch_raises():
     group_fractions, votes_fractions, precinct_pops, dims = _well_formed_inputs()
     bad_votes = votes_fractions[:, :-1]  # one fewer precinct
-    with pytest.raises(ValueError, match="votes_fractions should have shape: c x num_precincts"):
+    with pytest.raises(
+        ValueError, match="votes_fractions should have shape: c x num_precincts"
+    ):
         check_dimensions_of_input(
             group_fractions, bad_votes, precinct_pops, None, None, dims
         )

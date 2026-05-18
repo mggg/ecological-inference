@@ -122,7 +122,9 @@ def test_initial_internal_count_preserves_both_marginals(num_precincts, r, c, se
 @given(
     n1=hst.integers(min_value=1, max_value=50),
     n2=hst.integers(min_value=1, max_value=50),
-    psi=hst.floats(min_value=0.05, max_value=20.0, allow_nan=False, allow_infinity=False),
+    psi=hst.floats(
+        min_value=0.05, max_value=20.0, allow_nan=False, allow_infinity=False
+    ),
 )
 def test_nchg_sample_in_support(n1, n2, psi):
     """The sample must lie in [max(0, m1 - n2), min(n1, m1)] for any m1
