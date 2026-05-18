@@ -10,7 +10,7 @@ vars:
   # Coverage floor; ratchet up as the suite improves. Set ~2 below the
   # last measured value so honest refactors don't break CI but real
   # regressions do.
-  COV_MIN: "74"
+  COV_MIN: "80"
 
 tasks:
   default:
